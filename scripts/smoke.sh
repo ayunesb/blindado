@@ -13,6 +13,12 @@ DUR_HOURS="${DUR_HOURS:-4}"
 # e.g., export ANON="$(op read supabase_anon_key)" or set in CI secrets
 ANON="${ANON:-}"
 
+# In CI, require ANON to be set for Functions gateway
+if [[ "${GITHUB_ACTIONS:-}" == "true" && -z "${ANON}" ]]; then
+  echo "[ERROR] SUPABASE_ANON_KEY (ANON) is not set. Configure it in GitHub → Settings → Secrets and variables → Actions."
+  exit 1
+fi
+
 # Build curl header array (includes apikey/Authorization when ANON is provided)
 HEADERS=(-H 'content-type: application/json')
 if [[ -n "$ANON" ]]; then
