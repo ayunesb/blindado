@@ -196,6 +196,14 @@
             document.getElementById('btnRefresh').onclick=listJobs;
             window.addEventListener('load', ()=>{ listJobs(); startRealtime(); startHeartbeat(); });
           </script>
-          <!-- Google Maps loader now handled in <head> above -->
+          <script>
+            // Dynamically load Google Maps API at the end to ensure initMap is defined
+            (function loadMaps(){
+              const s=document.createElement('script');
+              const libs='marker';
+              s.src=`https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=${libs}&callback=initMap`;
+              s.async=true; s.defer=true; document.body.appendChild(s);
+            })();
+          </script>
         </body>
         </html>
