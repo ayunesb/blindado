@@ -26,8 +26,20 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "bucket and path required" }), { status: 400, headers: CORS });
   }
 
-  const url = Deno.env.get("BLINDADO_SUPABASE_URL")!;
-  const key = Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!;
+  // Prefer BLINDADO_* but fallback to standard SUPABASE_* to avoid duplication
+  const url =
+    Deno.env.get("BLINDADO_SUPABASE_URL") ||
+    Deno.env.get("SUPABASE_URL");
+  const key =
+    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY") ||
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!url || !key) {
+    return new Response(
+      JSON.stringify({ error: "missing Supabase URL or service role key" }),
+      { status: 500, headers: CORS }
+    );
+  }
   const supa = createClient(url, key);
 
   try {
