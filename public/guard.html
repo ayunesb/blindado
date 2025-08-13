@@ -11,12 +11,16 @@
   <div class="max-w-7xl mx-auto p-6">
     <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-bold">Guard Console</h1>
-        <p class="text-slate-500">View offers → Accept → Advance status</p>
+        <h1 id="g_title" class="text-3xl font-bold">Guard Console</h1>
+        <p id="g_sub" class="text-slate-500">View offers → Accept → Advance status</p>
       </div>
       <div class="flex items-center gap-3 bg-white rounded-xl shadow px-4 py-3">
-        <input id="gid" class="rounded-lg border border-slate-200 px-3 py-2 text-sm w-72" placeholder="guard_id" value="c38efbac-fd1e-426b-a0ab-be59fd908c8c" />
+        <input id="gid" class="rounded-lg border border-slate-200 px-3 py-2 text-sm w-56" placeholder="guard_id" value="c38efbac-fd1e-426b-a0ab-be59fd908c8c" />
         <button id="btnLoad" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">Load</button>
+        <select id="lang" class="text-xs border rounded px-2 py-1">
+          <option value="en" selected>EN</option>
+          <option value="es">ES</option>
+        </select>
       </div>
     </header>
 
@@ -27,8 +31,8 @@
           <div id="map" class="h-[340px] w-full"></div>
         </div>
         <div class="bg-white rounded-2xl shadow p-5">
-          <h2 class="font-semibold mb-2 text-sm tracking-wide uppercase text-slate-500">Help</h2>
-          <p class="text-sm text-slate-600">Accept a job to lock it. Then progress through check_in → on_site → in_progress → check_out → completed.</p>
+          <h2 id="g_help_hdr" class="font-semibold mb-2 text-sm tracking-wide uppercase text-slate-500">Help</h2>
+          <p id="g_help_txt" class="text-sm text-slate-600">Accept a job to lock it. Then progress through check_in → on_site → in_progress → check_out → completed.</p>
           <p id="err" class="text-xs text-rose-600 mt-2"></p>
         </div>
       </aside>
@@ -66,6 +70,16 @@
 
   <script>
     const $ = id => document.getElementById(id);
+    const GI18N = {
+      en: { title:'Guard Console', sub:'View offers → Accept → Advance status', help_hdr:'Help', help_txt:'Accept a job to lock it. Then progress through check_in → on_site → in_progress → check_out → completed.', load:'Load', accept:'Accept', update:'Update', no_jobs:'No offered jobs.' },
+      es: { title:'Consola de Guardia', sub:'Ver ofertas → Aceptar → Avanzar estado', help_hdr:'Ayuda', help_txt:'Acepta un servicio para bloquearlo. Luego avanza: check_in → on_site → in_progress → check_out → completed.', load:'Cargar', accept:'Aceptar', update:'Actualizar', no_jobs:'Sin ofertas.' }
+    };
+    function gApply(l){ const t=GI18N[l];
+      $('#g_title').textContent=t.title; $('#g_sub').textContent=t.sub; $('#g_help_hdr').textContent=t.help_hdr; $('#g_help_txt').textContent=t.help_txt; $('#btnLoad').textContent=t.load;
+      document.querySelectorAll('.accept').forEach(b=>b.textContent=t.accept); document.querySelectorAll('.update').forEach(b=>b.textContent=t.update);
+    }
+    document.addEventListener('change', e=>{ if(e.target.id==='lang'){ gApply(e.target.value); render(lastJobs, currentGuard); }});
+    let currentLang='en';
     const listEl = $("list");
 
     window.initMap = function initMap() {
@@ -84,8 +98,9 @@
       } catch(e){ $("err").textContent = String(e); }
     }
 
-    function render(rows, guard_id){
-      if(!rows.length){ listEl.innerHTML = '<p class="text-slate-500 text-sm">No offered jobs.</p>'; return; }
+    let lastJobs=[]; let currentGuard=null;
+    function render(rows, guard_id){ lastJobs=rows; currentGuard=guard_id; listEl.innerHTML='';
+      if(!rows.length){ listEl.innerHTML = `<p class='text-slate-500 text-sm'>${GI18N[$('#lang').value].no_jobs}</p>`; return; }
       for(const row of rows){ listEl.appendChild(jobCard(row, guard_id)); }
     }
 
@@ -97,9 +112,11 @@
       div.querySelector('.job-notes').textContent = b.notes || '(no notes)';
       div.querySelector('.job-raw').textContent = JSON.stringify({ assignment: job, booking: b }, null, 2);
       const acceptBtn = div.querySelector('.accept');
-      if(job.status !== 'offered'){ acceptBtn.disabled = true; acceptBtn.className = 'accept px-3 py-1.5 rounded-lg bg-slate-300 text-slate-500 text-xs font-medium cursor-not-allowed'; }
-      acceptBtn.onclick = async ()=>{ await act(job.id, 'accept'); await load(); };
-      div.querySelector('.update').onclick = async ()=>{ const status = div.querySelector('.status').value; await act(job.id, status); await load(); };
+  if(job.status !== 'offered'){ acceptBtn.disabled = true; acceptBtn.className = 'accept px-3 py-1.5 rounded-lg bg-slate-300 text-slate-500 text-xs font-medium cursor-not-allowed'; }
+  acceptBtn.textContent = GI18N[$('#lang').value].accept;
+  const updBtn = div.querySelector('.update'); updBtn.textContent = GI18N[$('#lang').value].update;
+  acceptBtn.onclick = async ()=>{ await act(job.id, 'accept'); await load(); };
+  updBtn.onclick = async ()=>{ const status = div.querySelector('.status').value; await act(job.id, status); await load(); };
       return div;
     }
 
@@ -111,9 +128,9 @@
       const j = await r.json(); if(!r.ok) alert(j.error || r.statusText);
     }
 
-    $("btnLoad").onclick = load;
+  $("btnLoad").onclick = load;
     const qp = new URLSearchParams(location.search); const qg = qp.get('guard_id'); if(qg){ $("gid").value = qg; }
-    load();
+  gApply('en'); load();
   </script>
   <script async src="https://maps.googleapis.com/maps/api/js?key=REPLACE_WITH_YOUR_RESTRICTED_KEY&callback=initMap"></script>
 </body>

@@ -9,9 +9,18 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div class="max-w-3xl mx-auto p-6">
-    <header class="mb-6">
-      <h1 class="text-3xl font-bold">Dispatcher</h1>
-      <p class="text-slate-500">Trigger matching for a booking</p>
+    <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 id="d_title" class="text-3xl font-bold">Dispatcher</h1>
+        <p id="d_sub" class="text-slate-500">Trigger matching for a booking</p>
+      </div>
+      <div class="flex items-center gap-2 bg-white rounded-xl shadow px-3 py-2">
+        <label for="lang" class="text-xs text-slate-500">Lang</label>
+        <select id="lang" class="text-sm border rounded px-2 py-1">
+          <option value="en" selected>EN</option>
+          <option value="es">ES</option>
+        </select>
+      </div>
     </header>
     <section class="bg-white rounded-2xl shadow p-6">
       <div class="flex gap-3 items-center">
@@ -23,11 +32,19 @@
   </div>
   <script>
     const $ = id => document.getElementById(id);
-    $("btnMatch").onclick = async () => {
-      const booking_id = $("bid").value.trim();
-      if(!booking_id){ $("out").textContent = 'Enter booking_id'; return; }
-      const r = await fetch(`${FN}/matching`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ booking_id }) });
-      $("out").textContent = JSON.stringify(await r.json(), null, 2);
+    const DI18N = {
+      en: { title:'Dispatcher', sub:'Trigger matching for a booking', placeholder:'booking_id', match:'Match', help:'Paste a booking_id from the client page and click Match.', enter:'Enter booking_id' },
+      es: { title:'Despachador', sub:'Lanzar matching para una reserva', placeholder:'id de reserva', match:'Asignar', help:'Pega un booking_id de la página de cliente y haz clic en Asignar.', enter:'Ingresa booking_id' }
+    };
+    function dApply(l){ const t=DI18N[l]; $('#d_title').textContent=t.title; $('#d_sub').textContent=t.sub; $('#bid').placeholder=t.placeholder; $('#btnMatch').textContent=t.match; if(!$('#out').dataset.lock) $('#out').textContent=t.help; }
+    $('#lang').addEventListener('change', e=>dApply(e.target.value));
+    dApply('en');
+    $('#btnMatch').onclick = async () => {
+      const booking_id = $('#bid').value.trim();
+      if(!booking_id){ $('#out').textContent = DI18N[$('#lang').value].enter; return; }
+      const r = await fetch(`${FN}/matching`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ booking_id }) });
+      $('#out').dataset.lock='1';
+      $('#out').textContent = JSON.stringify(await r.json(), null, 2);
     };
   </script>
 </body>

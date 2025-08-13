@@ -8,25 +8,34 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div class="max-w-6xl mx-auto p-6">
-    <header class="mb-6">
-      <h1 class="text-3xl font-bold">Book Security</h1>
-      <p class="text-slate-500">Quote → Create → Preauth → Confirm → Match</p>
+    <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 id="t_title" class="text-3xl font-bold">Book Security</h1>
+        <p id="t_flow" class="text-slate-500 text-sm">Quote → Create → Preauth → Confirm → Match</p>
+      </div>
+      <div class="flex items-center gap-2 bg-white rounded-xl shadow px-3 py-2">
+        <label for="lang" class="text-xs text-slate-500">Lang</label>
+        <select id="lang" class="text-sm border rounded px-2 py-1">
+          <option value="en" selected>EN</option>
+          <option value="es">ES</option>
+        </select>
+      </div>
     </header>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Form card -->
       <div class="bg-white rounded-2xl shadow p-6">
-        <h2 class="text-lg font-semibold mb-4">1) Job details</h2>
+  <h2 id="t_job_details" class="text-lg font-semibold mb-4">1) Job details</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label class="block">
-            <span class="text-sm text-slate-600">Client ID</span>
+            <span id="t_client_id" class="text-sm text-slate-600">Client ID</span>
             <input id="client" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                    value="1b387371-6711-485c-81f7-79b2174b90fb" />
           </label>
 
           <label class="block">
-            <span class="text-sm text-slate-600">Tier</span>
+            <span id="t_tier" class="text-sm text-slate-600">Tier</span>
             <select id="tier" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2">
               <option value="direct" selected>direct</option>
               <option value="elite">elite</option>
@@ -35,7 +44,7 @@
           </label>
 
           <label class="block">
-            <span class="text-sm text-slate-600">City</span>
+            <span id="t_city" class="text-sm text-slate-600">City</span>
             <input id="city" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                    value="CDMX" />
           </label>
@@ -43,35 +52,35 @@
           <div class="flex items-center gap-6 mt-6 md:mt-0">
             <label class="inline-flex items-center gap-2">
               <input id="armed" type="checkbox" class="h-4 w-4 rounded border-slate-300" />
-              <span class="text-sm">Armed</span>
+              <span id="t_armed" class="text-sm">Armed</span>
             </label>
             <label class="inline-flex items-center gap-2">
               <input id="vehicle" type="checkbox" class="h-4 w-4 rounded border-slate-300" />
-              <span class="text-sm">Vehicle</span>
+              <span id="t_vehicle" class="text-sm">Vehicle</span>
             </label>
           </div>
 
           <label class="block">
-            <span class="text-sm text-slate-600">Start (local)</span>
+            <span id="t_start" class="text-sm text-slate-600">Start (local)</span>
             <input id="start" type="datetime-local"
                    class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2" />
           </label>
 
           <label class="block">
-            <span class="text-sm text-slate-600">End (local)</span>
+            <span id="t_end" class="text-sm text-slate-600">End (local)</span>
             <input id="end" type="datetime-local"
                    class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2" />
           </label>
 
           <label class="block">
-            <span class="text-sm text-slate-600">Origin lat</span>
+            <span id="t_olat" class="text-sm text-slate-600">Origin lat</span>
             <input id="olat" type="number" step="0.000001"
                    class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                    value="19.4326" />
           </label>
 
           <label class="block">
-            <span class="text-sm text-slate-600">Origin lng</span>
+            <span id="t_olng" class="text-sm text-slate-600">Origin lng</span>
             <input id="olng" type="number" step="0.000001"
                    class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                    value="-99.1332" />
@@ -79,7 +88,7 @@
         </div>
 
         <label class="block mt-4">
-          <span class="text-sm text-slate-600">Notes</span>
+          <span id="t_notes" class="text-sm text-slate-600">Notes</span>
           <textarea id="notes" rows="2"
                     class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                     placeholder="Client web booking"></textarea>
@@ -88,9 +97,9 @@
         <div class="flex flex-wrap gap-3 mt-5">
           <button id="btnQuote" class="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">Get Quote</button>
           <button id="btnCreate" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Create Booking</button>
-          <button id="btnPreauth" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Preauth (stub)</button>
-          <button id="btnConfirm" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Confirm Booking</button>
-          <button id="btnMatch" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Run Matching</button>
+          <button id="btnPreauth" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Preauth</button>
+          <button id="btnConfirm" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Confirm</button>
+          <button id="btnMatch" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Match</button>
         </div>
       </div>
 
@@ -100,7 +109,7 @@
           <div id="map" class="h-[360px] w-full"></div>
         </div>
         <div class="bg-white rounded-2xl shadow p-6">
-          <h2 class="text-lg font-semibold mb-2">Output</h2>
+          <h2 id="t_output" class="text-lg font-semibold mb-2">Output</h2>
           <pre id="out" class="text-sm text-slate-700 whitespace-pre-wrap"></pre>
         </div>
       </div>
@@ -109,6 +118,37 @@
 
   <script>
     const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1"; // change if needed
+    const I18N = {
+      en: {
+        title: 'Book Security', flow: 'Quote → Create → Preauth → Confirm → Match', job_details: '1) Job details', client_id:'Client ID', tier:'Tier', city:'City', armed:'Armed', vehicle:'Vehicle', start:'Start (local)', end:'End (local)', olat:'Origin lat', olng:'Origin lng', notes:'Notes', btnQuote:'Get Quote', btnCreate:'Create Booking', btnPreauth:'Preauth', btnConfirm:'Confirm', btnMatch:'Match', output:'Output', placeholderNotes:'Client web booking'
+      },
+      es: {
+        title: 'Reservar Seguridad', flow: 'Cotizar → Crear → Preautorizar → Confirmar → Asignar', job_details: '1) Detalles del servicio', client_id:'ID Cliente', tier:'Nivel', city:'Ciudad', armed:'Armado', vehicle:'Vehículo', start:'Inicio (local)', end:'Fin (local)', olat:'Lat origen', olng:'Lng origen', notes:'Notas', btnQuote:'Cotizar', btnCreate:'Crear Reserva', btnPreauth:'Preautorizar', btnConfirm:'Confirmar', btnMatch:'Asignar', output:'Salida', placeholderNotes:'Reserva web cliente'
+      }
+    };
+    function applyLang(l){ const t=I18N[l];
+      document.getElementById('t_title').textContent=t.title;
+      document.getElementById('t_flow').textContent=t.flow;
+      document.getElementById('t_job_details').textContent=t.job_details;
+      document.getElementById('t_client_id').textContent=t.client_id;
+      document.getElementById('t_tier').textContent=t.tier;
+      document.getElementById('t_city').textContent=t.city;
+      document.getElementById('t_armed').textContent=t.armed;
+      document.getElementById('t_vehicle').textContent=t.vehicle;
+      document.getElementById('t_start').textContent=t.start;
+      document.getElementById('t_end').textContent=t.end;
+      document.getElementById('t_olat').textContent=t.olat;
+      document.getElementById('t_olng').textContent=t.olng;
+      document.getElementById('t_notes').textContent=t.notes;
+      document.getElementById('btnQuote').textContent=t.btnQuote;
+      document.getElementById('btnCreate').textContent=t.btnCreate;
+      document.getElementById('btnPreauth').textContent=t.btnPreauth;
+      document.getElementById('btnConfirm').textContent=t.btnConfirm;
+      document.getElementById('btnMatch').textContent=t.btnMatch;
+      document.getElementById('t_output').textContent=t.output;
+      if(!document.getElementById('notes').value) document.getElementById('notes').placeholder=t.placeholderNotes;
+    }
+    document.getElementById('lang').addEventListener('change', e=>applyLang(e.target.value));
     const $ = (id) => document.getElementById(id);
     const out = $("out");
 
@@ -122,7 +162,8 @@
       const plus4 = new Date(now.getTime() + 4*60*60*1000);
       $("start").value = new Date(now.getTime() + 60*1000).toISOString().slice(0,16);
       $("end").value = plus4.toISOString().slice(0,16);
-      $("notes").value = "Client web booking";
+  $("notes").value = I18N.en.placeholderNotes;
+  applyLang('en');
     })();
 
     // map
