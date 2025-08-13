@@ -1,8 +1,8 @@
 // supabase/functions/uploads/index.ts
 // Secure base64 upload (avatars, licenses, vehicles). Returns public/signed URL.
 // Uses same import aliases (serve, supabase) as other functions for consistency.
-import { serve } from "serve";
-import { createClient } from "supabase";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
