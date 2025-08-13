@@ -49,6 +49,13 @@
               <input id="vehicle" type="checkbox" class="h-4 w-4 rounded border">
               <span>Vehicle</span>
             </label>
+            <label class="inline-flex items-center gap-2">
+              <span class="text-sm">Type</span>
+              <select id="vehicle_type" class="rounded border px-2 py-1 text-sm">
+                <option value="suv">SUV</option>
+                <option value="armored">Armored</option>
+              </select>
+            </label>
           </div>
 
           <div>
@@ -152,6 +159,7 @@
         tier: $("tier").value,
         armed_required: $("armed").checked,
         vehicle_required: $("vehicle").checked,
+  vehicle_type: $("vehicle_type").value,
         start_ts: $("start").value,
         end_ts: $("end").value
       };
@@ -168,6 +176,7 @@
         tier: $("tier").value,
         armed_required: $("armed").checked,
         vehicle_required: $("vehicle").checked,
+  vehicle_type: $("vehicle_type").value,
         start_ts: $("start").value,
         end_ts: $("end").value,
         origin_lat: parseFloat($("olat").value),
