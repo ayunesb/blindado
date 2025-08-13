@@ -119,3 +119,36 @@ done
 
 echo
 echo "✅ Smoke OK — booking_id=$BOOKING_ID assignment_id=$ASSIGN_ID"
+
+# Admin smoke (optional, gated by ADMIN)
+if [[ -n "${ADMIN:-}" ]]; then
+  echo
+  echo "→ admin_documents (JSON signed URL)"
+  TS=$(date +%s)
+  DOC_PATH="smoke/${GUARD_ID}/${TS}.txt"
+  ADMIN_DOCS_REQ=$(cat <<JSON
+{"bucket":"avatars","path":"$DOC_PATH","contentType":"text/plain"}
+JSON
+)
+  ADMIN_HEADERS=("${AUTH_ARGS[@]}" -H "x-admin-secret: $ADMIN" -H 'content-type: application/json')
+  ADMIN_DOCS_RES=$(curl -fsS "${ADMIN_HEADERS[@]}" -X POST "$FN/admin_documents" -d "$ADMIN_DOCS_REQ")
+  echo "$ADMIN_DOCS_RES" | jq .
+  SIGNED_URL=$(echo "$ADMIN_DOCS_RES" | jq -r '.signedUrl // empty')
+  test -n "$SIGNED_URL"
+  # Upload a tiny payload to the signed URL
+  curl -fsS -X PUT "$SIGNED_URL" -H 'x-upsert: true' -H 'content-type: text/plain' --data-binary $'smoke\n' >/dev/null
+
+  echo
+  echo "→ admin_licenses (JSON upsert)"
+  ADMIN_LIC_REQ=$(cat <<JSON
+{"guard_id":"$GUARD_ID","type":"id_card","files":[{"path":"$DOC_PATH"}],"status":"valid"}
+JSON
+)
+  ADMIN_LIC_RES=$(curl -fsS "${ADMIN_HEADERS[@]}" -X POST "$FN/admin_licenses" -d "$ADMIN_LIC_REQ")
+  echo "$ADMIN_LIC_RES" | jq .
+  LIC_ID=$(echo "$ADMIN_LIC_RES" | jq -r '.license_id // empty')
+  test -n "$LIC_ID"
+
+  echo
+  echo "✅ Admin smoke OK — license_id=$LIC_ID"
+fi
