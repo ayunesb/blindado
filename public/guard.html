@@ -24,102 +24,126 @@
     <section class="grid md:grid-cols-2 gap-6">
       <div class="glass rounded-2xl p-4">
         <h2 class="font-semibold mb-3" data-i18n="offers">Job Offers</h2>
-        <div id="list" class="space-y-3"></div>
-      </div>
-      <div class="space-y-4">
-        <div id="map" class="glass rounded-2xl h-[360px]"></div>
-        <div class="glass rounded-2xl p-4">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="font-medium" data-i18n="output">Output</h3>
-            <button class="text-xs opacity-70 hover:opacity-100" onclick="clearOut()">Clear</button>
+        <!doctype html>
+        <html lang="es">
+        <head>
+          <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+          <title>Blindado • Guardia</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <script>tailwind.config={theme:{extend:{colors:{brand:"#00E5A8"}}}}</script>
+          <style> .chip{background:#111;border:1px solid #222;border-radius:9999px;padding:.25rem .6rem} </style>
+        </head>
+        <body class="bg-black text-white min-h-screen">
+          <div class="max-w-6xl mx-auto p-6 space-y-6">
+            <header class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <img src="https://i.pravatar.cc/64" class="w-10 h-10 rounded-full" alt="">
+                <div>
+                  <div class="font-semibold">Guard Console</div>
+                  <div id="gid" class="text-xs opacity-70"></div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <select id="lang" class="bg-zinc-800 rounded px-3 py-2"><option value="es">ES</option><option value="en">EN</option></select>
+                <button id="toggleOnline" class="chip">online</button>
+              </div>
+            </header>
+
+            <section class="grid lg:grid-cols-3 gap-6">
+              <div class="lg:col-span-1 space-y-4">
+                <div class="bg-zinc-900/60 p-4 rounded-2xl">
+                  <h2 class="text-lg font-medium mb-2" data-i18n="offers">Ofertas</h2>
+                  <div id="list" class="space-y-3"></div>
+                </div>
+                <div class="bg-zinc-900/60 p-4 rounded-2xl">
+                  <h2 class="text-lg font-medium mb-2" data-i18n="actions">Acciones</h2>
+                  <button id="btnRefresh" class="bg-zinc-800 rounded-xl px-4 py-3 w-full" data-i18n="refresh">Refrescar</button>
+                </div>
+              </div>
+              <div class="lg:col-span-2">
+                <div id="map" class="w-full h-[560px] rounded-2xl overflow-hidden border border-zinc-800"></div>
+              </div>
+            </section>
+
+            <pre id="out" class="text-xs bg-black/50 p-3 rounded-xl h-[220px] overflow-auto"></pre>
           </div>
-          <pre id="out" class="text-xs whitespace-pre-wrap"></pre>
-        </div>
-      </div>
-    </section>
-  </div>
 
-  <script>
-    const PROJECT_REF = new URLSearchParams(location.search).get("ref") || "isnezquuwepqcjkaupjh";
-    const FN = `https://${PROJECT_REF}.supabase.co/functions/v1`;
-    const seeded = "c38efbac-fd1e-426b-a0ab-be59fd908c8c";
+          <script>
+            const DICT={es:{offers:"Ofertas",actions:"Acciones",refresh:"Refrescar",accept:"Aceptar",check_in:"Check-in",on_site:"En sitio",in_progress:"En progreso",check_out:"Cierre",completed:"Completado"},en:{offers:"Offers",actions:"Actions",refresh:"Refresh",accept:"Accept",check_in:"Check-in",on_site:"On-site",in_progress:"In progress",check_out:"Check-out",completed:"Completed"}};
+          const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+          const qs=new URL(location.href); const lang=qs.searchParams.get("lang")||"es"; const guardId=qs.searchParams.get("guard_id")||"c38efbac-fd1e-426b-a0ab-be59fd908c8c";
+            document.getElementById("lang").value=lang; document.getElementById("lang").onchange=e=>{qs.searchParams.set("lang",e.target.value); location.href=qs.toString()};
+            document.getElementById("gid").textContent=guardId;
+            function t(k){return DICT[lang][k]||k} ; document.querySelectorAll("[data-i18n]").forEach(el=>el.textContent=t(el.dataset.i18n));
+            const out=(o)=>document.getElementById('out').textContent=(typeof o==='string'?o:JSON.stringify(o,null,2));
 
-    // i18n
-    const dict = { en:{guard_console:"Guard Console", offers:"Job Offers", output:"Output", accept:"Accept", check_in:"Check-in", on_site:"On-site", in_progress:"In-progress", check_out:"Check-out", completed:"Completed"},
-                   es:{guard_console:"Consola del Guardia", offers:"Ofertas", output:"Resultado", accept:"Aceptar", check_in:"Check-in", on_site:"En sitio", in_progress:"En curso", check_out:"Salida", completed:"Completado"} };
-    const langSel = document.getElementById('lang'); function i18n(){const d=dict[langSel.value];document.querySelectorAll("[data-i18n]").forEach(n=>n.textContent=d[n.dataset.i18n]);}
-    langSel.onchange=i18n; i18n();
+            // Google Maps: dark style (inline style JSON)
+            let map, myMarker;
+            const DARK_STYLE=[{elementType:"geometry",stylers:[{color:"#1d1d1d"}]},{elementType:"labels.text.fill",stylers:[{color:"#e0e0e0"}]},{featureType:"poi",stylers:[{visibility:"off"}]},{featureType:"road",elementType:"geometry",stylers:[{color:"#2c2c2c"}]},{featureType:"water",stylers:[{color:"#0b0b0b"}]}];
 
-    // Dark style (no mapId required)
-    const darkStyle=[{"elementType":"geometry","stylers":[{"color":"#0b0b0b"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#e0e0e0"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#0b0b0b"}]},{"featureType":"poi","stylers":[{"visibility":"off"}]},{"featureType":"road","stylers":[{"color":"#1a1a1a"}]},{"featureType":"water","stylers":[{"color":"#0f2b3c"}]}];
-    let map, marker; function initMap(){ map=new google.maps.Map(document.getElementById("map"),{center:{lat:19.4326,lng:-99.1332},zoom:12,styles:darkStyle}); marker=new google.maps.Marker({position:{lat:19.4326,lng:-99.1332},map}); }
-    window.initMap=initMap;
+            window.initMap = function(){
+              map = new google.maps.Map(document.getElementById('map'),{center:{lat:19.4326,lng:-99.1332},zoom:12,disableDefaultUI:true,styles:DARK_STYLE});
+              myMarker = new google.maps.Marker({map, position:{lat:19.4326,lng:-99.1332}, icon:{path:google.maps.SymbolPath.CIRCLE,scale:6,fillColor:"#00E5A8",fillOpacity:1,strokeWeight:0}});
+            }
 
-    const out=(x)=>document.getElementById('out').textContent=(typeof x==="string"?x:JSON.stringify(x,null,2));
-    const clearOut=()=>document.getElementById('out').textContent="";
+          async function listJobs(){
+              const r = await fetch(`${FN}/jobs/list?guard_id=${guardId}`);
+              const j = await r.json();
+              const box = document.getElementById('list'); box.innerHTML="";
+              (j.items||j||[]).forEach(item=>{
+            const avatar = item.guard_photo_url || item.photo_url || (item.guard_id ? `/storage/v1/object/public/avatars/${item.guard_id}/avatar.jpg` : "https://i.pravatar.cc/100");
+                const div = document.createElement('div');
+                div.className="bg-black/40 border border-zinc-800 rounded-xl p-3 flex gap-3";
+                div.innerHTML = `
+                  <img src="${avatar}" class="w-14 h-14 rounded-lg object-cover" alt="">
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                      <div class="font-medium">${item.city||'CDMX'} · ${item.tier||'direct'}</div>
+                      <span class="chip">${item.status||'offered'}</span>
+                    </div>
+                    <div class="text-xs opacity-70">${item.start_ts?new Date(item.start_ts).toLocaleString():''}</div>
+                    <div class="mt-2 grid grid-cols-3 gap-2">
+                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="accept" data-id="${item.assignment_id||item.id}">${t('accept')}</button>
+                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="check_in" data-id="${item.assignment_id||item.id}">${t('check_in')}</button>
+                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="on_site" data-id="${item.assignment_id||item.id}">${t('on_site')}</button>
+                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="in_progress" data-id="${item.assignment_id||item.id}">${t('in_progress')}</button>
+                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="check_out" data-id="${item.assignment_id||item.id}">${t('check_out')}</button>
+                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="completed" data-id="${item.assignment_id||item.id}">${t('completed')}</button>
+                    </div>
+                  </div>`;
+                box.appendChild(div);
+              });
+          box.onclick = async (e)=>{
+                const btn=e.target.closest("button"); if(!btn) return;
+                const assignment_id=btn.dataset.id; const action=btn.dataset.action;
+                const path = action==="accept" ? "accept" : "status";
+                const body = action==="accept" ? {assignment_id} : {assignment_id, status:action};
+                const r = await fetch(`${FN}/jobs/${path}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+                out(await r.json());
+              };
+            }
 
-    const gid = document.getElementById('guard_id'); gid.value = new URLSearchParams(location.search).get("guard_id") || seeded;
+            // Heartbeat (simple, unauthenticated MVP)
+          let watchId=null;
+          function startHeartbeat(){
+              if(!('geolocation' in navigator)) return;
+              watchId = navigator.geolocation.watchPosition(async p=>{
+                const {latitude:lat, longitude:lng} = p.coords;
+                myMarker.setPosition({lat,lng}); map.setCenter({lat,lng});
+            await fetch(`${FN}/locations`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({op:"heartbeat",guard_id:guardId,lat,lng,speed:p.coords.speed||0})}).catch(()=>{});
+              },console.error,{enableHighAccuracy:true,maximumAge:5e3,timeout:2e4});
+            }
 
-    async function go(path, body, method="POST"){
-      if(method==="GET"){ const r = await fetch(`${FN}${path}`); if(!r.ok) throw await r.text(); return r.json(); }
-      const r = await fetch(`${FN}${path}`, { method, headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
-      if(!r.ok) throw await r.text(); return r.json();
-    }
+          document.getElementById('btnRefresh').onclick=listJobs;
+          window.addEventListener('load', ()=>{ listJobs(); startHeartbeat(); });
 
-    async function load(){
-      try{
-        const res = await go(`/jobs/list?guard_id=${encodeURIComponent(gid.value)}`, null, "GET");
-        render(res);
-        out(res);
-      }catch(e){ out(e); }
-    }
-    document.getElementById('btnLoad').onclick=load; load();
-
-    function line(d){ return new Date(d).toLocaleString(); }
-
-    function render(payload){
-      const box = document.getElementById('list'); box.innerHTML="";
-      (payload.jobs||[]).forEach(j=>{
-        const el = document.createElement('div');
-        el.className="glass rounded-xl p-3";
-        const client = j.client || {};
-        const avatar = client.photo_url || "https://ui-avatars.com/api/?name="+encodeURIComponent((client.first_name||"")+ " " +(client.last_name||""))+"&background=111&color=fff";
-        el.innerHTML = `
-          <div class="flex items-center gap-3">
-            <img src="${avatar}" class="w-12 h-12 rounded-xl object-cover border border-white/10" alt="avatar"/>
-            <div class="flex-1">
-              <div class="font-medium">${j.booking.city} — ${j.booking.tier}</div>
-              <div class="text-xs opacity-70">${line(j.booking.start_ts)} → ${line(j.booking.end_ts)}</div>
-              <div class="text-xs opacity-80 mt-1">${client.first_name||""} ${client.last_name||""}</div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <button class="btn" data-act="accept" data-id="${j.assignment_id}" data-i18n="accept">Accept</button>
-              <button class="btn" data-act="status" data-s="check_in" data-id="${j.assignment_id}" data-i18n="check_in">Check-in</button>
-              <button class="btn" data-act="status" data-s="on_site" data-id="${j.assignment_id}" data-i18n="on_site">On-site</button>
-              <button class="btn" data-act="status" data-s="in_progress" data-id="${j.assignment_id}" data-i18n="in_progress">In-progress</button>
-              <button class="btn" data-act="status" data-s="check_out" data-id="${j.assignment_id}" data-i18n="check_out">Check-out</button>
-              <button class="btn" data-act="status" data-s="completed" data-id="${j.assignment_id}" data-i18n="completed">Completed</button>
-            </div>
-          </div>`;
-        box.appendChild(el);
-      });
-      i18n();
-      if((payload.jobs||[])[0]) marker.setPosition({lat: payload.jobs[0].booking.origin_lat, lng: payload.jobs[0].booking.origin_lng});
-    }
-
-    document.getElementById('list').addEventListener('click', async (e)=>{
-      const btn = e.target.closest('button'); if(!btn) return;
-      const id = btn.dataset.id;
-      try{
-        if(btn.dataset.act==="accept"){
-          out(await go("/jobs/accept",{assignment_id:id}));
-        }else{
-          out(await go("/jobs/status",{assignment_id:id,status:btn.dataset.s}));
-        }
-        await load();
-      }catch(err){ out(err); }
-    });
-  </script>
-  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY&callback=initMap"></script>
-</body>
-</html>
+          </script>
+          <script>
+            // Dynamically load Google Maps API from query param ?gmaps=KEY (fallback to placeholder)
+            const GMAPS_KEY = new URL(location.href).searchParams.get('gmaps') || 'YOUR_GOOGLE_MAPS_API_KEY';
+            const gs = document.createElement('script');
+            gs.async = true; gs.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&callback=initMap`;
+            document.body.appendChild(gs);
+          </script>
+        </body>
+        </html>

@@ -120,6 +120,16 @@ done
 echo
 echo "✅ Smoke OK — booking_id=$BOOKING_ID assignment_id=$ASSIGN_ID"
 
+# Locations (optional simple check)
+echo
+echo "→ locations heartbeat"
+curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/locations" -H 'content-type: application/json' \
+  -d "{\"op\":\"heartbeat\",\"guard_id\":\"$GUARD_ID\",\"lat\":19.44,\"lng\":-99.14}" | jq .
+
+echo
+echo "→ locations get guard"
+curl -fsS "${AUTH_ARGS[@]}" "$FN/locations?guard_id=$GUARD_ID" | jq .
+
 # Admin smoke (optional, gated by ADMIN)
 if [[ -n "${ADMIN:-}" ]]; then
   echo

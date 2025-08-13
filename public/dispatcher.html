@@ -1,50 +1,35 @@
 <!doctype html>
-<html lang="en" class="h-full bg-black">
+<html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Blindado — Dispatcher</title>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Blindado • Dispatcher</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{brand:{500:"#00E0A4"}}}}};</script>
-  <style>.glass{backdrop-filter:blur(10px);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)} .btn{padding:.5rem .8rem;border:1px solid rgba(255,255,255,.1);border-radius:.75rem}</style>
 </head>
-<body class="h-full text-white">
-  <div class="max-w-3xl mx-auto p-6 space-y-6">
+<body class="bg-black text-white min-h-screen">
+  <div class="max-w-3xl mx-auto p-6 space-y-4">
     <header class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">Blindado — Dispatcher</h1>
-      <select id="lang" class="btn bg-black/30 text-sm"><option value="es">ES</option><option value="en" selected>EN</option></select>
+      <h1 class="text-2xl">Dispatcher</h1>
+      <select id="lang" class="bg-zinc-800 rounded px-3 py-2"><option value="es">ES</option><option value="en">EN</option></select>
     </header>
-
-    <section class="glass rounded-2xl p-5 space-y-3">
-      <label class="block">
-        <span class="text-sm opacity-80">booking_id</span>
-        <input id="booking_id" class="mt-1 w-full bg-black/20 glass rounded-lg p-2 text-sm" placeholder="uuid…" />
+    <div class="bg-zinc-900/60 p-4 rounded-2xl space-y-3">
+      <label class="text-sm block">
+        <span data-i18n="booking_id">booking_id</span>
+        <input id="booking_id" class="mt-1 w-full bg-zinc-800 rounded px-3 py-2"/>
       </label>
-      <div class="flex gap-2">
-        <button id="run" class="btn">Run Matching</button>
-      </div>
-    </section>
-
-    <section class="glass rounded-2xl p-4">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="font-medium">Output</h3>
-        <button class="text-xs opacity-70 hover:opacity-100" onclick="clearOut()">Clear</button>
-      </div>
-      <pre id="out" class="text-xs whitespace-pre-wrap"></pre>
-    </section>
+      <button id="btn" class="bg-brand text-black font-semibold rounded-xl px-4 py-3">Match</button>
+    </div>
+    <pre id="out" class="text-xs bg-black/50 p-3 rounded-xl h-[360px] overflow-auto"></pre>
   </div>
-
   <script>
-    const PROJECT_REF = location.search.match(/ref=([a-z0-9]+)/)?.[1] || "isnezquuwepqcjkaupjh";
-    const FN = `https://${PROJECT_REF}.supabase.co/functions/v1`;
-    const out = (x)=>document.getElementById('out').textContent=(typeof x==="string"?x:JSON.stringify(x,null,2));
-    const clearOut=()=>document.getElementById('out').textContent="";
-    document.getElementById('run').onclick = async ()=>{
-      try{
-        const id = document.getElementById('booking_id').value.trim();
-        const r = await fetch(`${FN}/matching`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id:id })});
-        out(await r.json());
-      }catch(e){ out(e); }
+    const DICT={es:{booking_id:"ID de reserva",run:"Correr matching"},en:{booking_id:"Booking ID",run:"Run matching"}};
+    const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+    const out=(o)=>document.getElementById('out').textContent=JSON.stringify(o,null,2);
+    function langInit(){const p=new URL(location).searchParams;const l=p.get("lang")||"es";document.getElementById("lang").value=l;document.querySelector("[data-i18n]").textContent=DICT[l].booking_id;document.getElementById("btn").textContent=DICT[l].run;document.getElementById("lang").onchange=e=>{p.set("lang",e.target.value);location.search=p.toString()}}
+    langInit();
+    document.getElementById('btn').onclick=async()=>{
+      const id=document.getElementById('booking_id').value.trim(); if(!id) return;
+      const r = await fetch(`${FN}/matching`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({booking_id:id})});
+      out(await r.json());
     };
   </script>
 </body>
