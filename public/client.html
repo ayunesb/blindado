@@ -1,174 +1,206 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Book Security</title>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:1100px;margin:32px auto;padding:0 16px}
-    input,select,button,textarea{padding:.7rem .75rem;border:1px solid #ccc;border-radius:10px;font-size:16px}
-    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-    .card{border:1px solid #e5e5e5;border-radius:14px;padding:16px;margin:16px 0;background:#fff}
-    .muted{color:#666}
-    pre{background:#f6f6f6;border-radius:12px;padding:12px;overflow:auto}
-    button.primary{background:#111;color:#fff;border-color:#111;cursor:pointer}
-    button:disabled{opacity:.5;cursor:not-allowed}
-    label.block{display:block;margin-top:10px;margin-bottom:6px;color:#333;font-weight:600}
-  </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Blindado — Book Security</title>
+  <script>
+    const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1"; // project ref set; change if needed
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
 </head>
-<body>
-  <h1>Book Security</h1>
+<body class="bg-slate-50 text-slate-900">
+  <div class="max-w-6xl mx-auto py-10 px-4">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold">Book Security</h1>
+      <p class="text-slate-600">Quote → Create → Preauth → Confirm → Match</p>
+    </header>
 
-  <div class="card">
-    <h3>1) Job details</h3>
-    <div class="row">
-      <div style="flex:1 1 420px">
-        <label class="block">Client ID</label>
-        <input id="client" value="1b387371-6711-485c-81f7-79b2174b90fb" style="width:100%" />
-      </div>
-      <div style="flex:1 1 220px">
-        <label class="block">Tier</label>
-        <select id="tier">
-          <option value="direct">direct</option>
-          <option value="elite">elite</option>
-          <option value="corporate">corporate</option>
-        </select>
-      </div>
-    </div>
+    <div class="grid lg:grid-cols-2 gap-6">
+      <!-- Form card -->
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">1) Job details</h2>
 
-    <div class="row">
-      <div style="flex:1 1 220px">
-        <label class="block">City</label>
-        <input id="city" value="CDMX" />
-      </div>
-      <div style="flex:1 1 140px">
-        <label class="block">Armed</label>
-        <input type="checkbox" id="armed" />
-      </div>
-      <div style="flex:1 1 140px">
-        <label class="block">Vehicle</label>
-        <input type="checkbox" id="vehicle" />
-      </div>
-    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">Client ID</label>
+            <input id="client" class="w-full rounded-lg border px-3 py-2" value="1b387371-6711-485c-81f7-79b2174b90fb"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Tier</label>
+            <select id="tier" class="w-full rounded-lg border px-3 py-2">
+              <option value="direct">direct</option>
+              <option value="elite">elite</option>
+              <option value="corporate">corporate</option>
+            </select>
+          </div>
 
-    <div class="row">
-      <div style="flex:1 1 420px">
-        <label class="block">Start (ISO)</label>
-        <input id="start" style="width:100%" />
-      </div>
-      <div style="flex:1 1 420px">
-        <label class="block">End (ISO)</label>
-        <input id="end" style="width:100%" />
-      </div>
-    </div>
+          <div>
+            <label class="block text-sm mb-1">City</label>
+            <input id="city" class="w-full rounded-lg border px-3 py-2" value="CDMX"/>
+          </div>
+          <div class="flex items-center gap-6 mt-6 md:mt-0">
+            <label class="inline-flex items-center gap-2">
+              <input id="armed" type="checkbox" class="h-4 w-4 rounded border">
+              <span>Armed</span>
+            </label>
+            <label class="inline-flex items-center gap-2">
+              <input id="vehicle" type="checkbox" class="h-4 w-4 rounded border">
+              <span>Vehicle</span>
+            </label>
+          </div>
 
-    <div class="row">
-      <div style="flex:1 1 220px">
-        <label class="block">Origin lat</label>
-        <input id="olat" value="19.4326" />
-      </div>
-      <div style="flex:1 1 220px">
-        <label class="block">Origin lng</label>
-        <input id="olng" value="-99.1332" />
-      </div>
-    </div>
+          <div>
+            <label class="block text-sm mb-1">Start (ISO)</label>
+            <input id="start" class="w-full rounded-lg border px-3 py-2"/>
+          </div>
+            <div>
+            <label class="block text-sm mb-1">End (ISO)</label>
+            <input id="end" class="w-full rounded-lg border px-3 py-2"/>
+          </div>
 
-    <div class="row">
-      <div style="flex:1 1 100%">
-        <label class="block">Notes</label>
-        <input id="notes" value="Client web booking" style="width:100%" />
-      </div>
-    </div>
+          <div>
+            <label class="block text-sm mb-1">Origin lat</label>
+            <input id="olat" class="w-full rounded-lg border px-3 py-2" value="19.4326"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Origin lng</label>
+            <input id="olng" class="w-full rounded-lg border px-3 py-2" value="-99.1332"/>
+          </div>
+        </div>
 
-    <div class="row" style="margin-top:14px">
-      <button id="btnQuote" class="primary">Get Quote</button>
-      <button id="btnCreate" disabled>Create Booking</button>
-      <button id="btnMatch" disabled>Run Matching</button>
+        <div class="mt-4">
+          <label class="block text-sm mb-1">Notes</label>
+          <input id="notes" class="w-full rounded-lg border px-3 py-2" value="Client web booking"/>
+        </div>
+
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button id="btnQuote" class="px-4 py-2 rounded-xl bg-black text-white">Get Quote</button>
+          <button id="btnCreate" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-800" disabled>Create Booking</button>
+          <button id="btnPreauth" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-800" disabled>Preauth (stub)</button>
+          <button id="btnConfirm" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-800" disabled>Confirm</button>
+          <button id="btnMatch" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-800" disabled>Run Matching</button>
+        </div>
+      </div>
+
+      <!-- Map + output -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-2xl shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Map</h2>
+          <p class="text-sm text-slate-600 mb-2">Click the map to set origin. Route previews after you set start/end.</p>
+          <div id="map" class="h-[360px] rounded-xl border"></div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Output</h2>
+          <pre id="out" class="bg-slate-50 rounded-xl p-4 overflow-auto text-sm"></pre>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <h3>Output</h3>
-    <pre id="out" class="muted">…</pre>
-  </div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const out = $("out");
+    const now = new Date();
+    const plus4 = new Date(now.getTime() + 4*60*60*1000);
+    $("start").value = now.toISOString();
+    $("end").value = plus4.toISOString();
 
-<script>
-const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
-const $ = id => document.getElementById(id);
-const out = $("out");
-const now = new Date(), plus4 = new Date(now.getTime() + 4*60*60*1000);
-$("start").value = now.toISOString();
-$("end").value = plus4.toISOString();
-let lastQuote = null, bookingId = null;
+    let lastQuote = null, bookingId = null;
 
-function show(x){ out.textContent = (typeof x==="string") ? x : JSON.stringify(x,null,2); }
+    function show(x){ out.textContent = typeof x === "string" ? x : JSON.stringify(x, null, 2); }
+    function enable(btn, on){ btn.disabled = !on; btn.classList.toggle("bg-black", on); btn.classList.toggle("text-white", on); btn.classList.toggle("bg-slate-200", !on); btn.classList.toggle("text-slate-800", !on); }
 
-$("btnQuote").onclick = async () => {
-  const body = {
-    city: $("city").value,
-    tier: $("tier").value,
-    armed_required: $("armed").checked,
-    vehicle_required: $("vehicle").checked,
-    start_ts: $("start").value,
-    end_ts: $("end").value,
-    origin_lat: parseFloat($("olat").value),
-    origin_lng: parseFloat($("olng").value),
-  };
-  try {
-    const r = await fetch(`${FN}/pricing`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body)
-    });
-    const j = await r.json();
-    lastQuote = j;
-    show(j);
-    $("btnCreate").disabled = !r.ok;
-  } catch (e) {
-    show(String(e));
-  }
-};
+    // Map
+    let map, originMarker, dirSvc, dirRenderer;
+    function initMap(){
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: parseFloat($("olat").value), lng: parseFloat($("olng").value) }, zoom: 12,
+        mapId: "DEMO_MAP_ID"
+      });
+      originMarker = new google.maps.Marker({ map, draggable:false, title:"Origin" });
+      originMarker.setPosition({ lat: parseFloat($("olat").value), lng: parseFloat($("olng").value) });
+      map.addListener("click",(e)=>{
+        $("olat").value = e.latLng.lat().toFixed(6);
+        $("olng").value = e.latLng.lng().toFixed(6);
+        originMarker.setPosition(e.latLng);
+        drawRoute();
+      });
+      dirSvc = new google.maps.DirectionsService();
+      dirRenderer = new google.maps.DirectionsRenderer({ map });
+    }
+    window.initMap = initMap;
 
-$("btnCreate").onclick = async () => {
-  const body = {
-    client_id: $("client").value,
-    city: $("city").value,
-    tier: $("tier").value,
-    armed_required: $("armed").checked,
-    vehicle_required: $("vehicle").checked,
-    start_ts: $("start").value,
-    end_ts: $("end").value,
-    origin_lat: parseFloat($("olat").value),
-    origin_lng: parseFloat($("olng").value),
-    notes: $("notes").value
-  };
-  try {
-    const r = await fetch(`${FN}/bookings`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body)
-    });
-    const j = await r.json();
-    if(!r.ok) return show(j);
-    bookingId = j.booking_id;
-    show({ created:true, booking_id: bookingId, quote: lastQuote });
-    $("btnMatch").disabled = !bookingId;
-  } catch(e){ show(String(e)); }
-};
+    function drawRoute(){
+      const start = new Date($("start").value), end = new Date($("end").value);
+      if(isNaN(start)||isNaN(end)) return;
+      const o = { lat: parseFloat($("olat").value), lng: parseFloat($("olng").value) };
+      dirSvc.route({
+        origin: o,
+        destination: o, // same city hourly job; loop route
+        travelMode: google.maps.TravelMode.DRIVING
+      }, (res, status)=>{ if(status==="OK") dirRenderer.setDirections(res); });
+    }
 
-$("btnMatch").onclick = async () => {
-  if(!bookingId) return;
-  try{
-    await fetch(`${FN}/bookings_confirm`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ booking_id: bookingId })
-    }).catch(()=>{});
-    const r = await fetch(`${FN}/matching`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ booking_id: bookingId })
-    });
-    show(await r.json());
-  }catch(e){ show(String(e)); }
-};
-</script>
+    window.onload = ()=> setTimeout(initMap, 0);
+
+    $("btnQuote").onclick = async () => {
+      const body = {
+        city: $("city").value,
+        tier: $("tier").value,
+        armed_required: $("armed").checked,
+        vehicle_required: $("vehicle").checked,
+        start_ts: $("start").value,
+        end_ts: $("end").value
+      };
+      const r = await fetch(`${FN}/pricing`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+      const j = await r.json().catch(()=>({}));
+      show(j);
+      if(r.ok){ lastQuote = j; enable($("btnCreate"), true); } else { enable($("btnCreate"), false); }
+    };
+
+    $("btnCreate").onclick = async () => {
+      const body = {
+        client_id: $("client").value,
+        city: $("city").value,
+        tier: $("tier").value,
+        armed_required: $("armed").checked,
+        vehicle_required: $("vehicle").checked,
+        start_ts: $("start").value,
+        end_ts: $("end").value,
+        origin_lat: parseFloat($("olat").value),
+        origin_lng: parseFloat($("olng").value),
+        notes: $("notes").value
+      };
+      const r = await fetch(`${FN}/bookings`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+      const j = await r.json().catch(()=>({}));
+      show(j);
+      if(r.ok){ bookingId = j.booking_id; enable($("btnPreauth"), true); }
+    };
+
+    $("btnPreauth").onclick = async () => {
+      const amt = lastQuote?.preauth_amount || lastQuote?.quote_amount || 0;
+      const r = await fetch(`${FN}/payments_preauth`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id: bookingId, amount: amt }) });
+      const j = await r.json().catch(()=>({}));
+      show(j);
+      if(r.ok){ enable($("btnConfirm"), true); }
+    };
+
+    $("btnConfirm").onclick = async () => {
+      const r = await fetch(`${FN}/bookings_confirm`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id: bookingId }) });
+      const j = await r.json().catch(()=>({}));
+      show(j);
+      if(r.ok){ enable($("btnMatch"), true); }
+    };
+
+    $("btnMatch").onclick = async () => {
+      const r = await fetch(`${FN}/matching`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id: bookingId }) });
+      show(await r.json());
+    };
+  </script>
+  <!-- async defer for maps callback -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
 </body>
 </html>

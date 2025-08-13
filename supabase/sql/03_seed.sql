@@ -1,10 +1,10 @@
 -- 03_seed.sql (demo data)
-insert into public.profiles (id, role, first_name, last_name, phone_e164, email, kyc_status)
-values ('1b387371-6711-485c-81f7-79b2174b90fb','client','Client','Demo','+5215555555551','client@demo.com','verified')
+insert into public.profiles (id, role, first_name, last_name, phone_e164, email, kyc_status, photo_url)
+values ('1b387371-6711-485c-81f7-79b2174b90fb','client','Client','Demo','+5215555555551','client@demo.com','verified','https://i.pravatar.cc/150?img=5')
 on conflict (id) do nothing;
 
-insert into public.profiles (id, role, first_name, last_name, phone_e164, email, kyc_status)
-values ('c38efbac-fd1e-426b-a0ab-be59fd908c8c','guard','Juan','Guard','+5215555555552','guard@demo.com','verified')
+insert into public.profiles (id, role, first_name, last_name, phone_e164, email, kyc_status, photo_url)
+values ('c38efbac-fd1e-426b-a0ab-be59fd908c8c','guard','Juan','Guard','+5215555555552','guard@demo.com','verified','https://i.pravatar.cc/150?img=12')
 on conflict (id) do nothing;
 
 insert into public.guards (id, city, skills, availability_status)

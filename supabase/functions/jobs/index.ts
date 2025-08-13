@@ -24,9 +24,26 @@ serve(async (req) => {
   if (req.method === "GET" && path === "list") {
     const guard_id = url.searchParams.get("guard_id");
     if (!guard_id) return json({ error: "guard_id required" }, 400);
-    const { data, error } = await supabase.from("assignments").select("*, bookings(*)").eq("guard_id", guard_id).eq("status", "offered");
+    // Fetch offered assignments with booking info
+    const { data, error } = await supabase
+      .from("assignments")
+      .select("*, bookings(*)")
+      .eq("guard_id", guard_id)
+      .eq("status", "offered");
     if (error) return json({ error: error.message }, 500);
-    return json({ jobs: data ?? [] });
+    // Enrich with guard photo_url from profiles (second query keeps select simpler)
+    const guardIds = [...new Set((data ?? []).map((r: any) => r.guard_id))];
+    let photoMap: Record<string,string> = {};
+    if (guardIds.length) {
+      const { data: profs } = await supabase.from("profiles").select("id, photo_url").in("id", guardIds);
+      (profs || []).forEach((p: any) => { if (p.photo_url) photoMap[p.id] = p.photo_url; });
+    }
+    const jobs = (data ?? []).map((row: any) => {
+      const photo = photoMap[row.guard_id];
+      if (photo) row.bookings = { ...(row.bookings || {}), guard_photo_url: photo };
+      return row;
+    });
+    return json({ jobs });
   }
 
   if (req.method === "POST" && path === "accept") {

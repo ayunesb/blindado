@@ -1,85 +1,86 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Guard Console</title>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:1100px;margin:32px auto;padding:0 16px}
-    input,button{padding:.7rem .75rem;border:1px solid #ccc;border-radius:10px;font-size:16px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .card{border:1px solid #e5e5e5;border-radius:14px;padding:16px;margin:16px 0;background:#fff}
-    .muted{color:#666}
-    pre{background:#f6f6f6;border-radius:12px;padding:12px;overflow:auto}
-    button.primary{background:#111;color:#fff;border-color:#111;cursor:pointer}
-  </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Blindado — Guard Console</title>
+  <script>const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";</script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>Guard Console</h1>
-  <div class="row">
-    <input id="gid" style="min-width:420px" />
-    <button id="load" class="primary">Load Jobs</button>
+<body class="bg-slate-50 text-slate-900">
+  <div class="max-w-5xl mx-auto py-10 px-4">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold">Guard Console</h1>
+      <p class="text-slate-600">View offers → Accept → Update status</p>
+    </header>
+    <div class="bg-white rounded-2xl shadow p-6 mb-6">
+      <div class="flex gap-3 items-center">
+        <input id="gid" class="w-full rounded-lg border px-3 py-2" placeholder="guard_id" value="c38efbac-fd1e-426b-a0ab-be59fd908c8c"/>
+        <button id="btnLoad" class="px-4 py-2 rounded-xl bg-black text-white">Load Jobs</button>
+      </div>
+      <p id="err" class="text-sm text-rose-600 mt-2"></p>
+    </div>
+    <div id="list" class="grid gap-4"></div>
   </div>
-  <div id="err" class="muted" style="margin-top:6px"></div>
-  <div id="list"></div>
-
-<script>
-const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
-const $ = id => document.getElementById(id);
-const qp = new URLSearchParams(location.search);
-const defaultGuard = "c38efbac-fd1e-426b-a0ab-be59fd908c8c";
-$("gid").value = qp.get("guard_id") || defaultGuard;
-document.getElementById("load").onclick = load;
-
-async function load(){
-  const gid = $("gid").value.trim();
-  const list = $("list"); const err = $("err");
-  list.innerHTML = ""; err.textContent = "";
-  try{
-    const r = await fetch(`${FN}/jobs/list?guard_id=${encodeURIComponent(gid)}`);
-    const j = await r.json();
-    if(!r.ok) throw new Error(j.error || r.statusText);
-    if(!j.jobs || j.jobs.length===0){ list.innerHTML = "<div class='muted'>No jobs right now.</div>"; return; }
-    for(const job of j.jobs) addCard(job);
-  }catch(e){ err.textContent = e.message || String(e); }
-}
-
-function addCard(j){
-  const b = j.bookings || {}
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <div class="row" style="justify-content:space-between">
-      <div><strong>Assignment:</strong> ${j.id}</div>
-      <div class="muted">status: ${j.status}</div>
-    </div>
-    <div class="muted">Booking: ${j.booking_id} • ${b.city||""} • ${b.tier||""}</div>
-    <div class="muted">When: ${b.start_ts||""} → ${b.end_ts||""}</div>
-    <div class="row" style="margin-top:10px">
-      <button data-act="accept">Accept</button>
-      <button data-act="check_in">Check-in</button>
-      <button data-act="on_site">On-site</button>
-      <button data-act="in_progress">In-progress</button>
-      <button data-act="check_out">Check-out</button>
-    </div>
-    <pre class="muted">${JSON.stringify(b,null,2)}</pre>
-  `;
-  card.querySelectorAll("button").forEach(btn=>{
-    btn.onclick = () => act(j.id, btn.dataset.act);
-  });
-  $("list").appendChild(card);
-}
-
-async function act(assignment_id, action){
-  let url, body;
-  if(action==="accept"){ url = `${FN}/jobs/accept`; body = { assignment_id }; }
-  else { url = `${FN}/jobs/status`; body = { assignment_id, status: action }; }
-  const r = await fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
-  const j = await r.json();
-  if(!r.ok) alert(j.error || r.statusText);
-  await load();
-}
-
-load();
-</script>
+  <script>
+    const $ = (id)=>document.getElementById(id);
+    $("btnLoad").onclick = load;
+    async function load(){
+      $("err").textContent = ""; $("list").innerHTML = "";
+      const gid = $("gid").value.trim();
+      try{
+        const r = await fetch(`${FN}/jobs/list?guard_id=${encodeURIComponent(gid)}`);
+        const j = await r.json();
+        if(!r.ok){ $("err").textContent = j.error || r.statusText; return; }
+        render(j.jobs || []);
+      }catch(e){ $("err").textContent = String(e); }
+    }
+    function card(job){
+      const b = job.bookings || {};
+      const city = b.city || "–"; const tier = b.tier || "–";
+      const when = `${b.start_ts || ""} → ${b.end_ts || ""}`;
+      const photo = b.guard_photo_url || "https://i.pravatar.cc/100?img=12";
+      const div = document.createElement("div");
+      div.className = "bg-white rounded-2xl shadow p-6";
+      div.innerHTML = `
+        <div class='flex items-center gap-4'>
+          <img src='${photo}' class='h-16 w-16 rounded-full object-cover' alt='guard'/>
+          <div class='flex-1'>
+            <div class='flex justify-between'>
+              <h3 class='text-lg font-semibold'>Assignment ${job.id.slice(0,8)}</h3>
+              <span class='text-sm text-slate-600'>status: ${job.status}</span>
+            </div>
+            <div class='text-sm text-slate-600'>${b.booking_id || job.booking_id}</div>
+            <div class='text-sm text-slate-700 mt-1'>${city} • ${tier}</div>
+            <div class='text-sm text-slate-700'>${when}</div>
+          </div>
+        </div>
+        <div class='flex flex-wrap gap-2 mt-4'>
+          <button data-act='accept' class='px-3 py-2 rounded-lg bg-black text-white'>Accept</button>
+          <button data-act='check_in' class='px-3 py-2 rounded-lg bg-slate-200'>Check-in</button>
+          <button data-act='on_site' class='px-3 py-2 rounded-lg bg-slate-200'>On-site</button>
+          <button data-act='in_progress' class='px-3 py-2 rounded-lg bg-slate-200'>In-progress</button>
+          <button data-act='check_out' class='px-3 py-2 rounded-lg bg-slate-200'>Check-out</button>
+          <button data-act='completed' class='px-3 py-2 rounded-lg bg-slate-200'>Completed</button>
+        </div>
+        <pre class='bg-slate-50 rounded-xl p-4 overflow-auto text-xs mt-4'>${JSON.stringify(b,null,2)}</pre>`;
+      div.querySelectorAll("button[data-act]").forEach(btn=>{
+        btn.onclick = async ()=>{ await act(job.id, btn.dataset.act); await load(); };
+      });
+      return div;
+    }
+    function render(rows){
+      if(!rows.length){ $("list").innerHTML = `<div class='text-slate-600'>No jobs right now.</div>`; return; }
+      const frag = document.createDocumentFragment();
+      rows.forEach(j=>frag.appendChild(card(j))); $("list").appendChild(frag);
+    }
+    async function act(assignment_id, action){
+      let url, body; if(action==="accept"){ url = `${FN}/jobs/accept`; body = { assignment_id }; } else { url = `${FN}/jobs/status`; body = { assignment_id, status: action }; }
+      const r = await fetch(url,{ method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+      const j = await r.json(); if(!r.ok) alert(j.error || r.statusText);
+    }
+    const qp = new URLSearchParams(location.search); const qg = qp.get("guard_id"); if(qg){ $("gid").value = qg; }
+    load();
+  </script>
 </body>
 </html>
