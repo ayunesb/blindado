@@ -25,23 +25,46 @@ END="$(date -u -d "+${DUR_HOURS} hour" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || gdate 
 
 echo "FN          = $FN"
 echo "CLIENT_ID   = $CLIENT_ID"
-echo "GUARD_ID    = $GUARD_ID"
-echo "CITY/TIER   = $CITY/$TIER"
-echo "WINDOW      = $NOW → $END"
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Config (override via env or .env)
+FN="${FN:-https://isnezquuwepqcjkaupjh.supabase.co/functions/v1}"
+CLIENT_ID="${CLIENT_ID:-1b387371-6711-485c-81f7-79b2174b90fb}"
+GUARD_ID="${GUARD_ID:-c38efbac-fd1e-426b-a0ab-be59fd908c8c}"
+CITY="${CITY:-CDMX}"
+TIER="${TIER:-direct}"
+DUR_HOURS="${DUR_HOURS:-4}"
+
+# Optional auth for functions that expect ANON key headers
+AUTH_ARGS=()
+if [[ -n "${ANON:-}" ]]; then
+  AUTH_ARGS=(-H "apikey: $ANON" -H "Authorization: Bearer $ANON")
+fi
+
+# Timestamps (UTC ISO)
+NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+END="$(date -u -d "+${DUR_HOURS} hour" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || gdate -u -d "+${DUR_HOURS} hour" +%Y-%m-%dT%H:%M:%SZ)"
+
+echo "FN=$FN"
+echo "CLIENT_ID=$CLIENT_ID"
+echo "GUARD_ID=$GUARD_ID"
+echo "CITY/TIER=$CITY/$TIER"
+echo "ANON set? $([[ -n "${ANON:-}" ]] && echo yes || echo no)"
 echo
 
-# AT-1 Pricing
+# AT-1: Pricing
 QUOTE_JSON=$(cat <<JSON
 {"city":"$CITY","tier":"$TIER","armed_required":false,"vehicle_required":false,
  "start_ts":"$NOW","end_ts":"$END"}
 JSON
 )
 echo "→ pricing"
-PRICING=$(curl -fsS -X POST "$FN/pricing" "${HEADERS[@]}" -d "$QUOTE_JSON")
+PRICING=$(curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/pricing" -H 'content-type: application/json' -d "$QUOTE_JSON")
 echo "$PRICING"
 AMOUNT=$(echo "$PRICING" | jq -r '.quote_amount // .amount // 0')
 
-# AT-2 Create Booking
+# AT-2: Create Booking
 CREATE_JSON=$(cat <<JSON
 {"client_id":"$CLIENT_ID","city":"$CITY","tier":"$TIER",
  "armed_required":false,"vehicle_required":false,
@@ -51,46 +74,46 @@ JSON
 )
 echo
 echo "→ bookings"
-BOOKING_RES=$(curl -fsS -X POST "$FN/bookings" "${HEADERS[@]}" -d "$CREATE_JSON")
+BOOKING_RES=$(curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/bookings" -H 'content-type: application/json' -d "$CREATE_JSON")
 echo "$BOOKING_RES"
 BOOKING_ID=$(echo "$BOOKING_RES" | jq -r '.booking_id // .id')
 test -n "$BOOKING_ID"
 
-# AT-3 Preauth (stub)
+# AT-3: Preauth (stub)
 echo
 echo "→ payments_preauth"
-curl -fsS -X POST "$FN/payments_preauth" "${HEADERS[@]}" \
+curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/payments_preauth" -H 'content-type: application/json' \
   -d "{\"booking_id\":\"$BOOKING_ID\",\"amount\":$AMOUNT}" | jq .
 
-# AT-4 Confirm & Match
+# AT-4: Confirm & Match
 echo
 echo "→ bookings_confirm"
-curl -fsS -X POST "$FN/bookings_confirm" "${HEADERS[@]}" \
+curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/bookings_confirm" -H 'content-type: application/json' \
   -d "{\"booking_id\":\"$BOOKING_ID\"}" | jq .
 
 echo
 echo "→ matching"
-curl -fsS -X POST "$FN/matching" "${HEADERS[@]}" \
+curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/matching" -H 'content-type: application/json' \
   -d "{\"booking_id\":\"$BOOKING_ID\"}" | jq .
 
-# AT-5 Jobs list & accept
+# AT-5: Jobs list & accept
 echo
 echo "→ jobs/list"
-LIST=$(curl -fsS "$FN/jobs/list?guard_id=$GUARD_ID" "${HEADERS[@]}")
+LIST=$(curl -fsS "${AUTH_ARGS[@]}" "$FN/jobs/list?guard_id=$GUARD_ID")
 echo "$LIST" | jq .
 ASSIGN_ID=$(echo "$LIST" | jq -r '.items[0].assignment_id // .items[0].id // .[0].assignment_id // .[0].id // empty')
 test -n "$ASSIGN_ID"
 
 echo
 echo "→ jobs/accept"
-curl -fsS -X POST "$FN/jobs/accept" "${HEADERS[@]}" \
+curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/jobs/accept" -H 'content-type: application/json' \
   -d "{\"assignment_id\":\"$ASSIGN_ID\"}" | jq .
 
-# AT-6 Status timeline
+# AT-6: Status timeline
 for s in check_in on_site in_progress check_out completed; do
   echo
   echo "→ jobs/status $s"
-  curl -fsS -X POST "$FN/jobs/status" "${HEADERS[@]}" \
+  curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/jobs/status" -H 'content-type: application/json' \
     -d "{\"assignment_id\":\"$ASSIGN_ID\",\"status\":\"$s\"}" | jq .
 done
 
