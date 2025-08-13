@@ -6,6 +6,20 @@
   <title>Blindado — Guard Console</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{colors:{brand:{500:"#00E0A4"}}}}};</script>
+  <script>
+    // Read from ?gmaps=... or fall back to embedded key string
+    const GMAPS_KEY = new URLSearchParams(location.search).get('gmaps') || 'AlzaSyDlQS_jV0dzGyXhaMZ6HQsV1eFSr4Kvy_s';
+    // Optional: if you made a dark styled Map in Google → Map Styles, put the mapId here
+    const GMAPS_MAP_ID = 'YOUR_MAP_ID_OR_EMPTY';
+    (function loadMaps() {
+      const s = document.createElement('script');
+      const libs = 'marker'; // add 'places' if you use autocomplete later
+      const cb = 'initMap';  // your page already defines initMap
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=${libs}&callback=${cb}`;
+      s.async = true; s.defer = true;
+      document.head.appendChild(s);
+    })();
+  </script>
   <style>.glass{backdrop-filter:blur(10px);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)} .btn{padding:.5rem .8rem;border:1px solid rgba(255,255,255,.1);border-radius:.75rem}</style>
 </head>
 <body class="h-full text-white">
@@ -182,11 +196,6 @@
             document.getElementById('btnRefresh').onclick=listJobs;
             window.addEventListener('load', ()=>{ listJobs(); startRealtime(); startHeartbeat(); });
           </script>
-          <script>
-            // Dynamically load Google Maps API using previously resolved GMAPS_API_KEY
-            const gs = document.createElement('script');
-            gs.async = true; gs.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_API_KEY}&callback=initMap`;
-            document.body.appendChild(gs);
-          </script>
+          <!-- Google Maps loader now handled in <head> above -->
         </body>
         </html>

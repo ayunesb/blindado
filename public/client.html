@@ -6,6 +6,20 @@
   <title>Blindado • Cliente</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{colors:{brand:"#00E5A8"}}}}</script>
+  <script>
+    // Read from ?gmaps=... or fall back to embedded key string
+    const GMAPS_KEY = new URLSearchParams(location.search).get('gmaps') || 'AlzaSyDlQS_jV0dzGyXhaMZ6HQsV1eFSr4Kvy_s';
+    // Optional: if you made a dark styled Map in Google → Map Styles, put the mapId here
+    const GMAPS_MAP_ID = 'YOUR_MAP_ID_OR_EMPTY';
+    (function loadMaps() {
+      const s = document.createElement('script');
+      const libs = 'marker'; // add 'places' if you use autocomplete later
+      const cb = 'initMap';  // your page already defines initMap
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=${libs}&callback=${cb}`;
+      s.async = true; s.defer = true;
+      document.head.appendChild(s);
+    })();
+  </script>
 </head>
 <body class="bg-black text-white min-h-screen">
   <div class="max-w-5xl mx-auto p-6 space-y-6">
