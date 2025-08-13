@@ -150,11 +150,11 @@
     langSel.addEventListener('change', applyI18n); applyI18n();
 
     // ---------- MAP ----------
+    const darkStyle=[{"elementType":"geometry","stylers":[{"color":"#0b0b0b"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#e0e0e0"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#0b0b0b"}]},{"featureType":"poi","stylers":[{"visibility":"off"}]},{"featureType":"road","stylers":[{"color":"#1a1a1a"}]},{"featureType":"water","stylers":[{"color":"#0f2b3c"}]}];
     let map, originMarker;
     function initMap(){
       map = new google.maps.Map(document.getElementById("map"), {
-        center: {lat: 19.4326, lng: -99.1332}, zoom: 12, mapId: "4504f8b37365c3d0",
-        styles:[{elementType:"geometry",stylers:[{color:"#0b0b0b"}]},{elementType:"labels.text.fill",stylers:[{color:"#e0e0e0"}]},{elementType:"labels.text.stroke",stylers:[{color:"#0b0b0b"}]}]
+        center: {lat: 19.4326, lng: -99.1332}, zoom: 12, styles: darkStyle
       });
       originMarker = new google.maps.Marker({position:{lat:19.4326, lng:-99.1332}, map, title:"Origin"});
     }

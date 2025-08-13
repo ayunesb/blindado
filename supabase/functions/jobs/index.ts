@@ -1,90 +1,107 @@
+// supabase/functions/jobs/index.ts
 import { serve } from "serve";
 import { createClient } from "supabase";
 
-const corsHeaders = {
+const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Content-Type": "application/json"
 };
-const j = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
   const url = new URL(req.url);
-  const tail = url.pathname.split("/").pop(); // "list" | "accept" | "status"
-
-  const supabase = createClient(
+  const supa = createClient(
     Deno.env.get("BLINDADO_SUPABASE_URL")!,
     Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // GET /list?guard_id=...
-  if (req.method === "GET" && tail === "list") {
-    const guard_id = url.searchParams.get("guard_id");
-    if (!guard_id) return j({ error: "guard_id required" }, 400);
+  try {
+    if (req.method === "GET" && url.pathname.endsWith("/list")) {
+      const guard_id = url.searchParams.get("guard_id");
+      if (!guard_id) return new Response(JSON.stringify({ error: "guard_id required" }), { status: 400, headers: cors });
 
-    const { data, error } = await supabase
-      .from("assignments")
-      .select("*, bookings(*)")
-      .eq("guard_id", guard_id)
-      .eq("status", "offered");
+      // 1) assignments for guard
+      const { data: assigns, error: e1 } = await supa
+        .from("assignments")
+        .select("id, status, booking_id")
+        .eq("guard_id", guard_id)
+        .in("status", ["offered","accepted","check_in","on_site","in_progress"])
+        .order("id", { ascending: false });
+      if (e1) throw e1;
 
-    if (error) return j({ error: error.message }, 500);
-    return j({ jobs: data ?? [] });
-  }
+      if (!assigns?.length) {
+        return new Response(JSON.stringify({ jobs: [] }), { headers: cors });
+      }
 
-  // POST /accept { assignment_id }
-  if (req.method === "POST" && tail === "accept") {
-    const { assignment_id } = await req.json().catch(() => ({}));
-    if (!assignment_id) return j({ error: "assignment_id required" }, 400);
+      // 2) bookings for those assignments
+      const bIds = assigns.map(a => a.booking_id);
+      const { data: bookings, error: e2 } = await supa
+        .from("bookings")
+        .select("id, city, tier, start_ts, end_ts, origin_lat, origin_lng, client_id")
+        .in("id", bIds);
+      if (e2) throw e2;
+      const bMap = new Map(bookings.filter(b => bIds.includes(b.id)).map(b => [b.id, b]));
 
-    const { data: current, error: getErr } = await supabase
-      .from("assignments")
-      .select("*")
-      .eq("id", assignment_id)
-      .single();
-    if (getErr || !current) return j({ error: "assignment not found" }, 404);
+      // 3) client profiles (photo_url)
+      const cIds = Array.from(new Set(bookings.filter(b => bIds.includes(b.id)).map(b => b.client_id)));
+      const { data: clients, error: e3 } = await supa
+        .from("profiles")
+        .select("id, first_name, last_name, photo_url")
+        .in("id", cIds);
+      if (e3) throw e3;
+      const cMap = new Map(clients.map(c => [c.id, c]));
 
-    if (current.status !== "offered") return j({ ok: true, status: current.status });
+      const jobs = assigns.map(a => {
+        const booking: any = bMap.get(a.booking_id) || {};
+        const client = cMap.get(booking.client_id) || null;
+        return {
+          assignment_id: a.id,
+            status: a.status,
+            booking,
+            client
+        };
+      });
 
-    // accept assignment
-    const { error: updErr } = await supabase
-      .from("assignments")
-      .update({ status: "accepted" })
-      .eq("id", assignment_id);
-    if (updErr) return j({ error: updErr.message }, 500);
-
-    // set booking assigned
-    await supabase.from("bookings").update({ status: "assigned" }).eq("id", current.booking_id);
-
-    return j({ ok: true });
-  }
-
-  // POST /status { assignment_id, status }
-  if (req.method === "POST" && tail === "status") {
-    const { assignment_id, status } = await req.json().catch(() => ({}));
-    const allowed = [
-      "offered",
-      "accepted",
-      "check_in",
-      "on_site",
-      "in_progress",
-      "check_out",
-      "completed"
-    ];
-    if (!assignment_id || !allowed.includes(status)) {
-      return j({ error: "assignment_id and valid status required" }, 400);
+      return new Response(JSON.stringify({ jobs }), { headers: cors });
     }
-    const { error } = await supabase
-      .from("assignments")
-      .update({ status })
-      .eq("id", assignment_id);
-    if (error) return j({ error: error.message }, 500);
-    return j({ ok: true });
-  }
 
-  return j({ error: "not found" }, 404);
+    if (req.method === "POST" && url.pathname.endsWith("/accept")) {
+      const { assignment_id } = await req.json();
+      if (!assignment_id) return new Response(JSON.stringify({ error:"assignment_id required" }), { status:400, headers:cors });
+
+      // first-accept wins
+      const { data: a, error: e0 } = await supa.from("assignments").select("id, booking_id, status").eq("id", assignment_id).single();
+      if (e0) throw e0;
+      if (a.status !== "offered") return new Response(JSON.stringify({ ok:true, info:"already accepted" }), { headers:cors });
+
+      const { error: e1u } = await supa.from("assignments").update({ status:"accepted" }).eq("id", assignment_id);
+      if (e1u) throw e1u;
+      const { error: e2u } = await supa.from("bookings").update({ status:"assigned" }).eq("id", a.booking_id);
+      if (e2u) throw e2u;
+
+      return new Response(JSON.stringify({ ok:true }), { headers:cors });
+    }
+
+    if (req.method === "POST" && url.pathname.endsWith("/status")) {
+      const { assignment_id, status } = await req.json();
+      const allowed = ["offered","accepted","check_in","on_site","in_progress","check_out","completed"];
+      if (!assignment_id || !allowed.includes(status)) {
+        return new Response(JSON.stringify({ error:"invalid payload" }), { status:400, headers:cors });
+      }
+      const patch:any = { status };
+      const tsField = { check_in:"check_in_ts", on_site:"on_site_ts", in_progress:"in_progress_ts", check_out:"check_out_ts" }[status];
+      if (tsField) patch[tsField] = new Date().toISOString();
+
+      const { error: eU } = await supa.from("assignments").update(patch).eq("id", assignment_id);
+      if (eU) throw eU;
+      return new Response(JSON.stringify({ ok:true }), { headers:cors });
+    }
+
+    return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: cors });
+  } catch (err:any) {
+    return new Response(JSON.stringify({ error: err?.message || String(err) }), { status: 500, headers: cors });
+  }
 });

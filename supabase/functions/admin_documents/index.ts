@@ -1,5 +1,5 @@
-// supabase/functions/admin_licenses/index.ts
-// Simple admin endpoint to verify / reject licenses
+// supabase/functions/admin_documents/index.ts
+// Admin-only signed upload URL endpoint
 import { serve } from "std/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
 
@@ -21,11 +21,9 @@ serve(async (req) => {
   const provided = req.headers.get("x-admin-secret") || "";
   if (provided !== adminSecret) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: CORS });
 
-  const payload = await req.json().catch(() => ({}));
-  const { guard_id, type, issuer, number, valid_from, valid_to, files = [], status = "valid" } = payload;
-
-  if (!guard_id || !type) {
-    return new Response(JSON.stringify({ error: "guard_id and type required" }), { status: 400, headers: CORS });
+  const { bucket, path } = await req.json().catch(() => ({}));
+  if (!bucket || !path) {
+    return new Response(JSON.stringify({ error: "bucket and path required" }), { status: 400, headers: CORS });
   }
 
   const url = Deno.env.get("BLINDADO_SUPABASE_URL")!;
@@ -33,23 +31,10 @@ serve(async (req) => {
   const supa = createClient(url, key);
 
   try {
-    const { data, error } = await supa
-      .from("licenses")
-      .insert({
-        guard_id,
-        type,
-        issuer: issuer ?? null,
-        number: number ?? null,
-        valid_from: valid_from ?? null,
-        valid_to: valid_to ?? null,
-        files, // array of { url, ... } is fine as jsonb
-        status
-      })
-      .select()
-      .single();
+    const { data, error } = await supa.storage.from(bucket).createSignedUploadUrl(path);
     if (error) throw error;
-
-    return new Response(JSON.stringify({ ok: true, license: data }), { headers: CORS });
+    // Client will PUT file bytes to `data.signedUrl` with header `x-upsert: true` plus `token`.
+    return new Response(JSON.stringify({ ok: true, bucket, path, ...data }), { headers: CORS });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e?.message || String(e) }), { status: 500, headers: CORS });
   }

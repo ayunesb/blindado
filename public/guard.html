@@ -40,7 +40,7 @@
   </div>
 
   <script>
-    const PROJECT_REF = location.search.match(/ref=([a-z0-9]+)/)?.[1] || "isnezquuwepqcjkaupjh";
+    const PROJECT_REF = new URLSearchParams(location.search).get("ref") || "isnezquuwepqcjkaupjh";
     const FN = `https://${PROJECT_REF}.supabase.co/functions/v1`;
     const seeded = "c38efbac-fd1e-426b-a0ab-be59fd908c8c";
 
@@ -50,7 +50,9 @@
     const langSel = document.getElementById('lang'); function i18n(){const d=dict[langSel.value];document.querySelectorAll("[data-i18n]").forEach(n=>n.textContent=d[n.dataset.i18n]);}
     langSel.onchange=i18n; i18n();
 
-    let map, marker; function initMap(){ map=new google.maps.Map(document.getElementById("map"),{center:{lat:19.4326,lng:-99.1332},zoom:12,mapId:"4504f8b37365c3d0"}); marker=new google.maps.Marker({position:{lat:19.4326,lng:-99.1332},map}); }
+    // Dark style (no mapId required)
+    const darkStyle=[{"elementType":"geometry","stylers":[{"color":"#0b0b0b"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#e0e0e0"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#0b0b0b"}]},{"featureType":"poi","stylers":[{"visibility":"off"}]},{"featureType":"road","stylers":[{"color":"#1a1a1a"}]},{"featureType":"water","stylers":[{"color":"#0f2b3c"}]}];
+    let map, marker; function initMap(){ map=new google.maps.Map(document.getElementById("map"),{center:{lat:19.4326,lng:-99.1332},zoom:12,styles:darkStyle}); marker=new google.maps.Marker({position:{lat:19.4326,lng:-99.1332},map}); }
     window.initMap=initMap;
 
     const out=(x)=>document.getElementById('out').textContent=(typeof x==="string"?x:JSON.stringify(x,null,2));
@@ -73,18 +75,24 @@
     }
     document.getElementById('btnLoad').onclick=load; load();
 
+    function line(d){ return new Date(d).toLocaleString(); }
+
     function render(payload){
       const box = document.getElementById('list'); box.innerHTML="";
       (payload.jobs||[]).forEach(j=>{
         const el = document.createElement('div');
         el.className="glass rounded-xl p-3";
+        const client = j.client || {};
+        const avatar = client.photo_url || "https://ui-avatars.com/api/?name="+encodeURIComponent((client.first_name||"")+ " " +(client.last_name||""))+"&background=111&color=fff";
         el.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div>
+          <div class="flex items-center gap-3">
+            <img src="${avatar}" class="w-12 h-12 rounded-xl object-cover border border-white/10" alt="avatar"/>
+            <div class="flex-1">
               <div class="font-medium">${j.booking.city} — ${j.booking.tier}</div>
-              <div class="text-xs opacity-70">${new Date(j.booking.start_ts).toLocaleString()} → ${new Date(j.booking.end_ts).toLocaleString()}</div>
+              <div class="text-xs opacity-70">${line(j.booking.start_ts)} → ${line(j.booking.end_ts)}</div>
+              <div class="text-xs opacity-80 mt-1">${client.first_name||""} ${client.last_name||""}</div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
               <button class="btn" data-act="accept" data-id="${j.assignment_id}" data-i18n="accept">Accept</button>
               <button class="btn" data-act="status" data-s="check_in" data-id="${j.assignment_id}" data-i18n="check_in">Check-in</button>
               <button class="btn" data-act="status" data-s="on_site" data-id="${j.assignment_id}" data-i18n="on_site">On-site</button>
@@ -108,7 +116,6 @@
         }else{
           out(await go("/jobs/status",{assignment_id:id,status:btn.dataset.s}));
         }
-        // refresh
         await load();
       }catch(err){ out(err); }
     });
