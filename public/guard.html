@@ -197,11 +197,14 @@
             window.addEventListener('load', ()=>{ listJobs(); startRealtime(); startHeartbeat(); });
           </script>
           <script>
-            // Dynamically load Google Maps API at the end to ensure initMap is defined
+            // Dynamically load Google Maps API at the end to ensure initMap is defined; require key via ?gmaps=
             (function loadMaps(){
+              const params=new URLSearchParams(location.search);
+              const key=params.get('gmaps');
+              if(!key){ console.warn('GMAPS key missing. Append ?gmaps=YOUR_KEY to the URL.'); return; }
               const s=document.createElement('script');
               const libs='marker';
-              s.src=`https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=${libs}&callback=initMap`;
+              s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=${libs}&callback=initMap`;
               s.async=true; s.defer=true; document.body.appendChild(s);
             })();
           </script>

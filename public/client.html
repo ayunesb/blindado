@@ -98,6 +98,9 @@
     </section>
   </div>
 
+      <!-- Map container (used by loader when ?gmaps=KEY is provided) -->
+      <div id="map" class="w-full h-[340px] rounded-2xl border border-neutral-800 bg-black/30 hidden"></div>
+
   <script>
     const DICT = {
       es: {
@@ -173,6 +176,33 @@
       const r = await fetch(`${FN}/matching`, {method:'POST', headers, body: JSON.stringify({booking_id:lastBookingId})});
       out(await r.json());
     };
+  </script>
+  <script>
+    // --- Google Maps loader that reads ?gmaps=KEY and mounts a dark map ---
+    (function(){
+      const params=new URLSearchParams(location.search);
+      const GMAPS_KEY=params.get('gmaps');
+      if(!GMAPS_KEY){ console.warn('GMAPS key missing. Append ?gmaps=YOUR_KEY to the URL.'); return; }
+      const mapEl=document.getElementById('map'); if(!mapEl){ return; }
+      mapEl.classList.remove('hidden');
+      window.initMap=function(){
+        const center={lat:19.4326,lng:-99.1332};
+        const map=new google.maps.Map(mapEl,{center,zoom:12,disableDefaultUI:true,styles:[
+          {elementType:"geometry",stylers:[{color:"#0b0b0c"}]},
+          {elementType:"labels.text.stroke",stylers:[{color:"#0b0b0c"}]},
+          {elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
+          {featureType:"poi",elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
+          {featureType:"road",elementType:"geometry",stylers:[{color:"#1f1f1f"}]},
+          {featureType:"road",elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
+          {featureType:"water",elementType:"geometry",stylers:[{color:"#111315"}]}]});
+        const lat=parseFloat(document.getElementById('lat')?.value||'19.4326');
+        const lng=parseFloat(document.getElementById('lng')?.value||'-99.1332');
+        new google.maps.Marker({position:{lat,lng},map});
+      };
+      const s=document.createElement('script');
+      s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_KEY)}&libraries=marker&callback=initMap`;
+      s.async=s.defer=true; document.head.appendChild(s);
+    })();
   </script>
 </body>
 </html>

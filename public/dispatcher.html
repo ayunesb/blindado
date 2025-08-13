@@ -18,7 +18,8 @@
       </label>
       <button id="btn" class="bg-brand text-black font-semibold rounded-xl px-4 py-3">Match</button>
     </div>
-    <pre id="out" class="text-xs bg-black/50 p-3 rounded-xl h-[360px] overflow-auto"></pre>
+  <pre id="out" class="text-xs bg-black/50 p-3 rounded-xl h-[360px] overflow-auto"></pre>
+  <div id="map" class="w-full h-[300px] rounded-2xl border border-neutral-800 bg-black/30 hidden"></div>
   </div>
   <script>
     const DICT={es:{booking_id:"ID de reserva",run:"Correr matching"},en:{booking_id:"Booking ID",run:"Run matching"}};
@@ -31,6 +32,31 @@
       const r = await fetch(`${FN}/matching`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({booking_id:id})});
       out(await r.json());
     };
+  </script>
+  <script>
+    // --- Google Maps loader (reads ?gmaps=) ---
+    (function(){
+      const params=new URLSearchParams(location.search);
+      const GMAPS_KEY=params.get('gmaps');
+      if(!GMAPS_KEY){ return; }
+      const mapEl=document.getElementById('map'); if(!mapEl){ return; }
+      mapEl.classList.remove('hidden');
+      window.initMap=function(){
+        const center={lat:19.4326,lng:-99.1332};
+        const map=new google.maps.Map(mapEl,{center,zoom:12,disableDefaultUI:true,styles:[
+          {elementType:"geometry",stylers:[{color:"#0b0b0c"}]},
+          {elementType:"labels.text.stroke",stylers:[{color:"#0b0b0c"}]},
+          {elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
+          {featureType:"poi",elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
+          {featureType:"road",elementType:"geometry",stylers:[{color:"#1f1f1f"}]},
+          {featureType:"road",elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
+          {featureType:"water",elementType:"geometry",stylers:[{color:"#111315"}]}
+        ]});
+      };
+      const s=document.createElement('script');
+      s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_KEY)}&libraries=marker&callback=initMap`;
+      s.async=s.defer=true; document.head.appendChild(s);
+    })();
   </script>
 </body>
 </html>
