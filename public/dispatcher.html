@@ -52,9 +52,12 @@
           {featureType:"road",elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
           {featureType:"water",elementType:"geometry",stylers:[{color:"#111315"}]}
         ]});
+        if (google?.maps?.marker?.AdvancedMarkerElement) {
+          new google.maps.marker.AdvancedMarkerElement({position:center, map});
+        }
       };
       const s=document.createElement('script');
-      s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_KEY)}&libraries=marker&callback=initMap`;
+      s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_KEY)}&libraries=marker&v=weekly&loading=async&callback=initMap`;
       s.async=s.defer=true; document.head.appendChild(s);
     })();
   </script>

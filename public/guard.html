@@ -204,7 +204,7 @@
               if(!key){ console.warn('GMAPS key missing. Append ?gmaps=YOUR_KEY to the URL.'); return; }
               const s=document.createElement('script');
               const libs='marker';
-              s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=${libs}&callback=initMap`;
+              s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=${libs}&v=weekly&loading=async&callback=initMap`;
               s.async=true; s.defer=true; document.body.appendChild(s);
             })();
           </script>
