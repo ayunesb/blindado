@@ -1,52 +1,51 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-full bg-black">
 <head>
   <meta charset="utf-8" />
-  <title>Blindado · Dispatcher</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blindado — Dispatcher</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";</script>
+  <script>tailwind.config={theme:{extend:{colors:{brand:{500:"#00E0A4"}}}}};</script>
+  <style>.glass{backdrop-filter:blur(10px);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)} .btn{padding:.5rem .8rem;border:1px solid rgba(255,255,255,.1);border-radius:.75rem}</style>
 </head>
-<body class="bg-slate-50 text-slate-900">
-  <div class="max-w-3xl mx-auto p-6">
-    <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 id="d_title" class="text-3xl font-bold">Dispatcher</h1>
-        <p id="d_sub" class="text-slate-500">Trigger matching for a booking</p>
-      </div>
-      <div class="flex items-center gap-2 bg-white rounded-xl shadow px-3 py-2">
-        <label for="lang" class="text-xs text-slate-500">Lang</label>
-        <select id="lang" class="text-sm border rounded px-2 py-1">
-          <option value="en" selected>EN</option>
-          <option value="es">ES</option>
-        </select>
-      </div>
+<body class="h-full text-white">
+  <div class="max-w-3xl mx-auto p-6 space-y-6">
+    <header class="flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Blindado — Dispatcher</h1>
+      <select id="lang" class="btn bg-black/30 text-sm"><option value="es">ES</option><option value="en" selected>EN</option></select>
     </header>
-    <section class="bg-white rounded-2xl shadow p-6">
-      <div class="flex gap-3 items-center">
-        <input id="bid" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="booking_id" />
-        <button id="btnMatch" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">Match</button>
+
+    <section class="glass rounded-2xl p-5 space-y-3">
+      <label class="block">
+        <span class="text-sm opacity-80">booking_id</span>
+        <input id="booking_id" class="mt-1 w-full bg-black/20 glass rounded-lg p-2 text-sm" placeholder="uuid…" />
+      </label>
+      <div class="flex gap-2">
+        <button id="run" class="btn">Run Matching</button>
       </div>
-      <pre id="out" class="bg-slate-50 rounded-xl p-4 overflow-auto text-xs mt-4">Paste a booking_id from the client page and click Match.</pre>
+    </section>
+
+    <section class="glass rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium">Output</h3>
+        <button class="text-xs opacity-70 hover:opacity-100" onclick="clearOut()">Clear</button>
+      </div>
+      <pre id="out" class="text-xs whitespace-pre-wrap"></pre>
     </section>
   </div>
+
   <script>
-    const $ = id => document.getElementById(id);
-    const DI18N = {
-      en: { title:'Dispatcher', sub:'Trigger matching for a booking', placeholder:'booking_id', match:'Match', help:'Paste a booking_id from the client page and click Match.', enter:'Enter booking_id' },
-      es: { title:'Despachador', sub:'Lanzar matching para una reserva', placeholder:'id de reserva', match:'Asignar', help:'Pega un booking_id de la página de cliente y haz clic en Asignar.', enter:'Ingresa booking_id' }
-    };
-    function dApply(l){ const t=DI18N[l]; $('#d_title').textContent=t.title; $('#d_sub').textContent=t.sub; $('#bid').placeholder=t.placeholder; $('#btnMatch').textContent=t.match; if(!$('#out').dataset.lock) $('#out').textContent=t.help; }
-    $('#lang').addEventListener('change', e=>dApply(e.target.value));
-    dApply('en');
-    $('#btnMatch').onclick = async () => {
-      const booking_id = $('#bid').value.trim();
-      if(!booking_id){ $('#out').textContent = DI18N[$('#lang').value].enter; return; }
-      const r = await fetch(`${FN}/matching`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ booking_id }) });
-      $('#out').dataset.lock='1';
-      $('#out').textContent = JSON.stringify(await r.json(), null, 2);
+    const PROJECT_REF = location.search.match(/ref=([a-z0-9]+)/)?.[1] || "isnezquuwepqcjkaupjh";
+    const FN = `https://${PROJECT_REF}.supabase.co/functions/v1`;
+    const out = (x)=>document.getElementById('out').textContent=(typeof x==="string"?x:JSON.stringify(x,null,2));
+    const clearOut=()=>document.getElementById('out').textContent="";
+    document.getElementById('run').onclick = async ()=>{
+      try{
+        const id = document.getElementById('booking_id').value.trim();
+        const r = await fetch(`${FN}/matching`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id:id })});
+        out(await r.json());
+      }catch(e){ out(e); }
     };
   </script>
 </body>
 </html>
-<!-- Google Maps not used on this page currently; placeholder key updated for consistency -->
