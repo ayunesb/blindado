@@ -6,8 +6,8 @@
 // (B) multipart/form-data -> directly uploads a file and returns public_url (for avatars)
 //     fields: profile_id? (to set profiles.photo_url), bucket? (defaults: "avatars"), file
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0";
+import { serve } from "serve";
+import { createClient } from "supabase";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
