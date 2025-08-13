@@ -26,14 +26,14 @@ serve(async (req) => {
       // 1) assignments for guard
       const { data: assigns, error: e1 } = await supa
         .from("assignments")
-        .select("id, status, booking_id")
+        .select("id, status, booking_id, guard_id")
         .eq("guard_id", guard_id)
         .in("status", ["offered","accepted","check_in","on_site","in_progress"])
         .order("id", { ascending: false });
       if (e1) throw e1;
 
       if (!assigns?.length) {
-        return new Response(JSON.stringify({ jobs: [] }), { headers: cors });
+        return new Response(JSON.stringify({ items: [] }), { headers: cors });
       }
 
       // 2) bookings for those assignments
@@ -54,18 +54,42 @@ serve(async (req) => {
       if (e3) throw e3;
       const cMap = new Map(clients.map(c => [c.id, c]));
 
-      const jobs = assigns.map(a => {
+      // 4) licenses per guard (for badges)
+      const guardIds = Array.from(new Set(assigns.map(a => a.guard_id))).filter(Boolean) as string[];
+      let licByGuard: Record<string, Array<{type:string,status:string,valid_to:string|null}>> = {};
+      if (guardIds.length) {
+        const { data: licRows } = await supa
+          .from("licenses")
+          .select("guard_id,type,status,valid_to")
+          .in("guard_id", guardIds);
+        (licRows || []).forEach((l: any) => {
+          licByGuard[l.guard_id] ??= [];
+          licByGuard[l.guard_id].push({ type: l.type, status: l.status, valid_to: l.valid_to });
+        });
+      }
+
+      const items = assigns.map(a => {
         const booking: any = bMap.get(a.booking_id) || {};
         const client = cMap.get(booking.client_id) || null;
+        const badges = (licByGuard[a.guard_id] || []).map(b => ({ label: b.type, status: b.status, valid_to: b.valid_to }));
         return {
           assignment_id: a.id,
-            status: a.status,
-            booking,
-            client
+          status: a.status,
+          booking_id: a.booking_id,
+          guard_id: a.guard_id,
+          // flatten booking fields for easier UI consumption
+          city: booking.city,
+          tier: booking.tier,
+          start_ts: booking.start_ts,
+          end_ts: booking.end_ts,
+          origin_lat: booking.origin_lat,
+          origin_lng: booking.origin_lng,
+          client,
+          license_badges: badges
         };
       });
 
-      return new Response(JSON.stringify({ jobs }), { headers: cors });
+      return new Response(JSON.stringify({ items }), { headers: cors });
     }
 
     if (req.method === "POST" && url.pathname.endsWith("/accept")) {

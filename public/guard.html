@@ -68,30 +68,60 @@
             <pre id="out" class="text-xs bg-black/50 p-3 rounded-xl h-[220px] overflow-auto"></pre>
           </div>
 
+          <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
           <script>
+            // Config
+            const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+            const SB_URL="https://isnezquuwepqcjkaupjh.supabase.co";
+            const SB_ANON="PASTE_SUPABASE_ANON_KEY_HERE"; // Required for Realtime
+
+            // i18n
             const DICT={es:{offers:"Ofertas",actions:"Acciones",refresh:"Refrescar",accept:"Aceptar",check_in:"Check-in",on_site:"En sitio",in_progress:"En progreso",check_out:"Cierre",completed:"Completado"},en:{offers:"Offers",actions:"Actions",refresh:"Refresh",accept:"Accept",check_in:"Check-in",on_site:"On-site",in_progress:"In progress",check_out:"Check-out",completed:"Completed"}};
-          const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
-          const qs=new URL(location.href); const lang=qs.searchParams.get("lang")||"es"; const guardId=qs.searchParams.get("guard_id")||"c38efbac-fd1e-426b-a0ab-be59fd908c8c";
+            const qs=new URL(location.href); const lang=qs.searchParams.get("lang")||"es"; const guardId=qs.searchParams.get("guard_id")||"c38efbac-fd1e-426b-a0ab-be59fd908c8c";
             document.getElementById("lang").value=lang; document.getElementById("lang").onchange=e=>{qs.searchParams.set("lang",e.target.value); location.href=qs.toString()};
             document.getElementById("gid").textContent=guardId;
-            function t(k){return DICT[lang][k]||k} ; document.querySelectorAll("[data-i18n]").forEach(el=>el.textContent=t(el.dataset.i18n));
+            function t(k){return (DICT[lang]||DICT.es)[k]||k} ; document.querySelectorAll("[data-i18n]").forEach(el=>el.textContent=t(el.dataset.i18n));
             const out=(o)=>document.getElementById('out').textContent=(typeof o==='string'?o:JSON.stringify(o,null,2));
 
-            // Google Maps: dark style (inline style JSON)
-            let map, myMarker;
+            // Google Maps: dark style
+            let map, myMarker, others={};
             const DARK_STYLE=[{elementType:"geometry",stylers:[{color:"#1d1d1d"}]},{elementType:"labels.text.fill",stylers:[{color:"#e0e0e0"}]},{featureType:"poi",stylers:[{visibility:"off"}]},{featureType:"road",elementType:"geometry",stylers:[{color:"#2c2c2c"}]},{featureType:"water",stylers:[{color:"#0b0b0b"}]}];
-
             window.initMap = function(){
               map = new google.maps.Map(document.getElementById('map'),{center:{lat:19.4326,lng:-99.1332},zoom:12,disableDefaultUI:true,styles:DARK_STYLE});
-              myMarker = new google.maps.Marker({map, position:{lat:19.4326,lng:-99.1332}, icon:{path:google.maps.SymbolPath.CIRCLE,scale:6,fillColor:"#00E5A8",fillOpacity:1,strokeWeight:0}});
+              myMarker = new google.maps.Marker({map, position:{lat:19.4326,lng:-99.1332}, icon:{path:google.maps.SymbolPath.CIRCLE,scale:6,fillColor:"#00E5A8",fillOpacity:1,strokeWeight:0}, title:"you"});
             }
 
-          async function listJobs(){
+            // Realtime: subscribe to guards updates
+            let sbClient=null;
+            function startRealtime(){
+              if (!SB_ANON || SB_ANON.includes("PASTE_")) { out("Realtime disabled: missing anon key"); return; }
+              sbClient = window.supabase.createClient(SB_URL, SB_ANON);
+              sbClient.channel('guards-updates')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'guards' }, (payload) => {
+                  const r = payload.new || payload.record || {};
+                  if (!r?.id || r.id === guardId) return;
+                  if (r.availability_status !== 'online') {
+                    if (others[r.id]) { others[r.id].setMap(null); delete others[r.id]; }
+                    return;
+                  }
+                  const pos = { lat: parseFloat(r.home_lat||0)||0, lng: parseFloat(r.home_lng||0)||0 };
+                  if (!others[r.id]) {
+                    others[r.id] = new google.maps.Marker({ map, position: pos, icon:{ path: google.maps.SymbolPath.CIRCLE, scale:4, fillColor:"#4CC9F0", fillOpacity:1, strokeWeight:0 }, title: r.id });
+                  } else { others[r.id].setPosition(pos); }
+                }).subscribe();
+            }
+
+            // Jobs list with license badges
+            async function listJobs(){
               const r = await fetch(`${FN}/jobs/list?guard_id=${guardId}`);
               const j = await r.json();
               const box = document.getElementById('list'); box.innerHTML="";
               (j.items||j||[]).forEach(item=>{
-            const avatar = item.guard_photo_url || item.photo_url || (item.guard_id ? `/storage/v1/object/public/avatars/${item.guard_id}/avatar.jpg` : "https://i.pravatar.cc/100");
+                const avatar = item.guard_photo_url || item.photo_url || (item.guard_id?`/storage/v1/object/public/avatars/${item.guard_id}/avatar.jpg`:"https://i.pravatar.cc/100");
+                const badges = (item.license_badges||[]).map(b=>{
+                  const ok = (b.status||"").toLowerCase()==='valid' && (!b.valid_to || new Date(b.valid_to) > new Date());
+                  return `<span class="badge ${ok?'ok':'warn'}">${b.label || b.type}${ok?' ✓':' ⚠'}</span>`;
+                }).join(" ");
                 const div = document.createElement('div');
                 div.className="bg-black/40 border border-zinc-800 rounded-xl p-3 flex gap-3";
                 div.innerHTML = `
@@ -102,6 +132,7 @@
                       <span class="chip">${item.status||'offered'}</span>
                     </div>
                     <div class="text-xs opacity-70">${item.start_ts?new Date(item.start_ts).toLocaleString():''}</div>
+                    <div class="mt-2">${badges}</div>
                     <div class="mt-2 grid grid-cols-3 gap-2">
                       <button class="bg-zinc-800 rounded px-2 py-1" data-action="accept" data-id="${item.assignment_id||item.id}">${t('accept')}</button>
                       <button class="bg-zinc-800 rounded px-2 py-1" data-action="check_in" data-id="${item.assignment_id||item.id}">${t('check_in')}</button>
@@ -113,7 +144,7 @@
                   </div>`;
                 box.appendChild(div);
               });
-          box.onclick = async (e)=>{
+              box.onclick = async (e)=>{
                 const btn=e.target.closest("button"); if(!btn) return;
                 const assignment_id=btn.dataset.id; const action=btn.dataset.action;
                 const path = action==="accept" ? "accept" : "status";
@@ -123,20 +154,30 @@
               };
             }
 
-            // Heartbeat (simple, unauthenticated MVP)
-          let watchId=null;
-          function startHeartbeat(){
-              if(!('geolocation' in navigator)) return;
+            // Heartbeat via JWT (locations_heartbeat)
+            const tokenKey = `hb_token_${guardId}`;
+            document.getElementById('btnToken')?.addEventListener('click',()=>{
+              const cur = localStorage.getItem(tokenKey)||"";
+              const v = prompt("Paste Heartbeat JWT (short-lived):", cur);
+              if (v!==null) localStorage.setItem(tokenKey, v.trim());
+            });
+            let watchId=null;
+            function startHeartbeat(){
+              if(!('geolocation' in navigator)) { out("No geolocation"); return; }
+              const token = localStorage.getItem(tokenKey)||"";
+              if(!token){ out("No heartbeat token set (Token button)"); }
               watchId = navigator.geolocation.watchPosition(async p=>{
                 const {latitude:lat, longitude:lng} = p.coords;
-                myMarker.setPosition({lat,lng}); map.setCenter({lat,lng});
-            await fetch(`${FN}/locations`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({op:"heartbeat",guard_id:guardId,lat,lng,speed:p.coords.speed||0})}).catch(()=>{});
-              },console.error,{enableHighAccuracy:true,maximumAge:5e3,timeout:2e4});
+                if (myMarker) { myMarker.setPosition({lat,lng}); map.setCenter({lat,lng}); }
+                await fetch(`${FN}/locations_heartbeat`,{
+                  method:'POST', headers:{'content-type':'application/json', ...(token?{authorization:`Bearer ${token}`}:{})},
+                  body: JSON.stringify({ lat, lng, guard_id: guardId })
+                }).catch(()=>{});
+              }, err => out(err.message), { enableHighAccuracy:true, maximumAge:5e3, timeout:2e4 });
             }
 
-          document.getElementById('btnRefresh').onclick=listJobs;
-          window.addEventListener('load', ()=>{ listJobs(); startHeartbeat(); });
-
+            document.getElementById('btnRefresh').onclick=listJobs;
+            window.addEventListener('load', ()=>{ listJobs(); startRealtime(); startHeartbeat(); });
           </script>
           <script>
             // Dynamically load Google Maps API from query param ?gmaps=KEY (fallback to placeholder)
