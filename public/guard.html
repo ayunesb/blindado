@@ -70,14 +70,17 @@
 
           <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
           <script>
-            // Config
-            const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
-            const SB_URL="https://isnezquuwepqcjkaupjh.supabase.co";
-            const SB_ANON="PASTE_SUPABASE_ANON_KEY_HERE"; // Required for Realtime
+            // Config from query params (fallback to placeholders)
+            const q = new URLSearchParams(location.search);
+            const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+            const GMAPS_API_KEY = q.get("gmaps") || "YOUR_GOOGLE_MAPS_API_KEY";
+            const SUPABASE_URL = "https://isnezquuwepqcjkaupjh.supabase.co";
+            const SUPABASE_ANON_KEY = q.get("anon") || "YOUR_SUPABASE_PUBLIC_ANON_KEY";
+            const DEFAULT_GUARD_ID = q.get("guard_id") || "c38efbac-fd1e-426b-a0ab-be59fd908c8c";
 
             // i18n
             const DICT={es:{offers:"Ofertas",actions:"Acciones",refresh:"Refrescar",accept:"Aceptar",check_in:"Check-in",on_site:"En sitio",in_progress:"En progreso",check_out:"Cierre",completed:"Completado"},en:{offers:"Offers",actions:"Actions",refresh:"Refresh",accept:"Accept",check_in:"Check-in",on_site:"On-site",in_progress:"In progress",check_out:"Check-out",completed:"Completed"}};
-            const qs=new URL(location.href); const lang=qs.searchParams.get("lang")||"es"; const guardId=qs.searchParams.get("guard_id")||"c38efbac-fd1e-426b-a0ab-be59fd908c8c";
+            const qs=new URL(location.href); const lang=qs.searchParams.get("lang")||"es"; const guardId=DEFAULT_GUARD_ID;
             document.getElementById("lang").value=lang; document.getElementById("lang").onchange=e=>{qs.searchParams.set("lang",e.target.value); location.href=qs.toString()};
             document.getElementById("gid").textContent=guardId;
             function t(k){return (DICT[lang]||DICT.es)[k]||k} ; document.querySelectorAll("[data-i18n]").forEach(el=>el.textContent=t(el.dataset.i18n));
@@ -94,8 +97,8 @@
             // Realtime: subscribe to guards updates
             let sbClient=null;
             function startRealtime(){
-              if (!SB_ANON || SB_ANON.includes("PASTE_")) { out("Realtime disabled: missing anon key"); return; }
-              sbClient = window.supabase.createClient(SB_URL, SB_ANON);
+              if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_PUBLIC_ANON_KEY")) { out("Realtime disabled: missing anon key"); return; }
+              sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
               sbClient.channel('guards-updates')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'guards' }, (payload) => {
                   const r = payload.new || payload.record || {};
@@ -180,10 +183,9 @@
             window.addEventListener('load', ()=>{ listJobs(); startRealtime(); startHeartbeat(); });
           </script>
           <script>
-            // Dynamically load Google Maps API from query param ?gmaps=KEY (fallback to placeholder)
-            const GMAPS_KEY = new URL(location.href).searchParams.get('gmaps') || 'YOUR_GOOGLE_MAPS_API_KEY';
+            // Dynamically load Google Maps API using previously resolved GMAPS_API_KEY
             const gs = document.createElement('script');
-            gs.async = true; gs.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&callback=initMap`;
+            gs.async = true; gs.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_API_KEY}&callback=initMap`;
             document.body.appendChild(gs);
           </script>
         </body>
