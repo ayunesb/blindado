@@ -102,7 +102,8 @@
         output:"Output"
       }
     };
-    const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+  const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+  const ANON = new URLSearchParams(location.search).get('anon') || '';
     const out = (o)=>{document.getElementById('out').textContent = (typeof o==='string'?o:JSON.stringify(o,null,2))+"\n"+document.getElementById('out').textContent}
 
     function applyLang(lang){
@@ -119,7 +120,7 @@
     });
 
     // helpers
-    const headers = {'content-type':'application/json'};
+  const headers = ANON ? {'content-type':'application/json','apikey':ANON,'Authorization':`Bearer ${ANON}`} : {'content-type':'application/json'};
     const val = id => document.getElementById(id).value;
 
     document.getElementById('btnQuote').onclick = async ()=>{
@@ -130,7 +131,7 @@
         start_ts: new Date(val('start')||Date.now()).toISOString(),
         end_ts: new Date(val('end')||Date.now()+4*3600e3).toISOString()
       };
-      const r = await fetch(`${FN}/pricing`, {method:'POST', headers, body: JSON.stringify(body)});
+  const r = await fetch(`${FN}/pricing`, {method:'POST', headers, body: JSON.stringify(body)});
       out(await r.json());
     };
 
@@ -144,22 +145,22 @@
         end_ts: new Date(val('end')||Date.now()+4*3600e3).toISOString(),
         origin_lat: parseFloat(val('lat')), origin_lng: parseFloat(val('lng'))
       };
-      const r = await fetch(`${FN}/bookings`, {method:'POST', headers, body: JSON.stringify(body)});
+  const r = await fetch(`${FN}/bookings`, {method:'POST', headers, body: JSON.stringify(body)});
       const j = await r.json(); out(j); lastBookingId=j.booking_id||j.id; lastPreauth=j.preauth_amount||j.quote_amount||0;
     };
     document.getElementById('btnPreauth').onclick = async ()=>{
       if(!lastBookingId) return out({error:'no booking'});
-      const r = await fetch(`${FN}/payments_preauth`, {method:'POST', headers, body: JSON.stringify({booking_id:lastBookingId, amount:lastPreauth})});
+  const r = await fetch(`${FN}/payments_preauth`, {method:'POST', headers, body: JSON.stringify({booking_id:lastBookingId, amount:lastPreauth})});
       out(await r.json());
     };
     document.getElementById('btnConfirm').onclick = async ()=>{
       if(!lastBookingId) return out({error:'no booking'});
-      const r = await fetch(`${FN}/bookings_confirm`, {method:'POST', headers, body: JSON.stringify({booking_id:lastBookingId})});
+  const r = await fetch(`${FN}/bookings_confirm`, {method:'POST', headers, body: JSON.stringify({booking_id:lastBookingId})});
       out(await r.json());
     };
     document.getElementById('btnMatch').onclick = async ()=>{
       if(!lastBookingId) return out({error:'no booking'});
-      const r = await fetch(`${FN}/matching`, {method:'POST', headers, body: JSON.stringify({booking_id:lastBookingId})});
+  const r = await fetch(`${FN}/matching`, {method:'POST', headers, body: JSON.stringify({booking_id:lastBookingId})});
       out(await r.json());
     };
   </script>

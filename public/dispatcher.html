@@ -22,14 +22,16 @@
   <div id="map" class="w-full h-[300px] rounded-2xl border border-neutral-800 bg-black/30 hidden"></div>
   </div>
   <script>
-    const DICT={es:{booking_id:"ID de reserva",run:"Correr matching"},en:{booking_id:"Booking ID",run:"Run matching"}};
-    const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+  const DICT={es:{booking_id:"ID de reserva",run:"Correr matching"},en:{booking_id:"Booking ID",run:"Run matching"}};
+  const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+  const ANON = new URLSearchParams(location.search).get('anon') || '';
     const out=(o)=>document.getElementById('out').textContent=JSON.stringify(o,null,2);
     function langInit(){const p=new URL(location).searchParams;const l=p.get("lang")||"es";document.getElementById("lang").value=l;document.querySelector("[data-i18n]").textContent=DICT[l].booking_id;document.getElementById("btn").textContent=DICT[l].run;document.getElementById("lang").onchange=e=>{p.set("lang",e.target.value);location.search=p.toString()}}
     langInit();
     document.getElementById('btn').onclick=async()=>{
       const id=document.getElementById('booking_id').value.trim(); if(!id) return;
-      const r = await fetch(`${FN}/matching`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({booking_id:id})});
+      const headers = ANON ? {'content-type':'application/json','apikey':ANON,'Authorization':`Bearer ${ANON}`} : {'content-type':'application/json'};
+      const r = await fetch(`${FN}/matching`,{method:'POST',headers,body:JSON.stringify({booking_id:id})});
       out(await r.json());
     };
   </script>
