@@ -16,4 +16,5 @@ jobs:
           FN: https://isnezquuwepqcjkaupjh.supabase.co/functions/v1
           CLIENT_ID: 1b387371-6711-485c-81f7-79b2174b90fb
           GUARD_ID: c38efbac-fd1e-426b-a0ab-be59fd908c8c
+          ANON: ${{ secrets.SUPABASE_ANON_KEY }}
         run: bash scripts/smoke.sh
