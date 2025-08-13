@@ -1,35 +1,34 @@
 <!doctype html>
-<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Blindado — Dispatcher</title>
-  <script>const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";</script>
+  <meta charset="utf-8" />
+  <title>Blindado · Dispatcher</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";</script>
 </head>
 <body class="bg-slate-50 text-slate-900">
-  <div class="max-w-3xl mx-auto py-10 px-4">
-    <header class="mb-8">
+  <div class="max-w-3xl mx-auto p-6">
+    <header class="mb-6">
       <h1 class="text-3xl font-bold">Dispatcher</h1>
-      <p class="text-slate-600">Manually trigger matching by booking_id</p>
+      <p class="text-slate-500">Trigger matching for a booking</p>
     </header>
-    <div class="bg-white rounded-2xl shadow p-6">
+    <section class="bg-white rounded-2xl shadow p-6">
       <div class="flex gap-3 items-center">
-        <input id="bid" class="w-full rounded-lg border px-3 py-2" placeholder="booking_id" />
-        <button id="btnMatch" class="px-4 py-2 rounded-xl bg-black text-white">Run Matching</button>
+        <input id="bid" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="booking_id" />
+        <button id="btnMatch" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">Match</button>
       </div>
-      <pre id="out" class="bg-slate-50 rounded-xl p-4 overflow-auto text-sm mt-4">Paste a booking_id you just created in client page.</pre>
-    </div>
+      <pre id="out" class="bg-slate-50 rounded-xl p-4 overflow-auto text-xs mt-4">Paste a booking_id from the client page and click Match.</pre>
+    </section>
   </div>
   <script>
-    const $=(id)=>document.getElementById(id);
-    $("btnMatch").onclick = async ()=>{
+    const $ = id => document.getElementById(id);
+    $("btnMatch").onclick = async () => {
       const booking_id = $("bid").value.trim();
-      const r = await fetch(`${FN}/matching`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id }) });
+      if(!booking_id){ $("out").textContent = 'Enter booking_id'; return; }
+      const r = await fetch(`${FN}/matching`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ booking_id }) });
       $("out").textContent = JSON.stringify(await r.json(), null, 2);
     };
   </script>
 </body>
 </html>
-</script>

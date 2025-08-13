@@ -4,6 +4,7 @@ Blindado full pack
    - supabase/sql/01_schema.sql
    - supabase/sql/02_policies.sql
    - supabase/sql/03_seed.sql
+      - supabase/sql/05_storage_policies.sql   # buckets & storage RLS
 
 2) In Dashboard → Project Settings → Functions → Secrets:
    BLINDADO_SUPABASE_URL = https://isnezquuwepqcjkaupjh.supabase.co
@@ -15,6 +16,7 @@ Blindado full pack
    supabase functions deploy bookings_confirm --no-verify-jwt
    supabase functions deploy matching --no-verify-jwt
    supabase functions deploy jobs --no-verify-jwt
+   supabase functions deploy payments_preauth --no-verify-jwt
 
 4) Serve static pages:
    cd public
@@ -24,3 +26,7 @@ Pages:
  - http://localhost:8080/client.html
  - http://localhost:8080/guard.html?guard_id=c38efbac-fd1e-426b-a0ab-be59fd908c8c
  - http://localhost:8080/dispatcher.html
+
+Updates:
+ - Polished Tailwind UI for client/guard/dispatcher pages (replace GMAPS_API_KEY placeholder with real key)
+ - Added storage bucket + policy migration (05_storage_policies.sql)

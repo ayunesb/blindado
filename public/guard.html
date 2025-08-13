@@ -1,86 +1,120 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Blindado — Guard Console</title>
-  <script>const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";</script>
+  <meta charset="utf-8" />
+  <title>Blindado · Guard Console</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";</script>
 </head>
 <body class="bg-slate-50 text-slate-900">
-  <div class="max-w-5xl mx-auto py-10 px-4">
-    <header class="mb-8">
-      <h1 class="text-3xl font-bold">Guard Console</h1>
-      <p class="text-slate-600">View offers → Accept → Update status</p>
-    </header>
-    <div class="bg-white rounded-2xl shadow p-6 mb-6">
-      <div class="flex gap-3 items-center">
-        <input id="gid" class="w-full rounded-lg border px-3 py-2" placeholder="guard_id" value="c38efbac-fd1e-426b-a0ab-be59fd908c8c"/>
-        <button id="btnLoad" class="px-4 py-2 rounded-xl bg-black text-white">Load Jobs</button>
+  <div class="max-w-7xl mx-auto p-6">
+    <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold">Guard Console</h1>
+        <p class="text-slate-500">View offers → Accept → Advance status</p>
       </div>
-      <p id="err" class="text-sm text-rose-600 mt-2"></p>
-    </div>
-    <div id="list" class="grid gap-4"></div>
+      <div class="flex items-center gap-3 bg-white rounded-xl shadow px-4 py-3">
+        <input id="gid" class="rounded-lg border border-slate-200 px-3 py-2 text-sm w-72" placeholder="guard_id" value="c38efbac-fd1e-426b-a0ab-be59fd908c8c" />
+        <button id="btnLoad" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">Load</button>
+      </div>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <section id="list" class="flex flex-col gap-5 lg:col-span-2"></section>
+      <aside class="flex flex-col gap-6">
+        <div class="bg-white rounded-2xl shadow overflow-hidden">
+          <div id="map" class="h-[340px] w-full"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-5">
+          <h2 class="font-semibold mb-2 text-sm tracking-wide uppercase text-slate-500">Help</h2>
+          <p class="text-sm text-slate-600">Accept a job to lock it. Then progress through check_in → on_site → in_progress → check_out → completed.</p>
+          <p id="err" class="text-xs text-rose-600 mt-2"></p>
+        </div>
+      </aside>
+    </main>
   </div>
+
+  <template id="jobTpl">
+    <div class="bg-white rounded-2xl shadow p-5 flex flex-col gap-4">
+      <div class="flex items-start gap-4">
+        <div class="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 text-xs font-medium select-none">JOB</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-semibold text-slate-800 leading-tight text-lg job-title truncate"></h3>
+          <p class="text-xs text-slate-500 job-meta mt-1"></p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <button class="accept px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700">Accept</button>
+          <select class="status rounded-lg border border-slate-300 px-2 py-1 text-xs">
+            <option value="accepted">accepted</option>
+            <option value="check_in">check_in</option>
+            <option value="on_site">on_site</option>
+            <option value="in_progress">in_progress</option>
+            <option value="check_out">check_out</option>
+            <option value="completed">completed</option>
+          </select>
+          <button class="update px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700">Update</button>
+        </div>
+      </div>
+      <div class="text-sm text-slate-700 job-notes"></div>
+      <details class="group">
+        <summary class="cursor-pointer text-xs text-slate-500 select-none">Raw details</summary>
+        <pre class="bg-slate-50 rounded-lg p-3 text-[11px] overflow-auto job-raw mt-2"></pre>
+      </details>
+    </div>
+  </template>
+
   <script>
-    const $ = (id)=>document.getElementById(id);
-    $("btnLoad").onclick = load;
+    const $ = id => document.getElementById(id);
+    const listEl = $("list");
+
+    window.initMap = function initMap() {
+      const map = new google.maps.Map(document.getElementById("map"), { center: { lat: 19.4326, lng: -99.1332 }, zoom: 11, mapId: "blindado-map" });
+      new google.maps.Marker({ position: { lat: 19.4326, lng: -99.1332 }, map, title: "City" });
+    };
+
     async function load(){
-      $("err").textContent = ""; $("list").innerHTML = "";
-      const gid = $("gid").value.trim();
-      try{
+      $("err").textContent = ""; listEl.innerHTML = "";
+      const gid = $("gid").value.trim(); if(!gid){ $("err").textContent = "guard_id required"; return; }
+      try {
         const r = await fetch(`${FN}/jobs/list?guard_id=${encodeURIComponent(gid)}`);
         const j = await r.json();
         if(!r.ok){ $("err").textContent = j.error || r.statusText; return; }
-        render(j.jobs || []);
-      }catch(e){ $("err").textContent = String(e); }
+        render(j.jobs || [], gid);
+      } catch(e){ $("err").textContent = String(e); }
     }
-    function card(job){
+
+    function render(rows, guard_id){
+      if(!rows.length){ listEl.innerHTML = '<p class="text-slate-500 text-sm">No offered jobs.</p>'; return; }
+      for(const row of rows){ listEl.appendChild(jobCard(row, guard_id)); }
+    }
+
+    function jobCard(job, guard_id){
       const b = job.bookings || {};
-      const city = b.city || "–"; const tier = b.tier || "–";
-      const when = `${b.start_ts || ""} → ${b.end_ts || ""}`;
-      const photo = b.guard_photo_url || "https://i.pravatar.cc/100?img=12";
-      const div = document.createElement("div");
-      div.className = "bg-white rounded-2xl shadow p-6";
-      div.innerHTML = `
-        <div class='flex items-center gap-4'>
-          <img src='${photo}' class='h-16 w-16 rounded-full object-cover' alt='guard'/>
-          <div class='flex-1'>
-            <div class='flex justify-between'>
-              <h3 class='text-lg font-semibold'>Assignment ${job.id.slice(0,8)}</h3>
-              <span class='text-sm text-slate-600'>status: ${job.status}</span>
-            </div>
-            <div class='text-sm text-slate-600'>${b.booking_id || job.booking_id}</div>
-            <div class='text-sm text-slate-700 mt-1'>${city} • ${tier}</div>
-            <div class='text-sm text-slate-700'>${when}</div>
-          </div>
-        </div>
-        <div class='flex flex-wrap gap-2 mt-4'>
-          <button data-act='accept' class='px-3 py-2 rounded-lg bg-black text-white'>Accept</button>
-          <button data-act='check_in' class='px-3 py-2 rounded-lg bg-slate-200'>Check-in</button>
-          <button data-act='on_site' class='px-3 py-2 rounded-lg bg-slate-200'>On-site</button>
-          <button data-act='in_progress' class='px-3 py-2 rounded-lg bg-slate-200'>In-progress</button>
-          <button data-act='check_out' class='px-3 py-2 rounded-lg bg-slate-200'>Check-out</button>
-          <button data-act='completed' class='px-3 py-2 rounded-lg bg-slate-200'>Completed</button>
-        </div>
-        <pre class='bg-slate-50 rounded-xl p-4 overflow-auto text-xs mt-4'>${JSON.stringify(b,null,2)}</pre>`;
-      div.querySelectorAll("button[data-act]").forEach(btn=>{
-        btn.onclick = async ()=>{ await act(job.id, btn.dataset.act); await load(); };
-      });
+      const div = document.getElementById("jobTpl").content.cloneNode(true);
+      div.querySelector('.job-title').textContent = `Assignment ${job.id.slice(0,8)}`;
+      div.querySelector('.job-meta').textContent = `${b.city || '–'} • ${b.tier || '–'} • status: ${job.status}`;
+      div.querySelector('.job-notes').textContent = b.notes || '(no notes)';
+      div.querySelector('.job-raw').textContent = JSON.stringify({ assignment: job, booking: b }, null, 2);
+      const acceptBtn = div.querySelector('.accept');
+      if(job.status !== 'offered'){ acceptBtn.disabled = true; acceptBtn.className = 'accept px-3 py-1.5 rounded-lg bg-slate-300 text-slate-500 text-xs font-medium cursor-not-allowed'; }
+      acceptBtn.onclick = async ()=>{ await act(job.id, 'accept'); await load(); };
+      div.querySelector('.update').onclick = async ()=>{ const status = div.querySelector('.status').value; await act(job.id, status); await load(); };
       return div;
     }
-    function render(rows){
-      if(!rows.length){ $("list").innerHTML = `<div class='text-slate-600'>No jobs right now.</div>`; return; }
-      const frag = document.createDocumentFragment();
-      rows.forEach(j=>frag.appendChild(card(j))); $("list").appendChild(frag);
-    }
-    async function act(assignment_id, action){
-      let url, body; if(action==="accept"){ url = `${FN}/jobs/accept`; body = { assignment_id }; } else { url = `${FN}/jobs/status`; body = { assignment_id, status: action }; }
-      const r = await fetch(url,{ method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+
+    async function act(assignment_id, status){
+      let url, body;
+      if(status === 'accept'){ url = `${FN}/jobs/accept`; body = { assignment_id }; }
+      else { url = `${FN}/jobs/status`; body = { assignment_id, status }; }
+      const r = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
       const j = await r.json(); if(!r.ok) alert(j.error || r.statusText);
     }
-    const qp = new URLSearchParams(location.search); const qg = qp.get("guard_id"); if(qg){ $("gid").value = qg; }
+
+    $("btnLoad").onclick = load;
+    const qp = new URLSearchParams(location.search); const qg = qp.get('guard_id'); if(qg){ $("gid").value = qg; }
     load();
   </script>
+  <script async src="https://maps.googleapis.com/maps/api/js?key=GMAPS_API_KEY&callback=initMap"></script>
 </body>
 </html>

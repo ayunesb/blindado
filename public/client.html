@@ -1,157 +1,155 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Blindado — Book Security</title>
-  <script>
-    const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1"; // project ref set; change if needed
-  </script>
+  <meta charset="utf-8" />
+  <title>Blindado · Book Security</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
 </head>
 <body class="bg-slate-50 text-slate-900">
-  <div class="max-w-6xl mx-auto py-10 px-4">
-    <header class="mb-8">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="mb-6">
       <h1 class="text-3xl font-bold">Book Security</h1>
-      <p class="text-slate-600">Quote → Create → Preauth → Confirm → Match</p>
+      <p class="text-slate-500">Quote → Create → Preauth → Confirm → Match</p>
     </header>
 
-    <div class="grid lg:grid-cols-2 gap-6">
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Form card -->
       <div class="bg-white rounded-2xl shadow p-6">
-        <h2 class="text-xl font-semibold mb-4">1) Job details</h2>
+        <h2 class="text-lg font-semibold mb-4">1) Job details</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm mb-1">Client ID</label>
-            <input id="client" class="w-full rounded-lg border px-3 py-2" value="1b387371-6711-485c-81f7-79b2174b90fb"/>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">Tier</label>
-            <select id="tier" class="w-full rounded-lg border px-3 py-2">
-              <option value="direct">direct</option>
+          <label class="block">
+            <span class="text-sm text-slate-600">Client ID</span>
+            <input id="client" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                   value="1b387371-6711-485c-81f7-79b2174b90fb" />
+          </label>
+
+          <label class="block">
+            <span class="text-sm text-slate-600">Tier</span>
+            <select id="tier" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2">
+              <option value="direct" selected>direct</option>
               <option value="elite">elite</option>
               <option value="corporate">corporate</option>
             </select>
-          </div>
+          </label>
 
-          <div>
-            <label class="block text-sm mb-1">City</label>
-            <input id="city" class="w-full rounded-lg border px-3 py-2" value="CDMX"/>
-          </div>
+          <label class="block">
+            <span class="text-sm text-slate-600">City</span>
+            <input id="city" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                   value="CDMX" />
+          </label>
+
           <div class="flex items-center gap-6 mt-6 md:mt-0">
             <label class="inline-flex items-center gap-2">
-              <input id="armed" type="checkbox" class="h-4 w-4 rounded border">
-              <span>Armed</span>
+              <input id="armed" type="checkbox" class="h-4 w-4 rounded border-slate-300" />
+              <span class="text-sm">Armed</span>
             </label>
             <label class="inline-flex items-center gap-2">
-              <input id="vehicle" type="checkbox" class="h-4 w-4 rounded border">
-              <span>Vehicle</span>
-            </label>
-            <label class="inline-flex items-center gap-2">
-              <span class="text-sm">Type</span>
-              <select id="vehicle_type" class="rounded border px-2 py-1 text-sm">
-                <option value="suv">SUV</option>
-                <option value="armored">Armored</option>
-              </select>
+              <input id="vehicle" type="checkbox" class="h-4 w-4 rounded border-slate-300" />
+              <span class="text-sm">Vehicle</span>
             </label>
           </div>
 
-          <div>
-            <label class="block text-sm mb-1">Start (ISO)</label>
-            <input id="start" class="w-full rounded-lg border px-3 py-2"/>
-          </div>
-            <div>
-            <label class="block text-sm mb-1">End (ISO)</label>
-            <input id="end" class="w-full rounded-lg border px-3 py-2"/>
-          </div>
+          <label class="block">
+            <span class="text-sm text-slate-600">Start (local)</span>
+            <input id="start" type="datetime-local"
+                   class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2" />
+          </label>
 
-          <div>
-            <label class="block text-sm mb-1">Origin lat</label>
-            <input id="olat" class="w-full rounded-lg border px-3 py-2" value="19.4326"/>
-          </div>
-          <div>
-            <label class="block text-sm mb-1">Origin lng</label>
-            <input id="olng" class="w-full rounded-lg border px-3 py-2" value="-99.1332"/>
-          </div>
+          <label class="block">
+            <span class="text-sm text-slate-600">End (local)</span>
+            <input id="end" type="datetime-local"
+                   class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2" />
+          </label>
+
+          <label class="block">
+            <span class="text-sm text-slate-600">Origin lat</span>
+            <input id="olat" type="number" step="0.000001"
+                   class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                   value="19.4326" />
+          </label>
+
+          <label class="block">
+            <span class="text-sm text-slate-600">Origin lng</span>
+            <input id="olng" type="number" step="0.000001"
+                   class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                   value="-99.1332" />
+          </label>
         </div>
 
-        <div class="mt-4">
-          <label class="block text-sm mb-1">Notes</label>
-          <input id="notes" class="w-full rounded-lg border px-3 py-2" value="Client web booking"/>
-        </div>
+        <label class="block mt-4">
+          <span class="text-sm text-slate-600">Notes</span>
+          <textarea id="notes" rows="2"
+                    class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                    placeholder="Client web booking"></textarea>
+        </label>
 
-        <div class="mt-6 flex flex-wrap gap-3">
-          <button id="btnQuote" class="px-4 py-2 rounded-xl bg-black text-white">Get Quote</button>
-          <button id="btnCreate" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-800" disabled>Create Booking</button>
-          <button id="btnPreauth" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-800" disabled>Preauth (stub)</button>
-          <button id="btnConfirm" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-800" disabled>Confirm</button>
-          <button id="btnMatch" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-800" disabled>Run Matching</button>
+        <div class="flex flex-wrap gap-3 mt-5">
+          <button id="btnQuote" class="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">Get Quote</button>
+          <button id="btnCreate" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Create Booking</button>
+          <button id="btnPreauth" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Preauth (stub)</button>
+          <button id="btnConfirm" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Confirm Booking</button>
+          <button id="btnMatch" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700" disabled>Run Matching</button>
         </div>
       </div>
 
-      <!-- Map + output -->
-      <div class="space-y-6">
-        <div class="bg-white rounded-2xl shadow p-6">
-          <h2 class="text-xl font-semibold mb-4">Map</h2>
-          <p class="text-sm text-slate-600 mb-2">Click the map to set origin. Route previews after you set start/end.</p>
-          <div id="map" class="h-[360px] rounded-xl border"></div>
+      <!-- Map + Output -->
+      <div class="flex flex-col gap-6">
+        <div class="bg-white rounded-2xl shadow overflow-hidden">
+          <div id="map" class="h-[360px] w-full"></div>
         </div>
-
         <div class="bg-white rounded-2xl shadow p-6">
-          <h2 class="text-xl font-semibold mb-4">Output</h2>
-          <pre id="out" class="bg-slate-50 rounded-xl p-4 overflow-auto text-sm"></pre>
+          <h2 class="text-lg font-semibold mb-2">Output</h2>
+          <pre id="out" class="text-sm text-slate-700 whitespace-pre-wrap"></pre>
         </div>
       </div>
-    </div>
+    </section>
   </div>
 
   <script>
+    const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1"; // change if needed
     const $ = (id) => document.getElementById(id);
     const out = $("out");
-    const now = new Date();
-    const plus4 = new Date(now.getTime() + 4*60*60*1000);
-    $("start").value = now.toISOString();
-    $("end").value = plus4.toISOString();
 
-    let lastQuote = null, bookingId = null;
+    let gmap, gOriginMarker;
+    let lastQuote = null;
+    let lastBookingId = null;
 
-    function show(x){ out.textContent = typeof x === "string" ? x : JSON.stringify(x, null, 2); }
-    function enable(btn, on){ btn.disabled = !on; btn.classList.toggle("bg-black", on); btn.classList.toggle("text-white", on); btn.classList.toggle("bg-slate-200", !on); btn.classList.toggle("text-slate-800", !on); }
+    // init default datetimes
+    (() => {
+      const now = new Date();
+      const plus4 = new Date(now.getTime() + 4*60*60*1000);
+      $("start").value = new Date(now.getTime() + 60*1000).toISOString().slice(0,16);
+      $("end").value = plus4.toISOString().slice(0,16);
+      $("notes").value = "Client web booking";
+    })();
 
-    // Map
-    let map, originMarker, dirSvc, dirRenderer;
-    function initMap(){
-      map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: parseFloat($("olat").value), lng: parseFloat($("olng").value) }, zoom: 12,
-        mapId: "DEMO_MAP_ID"
+    // map
+    window.initMap = function initMap() {
+      const lat = parseFloat($("olat").value), lng = parseFloat($("olng").value);
+      gmap = new google.maps.Map(document.getElementById("map"), {
+        center: { lat, lng }, zoom: 12, mapId: "blindado-map"
       });
-      originMarker = new google.maps.Marker({ map, draggable:false, title:"Origin" });
-      originMarker.setPosition({ lat: parseFloat($("olat").value), lng: parseFloat($("olng").value) });
-      map.addListener("click",(e)=>{
-        $("olat").value = e.latLng.lat().toFixed(6);
-        $("olng").value = e.latLng.lng().toFixed(6);
-        originMarker.setPosition(e.latLng);
-        drawRoute();
+      gOriginMarker = new google.maps.Marker({
+        position: { lat, lng }, map: gmap, title: "Origin"
       });
-      dirSvc = new google.maps.DirectionsService();
-      dirRenderer = new google.maps.DirectionsRenderer({ map });
-    }
-    window.initMap = initMap;
+    };
+    const updateMarker = () => {
+      const lat = parseFloat($("olat").value), lng = parseFloat($("olng").value);
+      if (!isFinite(lat) || !isFinite(lng)) return;
+      gOriginMarker.setPosition({ lat, lng });
+      gmap.panTo({ lat, lng });
+    };
+    ["olat","olng"].forEach(id => $(id).addEventListener("change", updateMarker));
 
-    function drawRoute(){
-      const start = new Date($("start").value), end = new Date($("end").value);
-      if(isNaN(start)||isNaN(end)) return;
-      const o = { lat: parseFloat($("olat").value), lng: parseFloat($("olng").value) };
-      dirSvc.route({
-        origin: o,
-        destination: o, // same city hourly job; loop route
-        travelMode: google.maps.TravelMode.DRIVING
-      }, (res, status)=>{ if(status==="OK") dirRenderer.setDirections(res); });
-    }
+    const show = (x) => { out.textContent = typeof x === "string" ? x : JSON.stringify(x, null, 2); };
 
-    window.onload = ()=> setTimeout(initMap, 0);
+    const iso = (id) => {
+      const v = $(id).value;
+      const d = new Date(v);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    };
 
     $("btnQuote").onclick = async () => {
       const body = {
@@ -159,14 +157,15 @@
         tier: $("tier").value,
         armed_required: $("armed").checked,
         vehicle_required: $("vehicle").checked,
-  vehicle_type: $("vehicle_type").value,
-        start_ts: $("start").value,
-        end_ts: $("end").value
+        start_ts: iso("start"),
+        end_ts: iso("end"),
+        origin: { lat: parseFloat($("olat").value), lng: parseFloat($("olng").value) }
       };
       const r = await fetch(`${FN}/pricing`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
-      const j = await r.json().catch(()=>({}));
-      show(j);
-      if(r.ok){ lastQuote = j; enable($("btnCreate"), true); } else { enable($("btnCreate"), false); }
+      lastQuote = await r.json();
+      show(lastQuote);
+      $("btnCreate").disabled = !r.ok;
+      $("btnCreate").className = r.ok ? "px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700" : "px-4 py-2 rounded-xl bg-slate-200 text-slate-700";
     };
 
     $("btnCreate").onclick = async () => {
@@ -176,40 +175,47 @@
         tier: $("tier").value,
         armed_required: $("armed").checked,
         vehicle_required: $("vehicle").checked,
-  vehicle_type: $("vehicle_type").value,
-        start_ts: $("start").value,
-        end_ts: $("end").value,
+        start_ts: iso("start"),
+        end_ts: iso("end"),
         origin_lat: parseFloat($("olat").value),
         origin_lng: parseFloat($("olng").value),
         notes: $("notes").value
       };
       const r = await fetch(`${FN}/bookings`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
-      const j = await r.json().catch(()=>({}));
+      const j = await r.json();
       show(j);
-      if(r.ok){ bookingId = j.booking_id; enable($("btnPreauth"), true); }
+      if (r.ok) {
+        lastBookingId = j.booking_id;
+        $("btnPreauth").disabled = false;
+        $("btnConfirm").disabled = false;
+        $("btnMatch").disabled = false;
+        ["btnPreauth","btnConfirm","btnMatch"].forEach(id => {
+          $(id).className = "px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700";
+        });
+      }
     };
 
     $("btnPreauth").onclick = async () => {
-      const amt = lastQuote?.preauth_amount || lastQuote?.quote_amount || 0;
-      const r = await fetch(`${FN}/payments_preauth`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id: bookingId, amount: amt }) });
-      const j = await r.json().catch(()=>({}));
-      show(j);
-      if(r.ok){ enable($("btnConfirm"), true); }
+      if (!lastBookingId || !lastQuote?.preauth_amount) { show({ error:"Create booking & quote first" }); return; }
+      const r = await fetch(`${FN}/payments_preauth`, { method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ booking_id: lastBookingId, amount: lastQuote.preauth_amount }) });
+      show(await r.json());
     };
 
     $("btnConfirm").onclick = async () => {
-      const r = await fetch(`${FN}/bookings_confirm`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id: bookingId }) });
-      const j = await r.json().catch(()=>({}));
-      show(j);
-      if(r.ok){ enable($("btnMatch"), true); }
+      if (!lastBookingId) { show({ error:"Create booking first" }); return; }
+      const r = await fetch(`${FN}/bookings_confirm`, { method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ booking_id: lastBookingId }) });
+      show(await r.json());
     };
 
     $("btnMatch").onclick = async () => {
-      const r = await fetch(`${FN}/matching`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id: bookingId }) });
+      if (!lastBookingId) { show({ error:"Create booking first" }); return; }
+      const r = await fetch(`${FN}/matching`, { method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ booking_id: lastBookingId }) });
       show(await r.json());
     };
   </script>
-  <!-- async defer for maps callback -->
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
+  <script async src="https://maps.googleapis.com/maps/api/js?key=GMAPS_API_KEY&callback=initMap&libraries=places"></script>
 </body>
 </html>
