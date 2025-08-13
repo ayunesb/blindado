@@ -1,28 +1,33 @@
 import { serve } from "serve";
 import { createClient } from "supabase";
 
-const cors = {
+const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Content-Type": "application/json"
 };
-
-const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...cors } });
+const j = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json({ error: "not found" }, 404);
-
-  const { booking_id } = await req.json().catch(() => ({}));
-  if (!booking_id) return json({ error: "booking_id required" }, 400);
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method !== "POST") return j({ error: "POST only" }, 405);
 
   const supabase = createClient(
-    Deno.env.get("BLINDADO_SUPABASE_URL"),
-    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")
+    Deno.env.get("BLINDADO_SUPABASE_URL")!,
+    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const { error } = await supabase.from("bookings").update({ status: "matching" }).eq("id", booking_id);
-  if (error) return json({ error: error.message }, 500);
+  const body = await req.json().catch(() => ({}));
+  const { booking_id } = body;
+  if (!booking_id) return j({ error: "booking_id required" }, 400);
 
-  return json({ ok: true });
+  const { error } = await supabase
+    .from("bookings")
+    .update({ status: "matching" })
+    .eq("id", booking_id);
+  if (error) return j({ error: error.message }, 500);
+
+  return j({ ok: true, booking_id });
 });

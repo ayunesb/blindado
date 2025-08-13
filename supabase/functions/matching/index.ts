@@ -1,41 +1,62 @@
 import { serve } from "serve";
 import { createClient } from "supabase";
 
-const cors = {
+const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Content-Type": "application/json"
 };
-
-const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...cors } });
+const j = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json({ error: "POST only" }, 405);
-
-  const { booking_id } = await req.json().catch(() => ({}));
-  if (!booking_id) return json({ error: "booking_id required" }, 400);
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method !== "POST") return j({ error: "POST only" }, 405);
 
   const supabase = createClient(
-    Deno.env.get("BLINDADO_SUPABASE_URL"),
-    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")
+    Deno.env.get("BLINDADO_SUPABASE_URL")!,
+    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const { data: booking, error: bErr } = await supabase.from("bookings").select("*").eq("id", booking_id).single();
-  if (bErr || !booking) return json({ error: "booking not found", details: bErr?.message }, 404);
+  const { booking_id } = await req.json().catch(() => ({}));
+  if (!booking_id) return j({ error: "booking_id required" }, 400);
 
-  const { data: guards, error: gErr } = await supabase
+  // Load booking
+  const { data: booking, error: bErr } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("id", booking_id)
+    .single();
+  if (bErr || !booking) return j({ error: "booking not found", details: bErr?.message }, 404);
+
+  // Eligible guards
+  let query = supabase
     .from("guards")
     .select("id, city, skills, availability_status")
     .eq("availability_status", "online")
     .eq("city", booking.city);
 
-  if (gErr) return json({ error: gErr.message }, 500);
+  const { data: guards, error: gErr } = await query;
+  if (gErr) return j({ error: gErr.message }, 500);
 
-  const candidates = (guards || []).slice(0, 5);
+  // Filter by armed skill if required
+  const eligible = (guards ?? []).filter(g => {
+    if (!booking.armed_required) return true;
+    const skills = (g as any).skills || {};
+    return !!skills.armed;
+  });
+
+  const candidates = eligible.slice(0, 5);
+
+  // Create assignment offers
   for (const g of candidates) {
-    await supabase.from("assignments").insert({ booking_id, guard_id: g.id, status: "offered" });
+    await supabase.from("assignments").insert({
+      booking_id,
+      guard_id: (g as any).id,
+      status: "offered"
+    });
   }
 
-  return json({ offered_to: candidates.map((c) => c.id) });
+  return j({ offered_to: candidates.map((c: any) => c.id) });
 });

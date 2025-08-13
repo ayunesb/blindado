@@ -4,7 +4,7 @@ set -euo pipefail
 # Blindado MVP Acceptance Test Runner (AT-1 .. AT-8)
 # Usage: FN="https://<project-ref>.supabase.co/functions/v1" ./scripts/at.sh
 # Optional env vars you can override:
-#   CLIENT_ID, GUARD_ID, CITY, TIER, HOURS
+#   CLIENT_ID, GUARD_ID, CITY, TIER, HOURS, ARMED, VEHICLE, VEHICLE_TYPE, SURGE_NIGHT, SURGE_EXPECT_MIN
 
 FN=${FN:-"https://isnezquuwepqcjkaupjh.supabase.co/functions/v1"}
 CLIENT_ID=${CLIENT_ID:-"1b387371-6711-485c-81f7-79b2174b90fb"}
@@ -12,9 +12,24 @@ GUARD_ID=${GUARD_ID:-"c38efbac-fd1e-426b-a0ab-be59fd908c8c"}
 CITY=${CITY:-"CDMX"}
 TIER=${TIER:-"direct"}
 HOURS=${HOURS:-4}
+ARMED=${ARMED:-0}
+VEHICLE=${VEHICLE:-0}
+VEHICLE_TYPE=${VEHICLE_TYPE:-suv}
+SURGE_NIGHT=${SURGE_NIGHT:-0}
+SURGE_EXPECT_MIN=${SURGE_EXPECT_MIN:-}
 
-start_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-end_ts=$(date -u -d "+${HOURS} hour" +%Y-%m-%dT%H:%M:%SZ)
+# If we expect a surge min (legacy test), pass that as explicit surge_mult to pricing (canonical pricing no longer auto-computes).
+SURGE_MULT_OVERRIDE=""
+if [ -n "${SURGE_EXPECT_MIN}" ]; then
+  SURGE_MULT_OVERRIDE=${SURGE_EXPECT_MIN}
+fi
+
+if [ "$SURGE_NIGHT" = "1" ]; then
+  start_ts="$(date -u +%Y-%m-%dT23:00:00Z)"
+else
+  start_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+fi
+end_ts=$(date -u -d "${start_ts} + ${HOURS} hour" +%Y-%m-%dT%H:%M:%SZ)
 
 have_jq=1
 command -v jq >/dev/null 2>&1 || have_jq=0
@@ -29,24 +44,55 @@ echo "FN=$FN"
 echo "Running acceptance tests..."; echo
 
 # AT-1: Pricing quote
-REQ_PRICING=$(cat <<JSON
-{ "city":"$CITY", "tier":"$TIER", "armed_required":false, "vehicle_required":false, "start_ts":"$start_ts", "end_ts":"$end_ts" }
+if [ -n "$SURGE_MULT_OVERRIDE" ]; then
+  REQ_PRICING=$(cat <<JSON
+{ "city":"$CITY", "tier":"$TIER", "armed_required":${ARMED}, "vehicle_required":${VEHICLE}, "vehicle_type":"$VEHICLE_TYPE", "surge_mult": ${SURGE_MULT_OVERRIDE}, "start_ts":"$start_ts", "end_ts":"$end_ts" }
 JSON
 )
+else
+  REQ_PRICING=$(cat <<JSON
+{ "city":"$CITY", "tier":"$TIER", "armed_required":${ARMED}, "vehicle_required":${VEHICLE}, "vehicle_type":"$VEHICLE_TYPE", "start_ts":"$start_ts", "end_ts":"$end_ts" }
+JSON
+)
+fi
 R1=$(curl -s -S -X POST "$FN/pricing" -H 'Content-Type: application/json' -d "$REQ_PRICING" || true)
 quote_amount=$(json_field "$R1" quote_amount || echo "")
 [ -n "$quote_amount" ] || fail "AT-1 Pricing quote" "$R1"
-pass "AT-1 Pricing quote (quote_amount=$quote_amount)"
+surge_mult=$(json_field "$R1" surge_mult || echo "")
+if [ -n "$SURGE_EXPECT_MIN" ]; then
+  awk_check=$(awk -v a="${surge_mult}" -v b="${SURGE_EXPECT_MIN}" 'BEGIN{ if (a+0 < b+0) print "fail"; }')
+  [ -z "$awk_check" ] || fail "AT-1 Surge expectation (got $surge_mult, expected >= $SURGE_EXPECT_MIN)" "$R1"
+fi
+[ -n "$surge_mult" ] || surge_mult="1"
+pass "AT-1 Pricing quote (quote_amount=$quote_amount surge=$surge_mult)"
 
 # AT-2: Create booking
 REQ_BOOKING=$(cat <<JSON
-{ "client_id":"$CLIENT_ID", "city":"$CITY", "tier":"$TIER", "armed_required":false, "vehicle_required":false, "start_ts":"$start_ts", "end_ts":"$end_ts", "origin_lat":19.4326, "origin_lng":-99.1332, "notes":"AT flow" }
+{ "client_id":"$CLIENT_ID", "city":"$CITY", "tier":"$TIER", "armed_required":${ARMED}, "vehicle_required":${VEHICLE}, "vehicle_type":"$VEHICLE_TYPE", "surge_mult": ${surge_mult}, "quote_amount": ${quote_amount}, "start_ts":"$start_ts", "end_ts":"$end_ts", "origin_lat":19.4326, "origin_lng":-99.1332, "notes":"AT flow A${ARMED}V${VEHICLE}T${VEHICLE_TYPE}" }
 JSON
 )
 R2=$(curl -s -S -X POST "$FN/bookings" -H 'Content-Type: application/json' -d "$REQ_BOOKING" || true)
 booking_id=$(json_field "$R2" booking_id || echo "")
 [ -n "$booking_id" ] || fail "AT-2 Create booking" "$R2"
 pass "AT-2 Create booking (booking_id=$booking_id)"
+
+# Verify booking status is 'quoted' (canonical flow) if we have service role key.
+if [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+  API_ROOT="${FN%/functions/v1}"
+  BSTAT=$(curl -s -S -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" "$API_ROOT/rest/v1/bookings?id=eq.$booking_id&select=status" || true)
+  if [ $have_jq -eq 1 ]; then
+    status_val=$(echo "$BSTAT" | jq -r '.[0].status // empty')
+  else
+    status_val=$(echo "$BSTAT" | sed -n 's/.*"status"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+  fi
+  if [ "$status_val" != "quoted" ]; then
+    fail "Booking initial status not quoted (got '$status_val')" "$BSTAT"
+  else
+    pass "Booking initial status is quoted"
+  fi
+else
+  echo "(Skipping booking status verification: SUPABASE_SERVICE_ROLE_KEY not set)"
+fi
 
 # AT-3: Preauth payment
 preauth_amount=$(json_field "$R1" preauth_amount || echo "")

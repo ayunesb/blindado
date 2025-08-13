@@ -8,48 +8,70 @@ const corsHeaders = {
   "Content-Type": "application/json"
 };
 
-function j(body, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders });
-}
+const j = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return j({ error: "POST only" }, 405);
 
   const supabase = createClient(
-    Deno.env.get("BLINDADO_SUPABASE_URL"),
-    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")
+    Deno.env.get("BLINDADO_SUPABASE_URL")!,
+    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  let payload;
+  let payload: any = {};
   try { payload = await req.json(); } catch { return j({ error: "invalid JSON body" }, 400); }
 
-  const { city, tier, armed_required = false, vehicle_required = false, start_ts, end_ts } = payload;
-  if (!city || !tier || !start_ts || !end_ts) return j({ error: "missing required fields (city, tier, start_ts, end_ts)" }, 400);
+  const {
+    city, tier,
+    armed_required = false,
+    vehicle_required = false,
+    vehicle_type = null,
+    start_ts, end_ts,
+    surge_mult = 1.0
+  } = payload;
+
+  if (!city || !tier || !start_ts || !end_ts) {
+    return j({ error: "missing required fields (city, tier, start_ts, end_ts)" }, 400);
+  }
 
   const start = new Date(start_ts), end = new Date(end_ts);
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return j({ error: "invalid timestamps; use ISO 8601" }, 400);
-  const rawHours = Math.ceil((end.getTime() - start.getTime()) / (1000*60*60));
-  if (rawHours <= 0) return j({ error: "end_ts must be after start_ts" }, 400);
+  if (isNaN(+start) || isNaN(+end) || end <= start) {
+    return j({ error: "invalid timestamps; end must be after start (ISO 8601)" }, 400);
+  }
 
-  const { data: rule } = await supabase
+  const rawHours = Math.ceil((+end - +start) / 3_600_000);
+
+  const { data: rule, error } = await supabase
     .from("pricing_rules")
     .select("base_rate_guard, armed_multiplier, vehicle_rate_suv, vehicle_rate_armored, min_hours")
-    .eq("city", city).eq("tier", tier).maybeSingle();
+    .eq("city", city)
+    .eq("tier", tier)
+    .single();
 
-  const defaults = { base_rate_guard: 700, armed_multiplier: 1.5, vehicle_rate_suv: 1500, vehicle_rate_armored: 3000, min_hours: 4 };
-  const r = rule || defaults;
+  if (error || !rule) return j({ error: "pricing rule not found for city/tier" }, 404);
 
-  const billedHours = Math.max(r.min_hours ?? 1, rawHours);
-  let hourly = Number(r.base_rate_guard) || defaults.base_rate_guard;
-  if (armed_required) hourly = Math.round(hourly * Number(r.armed_multiplier || defaults.armed_multiplier));
+  const min_hours = rule.min_hours ?? 1;
+  const hours = Math.max(min_hours, rawHours);
 
-  let total = hourly * billedHours;
-  if (vehicle_required) total += Number(r.vehicle_rate_suv || defaults.vehicle_rate_suv) * billedHours;
+  let guardHourly = rule.base_rate_guard as number;
+  if (armed_required) guardHourly = Math.round(guardHourly * (rule.armed_multiplier ?? 1));
 
-  const surge_mult = 1;
-  const quote_amount = Math.round(total * surge_mult);
+  let vehicleTotal = 0;
+  if (vehicle_required) {
+    if (vehicle_type === "armored_suv") vehicleTotal = (rule.vehicle_rate_armored ?? 0) * hours;
+    else vehicleTotal = (rule.vehicle_rate_suv ?? 0) * hours;
+  }
+
+  const quote_amount = Math.round((guardHourly * hours + vehicleTotal) * surge_mult);
   const preauth_amount = Math.round(quote_amount * 1.10);
 
-  return j({ quote_amount, currency: "MXN", min_hours: r.min_hours || defaults.min_hours, surge_mult, preauth_amount });
+  return j({
+    quote_amount,
+    currency: "MXN",
+    min_hours,
+    surge_mult,
+    preauth_amount
+  });
 });

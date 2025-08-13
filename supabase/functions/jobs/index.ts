@@ -4,67 +4,87 @@ import { createClient } from "supabase";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Content-Type": "application/json"
 };
-
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
+const j = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
   const url = new URL(req.url);
-  const path = url.pathname.split("/").pop();
+  const tail = url.pathname.split("/").pop(); // "list" | "accept" | "status"
+
   const supabase = createClient(
-    Deno.env.get("BLINDADO_SUPABASE_URL"),
-    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")
+    Deno.env.get("BLINDADO_SUPABASE_URL")!,
+    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  if (req.method === "GET" && path === "list") {
+  // GET /list?guard_id=...
+  if (req.method === "GET" && tail === "list") {
     const guard_id = url.searchParams.get("guard_id");
-    if (!guard_id) return json({ error: "guard_id required" }, 400);
-    // Fetch offered assignments with booking info
+    if (!guard_id) return j({ error: "guard_id required" }, 400);
+
     const { data, error } = await supabase
       .from("assignments")
       .select("*, bookings(*)")
       .eq("guard_id", guard_id)
       .eq("status", "offered");
-    if (error) return json({ error: error.message }, 500);
-    // Enrich with guard photo_url from profiles (second query keeps select simpler)
-    const guardIds = [...new Set((data ?? []).map((r: any) => r.guard_id))];
-    let photoMap: Record<string,string> = {};
-    if (guardIds.length) {
-      const { data: profs } = await supabase.from("profiles").select("id, photo_url").in("id", guardIds);
-      (profs || []).forEach((p: any) => { if (p.photo_url) photoMap[p.id] = p.photo_url; });
-    }
-    const jobs = (data ?? []).map((row: any) => {
-      const photo = photoMap[row.guard_id];
-      if (photo) row.bookings = { ...(row.bookings || {}), guard_photo_url: photo };
-      return row;
-    });
-    return json({ jobs });
+
+    if (error) return j({ error: error.message }, 500);
+    return j({ jobs: data ?? [] });
   }
 
-  if (req.method === "POST" && path === "accept") {
-    const { assignment_id } = await req.json();
-    const { data: current, error: getErr } = await supabase.from("assignments").select("*").eq("id", assignment_id).single();
-    if (getErr || !current) return json({ error: "assignment not found" }, 404);
-    if (current.status !== "offered") return json({ ok: true, status: current.status });
-    const { error: updErr } = await supabase.from("assignments").update({ status: "accepted" }).eq("id", assignment_id);
-    if (updErr) return json({ error: updErr.message }, 500);
+  // POST /accept { assignment_id }
+  if (req.method === "POST" && tail === "accept") {
+    const { assignment_id } = await req.json().catch(() => ({}));
+    if (!assignment_id) return j({ error: "assignment_id required" }, 400);
+
+    const { data: current, error: getErr } = await supabase
+      .from("assignments")
+      .select("*")
+      .eq("id", assignment_id)
+      .single();
+    if (getErr || !current) return j({ error: "assignment not found" }, 404);
+
+    if (current.status !== "offered") return j({ ok: true, status: current.status });
+
+    // accept assignment
+    const { error: updErr } = await supabase
+      .from("assignments")
+      .update({ status: "accepted" })
+      .eq("id", assignment_id);
+    if (updErr) return j({ error: updErr.message }, 500);
+
+    // set booking assigned
     await supabase.from("bookings").update({ status: "assigned" }).eq("id", current.booking_id);
-    return json({ ok: true });
+
+    return j({ ok: true });
   }
 
-  if (req.method === "POST" && path === "status") {
-    const { assignment_id, status } = await req.json();
-    const allowed = ["offered","accepted","check_in","on_site","in_progress","check_out","completed"];
-    if (!allowed.includes(status)) return json({ error: "invalid status" }, 400);
-    const { error } = await supabase.from("assignments").update({ status }).eq("id", assignment_id);
-    if (error) return json({ error: error.message }, 500);
-    return json({ ok: true });
+  // POST /status { assignment_id, status }
+  if (req.method === "POST" && tail === "status") {
+    const { assignment_id, status } = await req.json().catch(() => ({}));
+    const allowed = [
+      "offered",
+      "accepted",
+      "check_in",
+      "on_site",
+      "in_progress",
+      "check_out",
+      "completed"
+    ];
+    if (!assignment_id || !allowed.includes(status)) {
+      return j({ error: "assignment_id and valid status required" }, 400);
+    }
+    const { error } = await supabase
+      .from("assignments")
+      .update({ status })
+      .eq("id", assignment_id);
+    if (error) return j({ error: error.message }, 500);
+    return j({ ok: true });
   }
 
-  return json({ error: "not found" }, 404);
+  return j({ error: "not found" }, 404);
 });

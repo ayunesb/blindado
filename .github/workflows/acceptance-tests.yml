@@ -17,15 +17,24 @@ on:
 jobs:
   at:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { city: CDMX, tier: direct, armed: 0, vehicle: 0, vtype: suv }
+          - { city: CDMX, tier: direct, armed: 1, vehicle: 0, vtype: suv }
+          - { city: CDMX, tier: direct, armed: 0, vehicle: 1, vtype: suv }
+          - { city: CDMX, tier: direct, armed: 0, vehicle: 1, vtype: armored }
+          - { city: CDMX, tier: elite, armed: 1, vehicle: 1, vtype: armored }
+          - { city: GDL, tier: direct, armed: 0, vehicle: 0, vtype: suv }
+          - { city: MTY, tier: corporate, armed: 1, vehicle: 1, vtype: armored }
+          # Removed surge-night scenario (canonical pricing no longer auto-computes surge).
     env:
-      # You can store SERVICE_ROLE and URL in repo or org secrets; service role is sensitive.
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       CLIENT_ID: 1b387371-6711-485c-81f7-79b2174b90fb
       GUARD_ID: c38efbac-fd1e-426b-a0ab-be59fd908c8c
-      CITY: CDMX
-      TIER: direct
       HOURS: 4
     steps:
       - name: Checkout
@@ -52,12 +61,21 @@ jobs:
       - name: Show FN
         run: echo "FN=$FN"
 
-      - name: Run Acceptance Tests
+      - name: Run Acceptance Tests (matrix)
+        env:
+          CITY: ${{ matrix.city }}
+          TIER: ${{ matrix.tier }}
+          ARMED: ${{ matrix.armed }}
+          VEHICLE: ${{ matrix.vehicle }}
+          VEHICLE_TYPE: ${{ matrix.vtype }}
+          SURGE_NIGHT: ${{ matrix.surge_night || 0 }}
+          SURGE_EXPECT_MIN: ${{ matrix.surge_expect_min || '' }}
         run: |
+          echo "Matrix CITY=$CITY TIER=$TIER ARMED=$ARMED VEHICLE=$VEHICLE VTYPE=$VEHICLE_TYPE SURGE_NIGHT=$SURGE_NIGHT"
           chmod +x scripts/at.sh
           ./scripts/at.sh
 
       - name: Summary
         if: always()
         run: |
-          echo "Workflow complete."
+          echo "Workflow complete for CITY=$CITY TIER=$TIER ARMED=$ARMED VEHICLE=$VEHICLE VTYPE=$VEHICLE_TYPE SURGE_NIGHT=$SURGE_NIGHT"

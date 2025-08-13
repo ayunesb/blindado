@@ -1,45 +1,49 @@
 import { serve } from "serve";
 import { createClient } from "supabase";
 
-const cors = {
+const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Content-Type": "application/json"
 };
-
-const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...cors } });
+const j = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json({ error: "not found" }, 404);
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method !== "POST") return j({ error: "POST only" }, 405);
 
   const supabase = createClient(
-    Deno.env.get("BLINDADO_SUPABASE_URL"),
-    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")
+    Deno.env.get("BLINDADO_SUPABASE_URL")!,
+    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!
   );
 
   const body = await req.json().catch(() => ({}));
   const {
-    client_id = "1b387371-6711-485c-81f7-79b2174b90fb",
-    city = "CDMX",
-    tier = "direct",
-    armed_required = false,
-    vehicle_required = false,
-    start_ts,
-    end_ts,
-    origin_lat = 19.4326,
-    origin_lng = -99.1332,
-    notes = "Web-created booking"
-  } = body || {};
+    client_id, city, tier = "direct",
+    armed_required = false, vehicle_required = false, vehicle_type = null,
+    start_ts, end_ts, origin_lat, origin_lng, dest_lat = null, dest_lng = null,
+    notes = null
+  } = body;
 
-  if (!start_ts || !end_ts) return json({ error: "start_ts and end_ts are required (ISO strings)" }, 400);
+  if (!client_id || !start_ts || !end_ts || !city) {
+    return j({ error: "client_id, city, start_ts, end_ts are required" }, 400);
+  }
 
   const { data, error } = await supabase
     .from("bookings")
-    .insert([{ client_id, status: "matching", city, tier, armed_required, vehicle_required, start_ts, end_ts, origin_lat, origin_lng, notes }])
-    .select("id").single();
+    .insert([{
+      client_id, city, tier,
+      armed_required, vehicle_required, vehicle_type,
+      start_ts, end_ts,
+      origin_lat, origin_lng, dest_lat, dest_lng,
+      notes,
+      status: "quoted"
+    }])
+    .select("id")
+    .single();
 
-  if (error) return json({ error: error.message }, 500);
-  return json({ ok: true, booking_id: data.id });
+  if (error) return j({ error: error.message }, 500);
+  return j({ ok: true, booking_id: data.id });
 });
