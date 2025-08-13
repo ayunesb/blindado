@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Book Security</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;max-width:1000px;margin:30px auto;padding:0 16px}
+    input,select,button,textarea{padding:.7rem .75rem;border:1px solid #ccc;border-radius:10px}
+    button{cursor:pointer}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .card{border:1px solid #eee;background:#fff;border-radius:16px;padding:18px;box-shadow:0 6px 20px rgba(0,0,0,.05)}
+    .muted{color:#666}
+    #out{background:#f6f6f6;border-radius:12px;padding:12px;white-space:pre-wrap;overflow:auto;min-height:56px}
+  </style>
+</head>
+<body>
+  <h1>Book Security</h1>
+  <div class="card">
+    <h3>1) Job details</h3>
+    <div class="row">
+      <div style="flex:1">
+        <div>Client ID</div>
+        <input id="client" style="min-width:480px" />
+      </div>
+      <div>
+        <div>Tier</div>
+        <select id="tier">
+          <option value="direct">direct</option>
+          <option value="elite">elite</option>
+          <option value="corporate">corporate</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div>
+        <div>City</div><input id="city" value="CDMX" />
+      </div>
+      <div style="min-width:180px"><label><input type="checkbox" id="armed"/> Armed</label></div>
+      <div style="min-width:180px"><label><input type="checkbox" id="vehicle"/> Vehicle</label></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div><div>Start (ISO)</div><input id="start" style="min-width:360px"/></div>
+      <div><div>End (ISO)</div><input id="end" style="min-width:360px"/></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div><div>Origin lat</div><input id="olat" value="19.4326"/></div>
+      <div><div>Origin lng</div><input id="olng" value="-99.1332"/></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div style="flex:1"><div>Notes</div><input id="notes" style="width:100%" value="Client web booking"/></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button id="btnQuote">Get Quote</button>
+      <button id="btnCreate" disabled>Create Booking</button>
+      <button id="btnPreauth" disabled>Pre‑auth</button>
+      <button id="btnConfirm" disabled>Confirm (to Matching)</button>
+      <button id="btnMatch" disabled>Run Matching</button>
+    </div>
+  </div>
+  <h3>Output</h3>
+  <div id="out"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const out = $("out");
+const now = new Date(), plus4 = new Date(now.getTime()+4*60*60*1000);
+$("start").value = now.toISOString(); $("end").value = plus4.toISOString();
+let bookingId = null, lastQuote = null;
+
+// ---- CONFIG: update to your project if different ----
+const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+// -----------------------------------------------------
+
+function show(x){ out.textContent = (typeof x==="string")? x : JSON.stringify(x,null,2); }
+
+$("btnQuote").onclick = async () => {
+  const body = {
+    city: $("city").value, tier: $("tier").value,
+    armed_required: $("armed").checked,
+    vehicle_required: $("vehicle").checked,
+    start_ts: $("start").value, end_ts: $("end").value,
+    origin: { lat: parseFloat($("olat").value), lng: parseFloat($("olng").value) }
+  };
+  const r = await fetch(`${FN}/pricing`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(()=>({error:"Failed to parse"}));
+  lastQuote = j; show(j);
+  $("btnCreate").disabled = !r.ok;
+};
+
+$("btnCreate").onclick = async () => {
+  const body = {
+    client_id: $("client").value, city: $("city").value, tier: $("tier").value,
+    armed_required: $("armed").checked, vehicle_required: $("vehicle").checked,
+    start_ts: $("start").value, end_ts: $("end").value,
+    origin_lat: parseFloat($("olat").value), origin_lng: parseFloat($("olng").value),
+    notes: $("notes").value, quote_amount: lastQuote?.quote_amount ?? null
+  };
+  const r = await fetch(`${FN}/bookings`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+  const j = await r.json(); show(j);
+  if (r.ok) { bookingId = j.booking_id; $("btnPreauth").disabled = false; }
+};
+
+$("btnPreauth").onclick = async () => {
+  const r = await fetch(`${FN}/payments_preauth`, {
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ booking_id: bookingId, amount: lastQuote?.preauth_amount })
+  });
+  const j = await r.json(); show(j);
+  if (r.ok) { $("btnConfirm").disabled = false; }
+};
+
+$("btnConfirm").onclick = async () => {
+  const r = await fetch(`${FN}/bookings_confirm`, {
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ booking_id: bookingId })
+  });
+  const j = await r.json(); show(j);
+  if (r.ok) { $("btnMatch").disabled = false; }
+};
+
+$("btnMatch").onclick = async () => {
+  const r = await fetch(`${FN}/matching`, {
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ booking_id: bookingId })
+  });
+  show(await r.json());
+};
+</script>
+</body>
+</html>

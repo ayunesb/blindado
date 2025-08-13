@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Book Security</title>
+  <style>
+    body{font-family:system-ui,apple-system,Segoe UI,Roboto,Arial;max-width:960px;margin:40px auto;padding:0 16px}
+    input,select,button{padding:.6rem .75rem;border:1px solid #ccc;border-radius:10px}
+    button{cursor:pointer}
+    .row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+    .muted{color:#777}
+    .card{border:1px solid #e5e5e5;border-radius:14px;padding:16px;margin:16px 0}
+    #out{background:#f6f6f6;border:1px solid #ececec;border-radius:12px;padding:12px;overflow:auto;min-height:60px}
+    fieldset{border:1px solid #eee;border-radius:14px;padding:18px}
+    legend{font-weight:700}
+    label{display:block;font-size:12px;margin:10px 0 6px}
+  </style>
+</head>
+<body>
+  <h1>Book Security</h1>
+
+  <fieldset>
+    <legend>1) Job details</legend>
+
+    <div class="row">
+      <div style="flex:1 1 300px">
+        <label>Client ID</label>
+        <input id="client" style="min-width:260px" />
+      </div>
+
+      <div style="flex:1 1 220px">
+        <label>Tier</label>
+        <select id="tier">
+          <option value="direct">direct</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div style="flex:1 1 220px">
+        <label>City</label>
+        <input id="city" value="CDMX" />
+      </div>
+      <div class="row" style="flex:1 1 220px; gap:20px; align-items:end">
+        <label><input type="checkbox" id="armed" /> Armed</label>
+        <label><input type="checkbox" id="vehicle" /> Vehicle</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div style="flex:1 1 320px">
+        <label>Start (ISO)</label>
+        <input id="start" style="min-width:280px" />
+      </div>
+      <div style="flex:1 1 320px">
+        <label>End (ISO)</label>
+        <input id="end" style="min-width:280px" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Origin lat</label>
+        <input id="olat" value="19.4326" />
+      </div>
+      <div>
+        <label>Origin lng</label>
+        <input id="olng" value="-99.1332" />
+      </div>
+    </div>
+
+    <div>
+      <label>Notes</label>
+      <input id="notes" style="width:100%" value="Client web booking" />
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <button id="btnQuote">Get Quote</button>
+      <button id="btnCreate" disabled>Create Booking</button>
+      <button id="btnMatch" disabled>Run Matching</button>
+    </div>
+  </fieldset>
+
+  <h2>Output</h2>
+  <pre id="out"></pre>
+
+  <script>
+    // <<< CHANGE ONLY THIS if you use a different Supabase project >>>
+    const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+
+    const $ = (id) => document.getElementById(id);
+    const out = $("out");
+
+    // sensible defaults
+    $("client").value = "1b387371-6711-485c-81f7-79b2174b90fb";
+    const now = new Date();
+    const plus4 = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+    $("start").value = now.toISOString();
+    $("end").value   = plus4.toISOString();
+
+    let lastQuote = null;
+    let bookingId = null;
+
+    function show(x) {
+      out.textContent = (typeof x === "string") ? x : JSON.stringify(x, null, 2);
+    }
+
+    $("btnQuote").onclick = async () => {
+      const body = {
+        city: $("city").value,
+        tier: $("tier").value,
+        armed_required: $("armed").checked,
+        vehicle_required: $("vehicle").checked,
+        start_ts: $("start").value,
+        end_ts: $("end").value
+      };
+      try {
+        const r = await fetch(`${FN}/pricing`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const j = await r.json();
+        if (!r.ok) { show(j); $("btnCreate").disabled = true; return; }
+        lastQuote = j;
+        show(j);
+        $("btnCreate").disabled = false;
+      } catch (e) {
+        show(String(e));
+      }
+    };
+
+    $("btnCreate").onclick = async () => {
+      const body = {
+        client_id: $("client").value,
+        city: $("city").value,
+        tier: $("tier").value,
+        armed_required: $("armed").checked,
+        vehicle_required: $("vehicle").checked,
+        start_ts: $("start").value,
+        end_ts: $("end").value,
+        origin_lat: parseFloat($("olat").value),
+        origin_lng: parseFloat($("olng").value),
+        notes: $("notes").value
+      };
+      try {
+        const r = await fetch(`${FN}/bookings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const j = await r.json();
+        if (!r.ok) { show(j); return; }
+        bookingId = j.booking_id;
+        show({ created: true, booking_id: bookingId, quote: lastQuote });
+        $("btnMatch").disabled = !bookingId;
+      } catch (e) {
+        show(String(e));
+      }
+    };
+
+    $("btnMatch").onclick = async () => {
+      try {
+        const r = await fetch(`${FN}/matching`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ booking_id: bookingId })
+        });
+        show(await r.json());
+      } catch (e) {
+        show(String(e));
+      }
+    };
+  </script>
+</body>
+</html>
+

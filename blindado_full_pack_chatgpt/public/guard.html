@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Guard Console</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;max-width:960px;margin:30px auto;padding:0 16px}
+    input,button{padding:.7rem .75rem;border:1px solid #ccc;border-radius:10px}
+    button{cursor:pointer}
+    .card{border:1px solid #eee;background:#fff;border-radius:14px;padding:16px;margin:10px 0}
+    .row{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+    .muted{color:#666}
+  </style>
+</head>
+<body>
+  <h1>Guard Console</h1>
+  <div class="row">
+    <input id="gid" style="min-width:480px" placeholder="guard_id (UUID)" />
+    <button id="load">Load Jobs</button>
+  </div>
+  <div id="err" class="muted" style="margin-top:10px"></div>
+  <div id="list"></div>
+
+<script>
+const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+const qp = new URLSearchParams(location.search);
+const defaultGuard = qp.get("guard_id") || "";
+document.getElementById("gid").value = defaultGuard;
+
+document.getElementById("load").onclick = load;
+
+async function load() {
+  const gid = document.getElementById("gid").value.trim();
+  const list = document.getElementById("list");
+  const err = document.getElementById("err");
+  list.innerHTML = ""; err.textContent = "";
+  try {
+    const r = await fetch(`${FN}/jobs/list?guard_id=${encodeURIComponent(gid)}`);
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.statusText);
+    if (!j.jobs || j.jobs.length === 0) { list.innerHTML = "<p class='muted'>No jobs right now.</p>"; return; }
+    for (const job of j.jobs) addCard(job);
+  } catch (e) {
+    err.textContent = "Error: " + e.message;
+  }
+}
+
+function addCard(j){
+  const b = j.bookings || {};
+  const card = document.createElement("div"); card.className = "card";
+  card.innerHTML = `
+    <div class="row">
+      <div><strong>Assignment:</strong> ${j.id}</div>
+      <div class="muted">status: ${j.status}</div>
+    </div>
+    <div class="muted">Booking: ${j.booking_id} • ${b.city||""} • ${b.tier||""}</div>
+    <div class="muted">When: ${b.start_ts||""} → ${b.end_ts||""}</div>
+    <div class="row" style="margin-top:8px">
+      <button data-act="accept">Accept</button>
+      <button data-act="check_in">Check-in</button>
+      <button data-act="on_site">On-site</button>
+      <button data-act="in_progress">In-progress</button>
+      <button data-act="check_out">Check-out</button>
+      <button data-act="completed">Completed</button>
+    </div>
+    <pre class="muted" style="white-space:pre-wrap">${JSON.stringify(b,null,2)}</pre>
+  `;
+  card.querySelectorAll("button").forEach(btn => {
+    btn.onclick = () => act(j.id, btn.dataset.act);
+  });
+  document.getElementById("list").appendChild(card);
+}
+
+async function act(assignment_id, action){
+  let url, body;
+  if(action === "accept"){ url = `${FN}/jobs/accept`; body = { assignment_id }; }
+  else { url = `${FN}/jobs/status`; body = { assignment_id, status: action }; }
+  const r = await fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if(!r.ok) alert(j.error || r.statusText);
+  await load();
+}
+
+load();
+</script>
+</body>
+</html>

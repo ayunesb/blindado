@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Blindado – Client Booking</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:960px;margin:40px auto;padding:0 16px}
+    label{display:block;margin:.5rem 0 .25rem}
+    input,select,button{padding:.6rem .75rem;border:1px solid #ccc;border-radius:10px}
+    button{cursor:pointer}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .card{border:1px solid #e5e5e5;border-radius:14px;padding:16px;margin:16px 0}
+    pre{background:#f6f6f6;padding:12px;border-radius:12px;overflow:auto}
+  </style>
+</head>
+<body>
+  <h1>Book Security</h1>
+
+  <div class="card">
+    <h3>1) Job details</h3>
+    <label>Client ID</label>
+    <input id="client" value="1b387371-6711-485c-81f7-79b2174b90fb" />
+
+    <div class="row">
+      <div>
+        <label>City</label>
+        <input id="city" value="CDMX" />
+      </div>
+      <div>
+        <label>Tier</label>
+        <select id="tier">
+          <option value="direct" selected>direct</option>
+          <option value="concierge">concierge</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <label><input type="checkbox" id="armed"> Armed</label>
+      <label><input type="checkbox" id="vehicle"> Vehicle</label>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Start (ISO)</label>
+        <input id="start" />
+      </div>
+      <div>
+        <label>End (ISO)</label>
+        <input id="end" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Origin lat</label>
+        <input id="olat" value="19.4326" />
+      </div>
+      <div>
+        <label>Origin lng</label>
+        <input id="olng" value="-99.1332" />
+      </div>
+    </div>
+
+    <label>Notes</label>
+    <input id="notes" value="Client web booking" style="width:100%" />
+
+    <div style="margin-top:12px">
+      <button id="btnQuote">Get Quote</button>
+      <button id="btnCreate" disabled>Create Booking</button>
+      <button id="btnMatch"  disabled>Run Matching</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Output</h3>
+    <pre id="out"></pre>
+  </div>
+
+<script>
+const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+const $ = id => document.getElementById(id);
+const out = $("out");
+
+const now = new Date(), plus4 = new Date(now.getTime()+4*60*60*1000);
+$("start").value = now.toISOString();
+$("end").value   = plus4.toISOString();
+
+let lastQuote = null;
+let bookingId = null;
+
+function show(x){ out.textContent = (typeof x==="string") ? x : JSON.stringify(x,null,2); }
+
+$("btnQuote").onclick = async () => {
+  const body = {
+    city: $("city").value,
+    tier: $("tier").value,
+    armed_required: $("armed").checked,
+    vehicle_required: $("vehicle").checked,
+    start_ts: $("start").value,
+    end_ts: $("end").value
+  };
+  const r = await fetch(`${FN}/pricing`, {
+    method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body)
+  });
+  lastQuote = await r.json();
+  show(lastQuote);
+  $("btnCreate").disabled = !r.ok;
+};
+
+$("btnCreate").onclick = async () => {
+  const body = {
+    client_id: $("client").value,
+    city: $("city").value,
+    tier: $("tier").value,
+    armed_required: $("armed").checked,
+    vehicle_required: $("vehicle").checked,
+    start_ts: $("start").value,
+    end_ts: $("end").value,
+    origin_lat: parseFloat($("olat").value),
+    origin_lng: parseFloat($("olng").value),
+    notes: $("notes").value
+  };
+  const r = await fetch(`${FN}/bookings`, {
+    method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body)
+  });
+  const j = await r.json();
+  if (!r.ok) { show(j); return; }
+  bookingId = j.booking_id;
+  show({ created: true, booking_id: bookingId, quote: lastQuote });
+  $("btnMatch").disabled = !bookingId;
+};
+
+$("btnMatch").onclick = async () => {
+  const r = await fetch(`${FN}/matching`, {
+    method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ booking_id: bookingId })
+  });
+  show(await r.json());
+};
+</script>
+</body>
+</html>

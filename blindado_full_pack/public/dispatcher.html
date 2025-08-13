@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Dispatcher — Match Booking</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;max-width:960px;margin:40px auto;padding:0 16px}
+    input,button{padding:.6rem .75rem;border:1px solid #ccc;border-radius:10px}
+    button{cursor:pointer}
+    #out{background:#f6f6f6;padding:12px;border-radius:12px;min-height:40px;white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <h1>Dispatcher — Match Booking</h1>
+  <div style="display:flex;gap:8px">
+    <input id="bid" placeholder="booking_id (UUID)" style="min-width:520px"/>
+    <button id="run">Run matching</button>
+  </div>
+  <p class="muted">Paste a booking_id you just created in Client page.</p>
+  <pre id="out"></pre>
+<script>
+const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+document.getElementById("run").onclick = async () => {
+  const bid = document.getElementById("bid").value.trim();
+  const out = document.getElementById("out");
+  out.textContent = "";
+  try {
+    const r = await fetch(`${FN}/matching`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ booking_id: bid }) });
+    const j = await r.json();
+    out.textContent = JSON.stringify(j,null,2);
+  } catch(e) { out.textContent = String(e); }
+};
+</script>
+</body>
+</html>

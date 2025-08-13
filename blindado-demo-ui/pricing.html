@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pricing Quote</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>body{font-family:system-ui;max-width:780px;margin:32px auto;padding:0 16px}input,select,button{padding:10px 12px;font-size:14px;border-radius:10px;border:1px solid #ccc}.row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.card{border:1px solid #e5e5e5;border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.05)}</style>
+</head>
+<body>
+  <h2>Quick Quote</h2>
+  <div class="row">
+    <label>City <input id="city" value="CDMX"></label>
+    <label>Tier
+      <select id="tier"><option>direct</option></select>
+    </label>
+    <label><input type="checkbox" id="armed"> Armed</label>
+    <label><input type="checkbox" id="vehicle"> Vehicle</label>
+  </div>
+  <div class="row">
+    <label style="flex:1">Start (ISO) <input id="start" style="width:100%"></label>
+    <label style="flex:1">End (ISO) <input id="end" style="width:100%"></label>
+  </div>
+  <button id="quote">Get Quote</button>
+  <div id="out"></div>
+
+  <script>
+    const BASE = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+    const now = new Date();
+    const end = new Date(now.getTime()+4*60*60*1000);
+    document.getElementById("start").value = now.toISOString();
+    document.getElementById("end").value = end.toISOString();
+
+    document.getElementById("quote").onclick = async () => {
+      const payload = {
+        city: document.getElementById("city").value.trim() || "CDMX",
+        tier: document.getElementById("tier").value,
+        armed_required: document.getElementById("armed").checked,
+        vehicle_required: document.getElementById("vehicle").checked,
+        start_ts: document.getElementById("start").value,
+        end_ts: document.getElementById("end").value,
+      };
+      const res = await fetch(`${BASE}/pricing`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      document.getElementById("out").innerHTML =
+        `<div class="card"><pre>${JSON.stringify(data,null,2)}</pre></div>`;
+    };
+  </script>
+</body>
+</html>
