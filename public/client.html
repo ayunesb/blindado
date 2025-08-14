@@ -55,6 +55,10 @@
     <img src="/assets/brand/ic-shield.svg" width="16" height="16" alt="">
     <span id="cityHero">Detecting city…</span>
   </div>
+  <button id="btnWallet" class="btn btn-ghost gap-2" style="margin-left:10px">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3h-6a3 3 0 1 0 0 6h6v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zM21 12h-6a1 1 0 1 0 0 2h6v-2z"/></svg>
+    <span id="walletLabel" aria-live="polite">Connect Wallet</span>
+  </button>
 </header>
 
 <main>
@@ -162,6 +166,7 @@
         <div class="col"><label>Exp</label><input id="cardExp" placeholder="12/28"/></div>
         <div class="col"><label>CVC</label><input id="cardCvc" placeholder="123"/></div>
       </div>
+  <div id="walletInfo" class="muted" style="margin-top:8px"></div>
       <div class="right" style="margin-top:12px">
         <button id="btnPay" class="primary">Pay & Reserve</button>
       </div>
@@ -196,6 +201,42 @@
 </main>
 
 <script>
+/** ------- EIP-1193 shim (safe) ------- */
+(function ensureEVMProvider(){
+  const g = window;
+  const defaults = {
+    request: async (req)=>{
+      try {
+        if (req && (req.method === 'eth_requestAccounts' || req.method === 'eth_accounts')) return [];
+        if (req && req.method === 'eth_chainId') return '0x1';
+        return null;
+      } catch { return null; }
+    },
+    enable: async ()=>[],
+    isConnected: ()=>false,
+    on: ()=>{},
+    off: ()=>{},
+    isMetaMask: false
+  };
+  if (!g.ethereum){
+    g.ethereum = defaults;
+  } else if (g.ethereum && typeof g.ethereum.request === 'function') {
+    const orig = g.ethereum.request.bind(g.ethereum);
+    g.ethereum.request = async (req)=>{
+      try { return await orig(req); } catch (e){
+        const m = req && req.method;
+        if (m === 'eth_requestAccounts' || m === 'eth_accounts') return [];
+        if (m === 'eth_chainId') return '0x1';
+        console && console.warn && console.warn('ethereum.request error', e);
+        return null;
+      }
+    };
+    if (typeof g.ethereum.enable !== 'function') g.ethereum.enable = async ()=>[];
+    if (typeof g.ethereum.isConnected !== 'function') g.ethereum.isConnected = ()=>true;
+    if (typeof g.ethereum.on !== 'function') g.ethereum.on = ()=>{};
+    if (typeof g.ethereum.off !== 'function') g.ethereum.off = ()=>{};
+  }
+})();
 /** ------- helpers ------- */
 const q = new URL(location).searchParams;
 const SUPABASE_URL = q.get("url") || "https://isnezquuwepqcjkaupjh.supabase.co";
@@ -248,6 +289,19 @@ function activate(step){
   ["step1","step2","step3","step4"].forEach((id,i)=>{
     document.getElementById(id).classList.toggle("hidden", i!==step-1);
   });
+  if (step === 3) {
+    const info = document.getElementById('walletInfo');
+    if (info) {
+      const ws = window['walletState'];
+      if (ws && ws.connected && ws.address) {
+        const a = ws.address;
+        const short = a.slice(0,6) + '…' + a.slice(-4);
+        info.textContent = `Wallet connected: ${short}. On-chain payments are disabled in this demo.`;
+      } else {
+        info.textContent = 'Optional: Connect your wallet (header) — demo uses card preauth.';
+      }
+    }
+  }
 }
 
 async function geolocate() {
@@ -279,6 +333,52 @@ document.getElementById("btnEnterAddress").onclick = ()=>{
   document.getElementById("cityHero").textContent = cityManual;
 };
 document.getElementById("btnOpenMaps").onclick = ()=> center && openMapsLink(center.lat, center.lng);
+
+/** wallet connect (optional, never blocks flow) */
+const walletBtn = document.getElementById('btnWallet');
+const walletLabel = document.getElementById('walletLabel');
+;(function initWallet(){
+  window['walletState'] = { connected:false, address:null, chainId:null };
+})();
+
+async function connectWallet() {
+  try {
+    if (!window.ethereum || !window.ethereum.request) {
+      walletLabel.textContent = 'Wallet not detected';
+      walletBtn.classList.add('opacity-70','pointer-events-none');
+      return;
+    }
+    walletLabel.textContent = 'Connecting…';
+  const accounts = await window.ethereum.request({ method:'eth_requestAccounts' }).catch(() => []);
+    const chainId = await window.ethereum.request({ method:'eth_chainId' }).catch(()=> '0x1');
+    if (accounts && accounts.length) {
+  window['walletState'] = { connected:true, address:accounts[0], chainId: chainId };
+      const short = accounts[0].slice(0,6) + '…' + accounts[0].slice(-4);
+      walletLabel.textContent = short;
+      localStorage.setItem('wallet.address', accounts[0]);
+  localStorage.setItem('wallet.chainId', chainId);
+      walletBtn.classList.remove('btn-ghost'); walletBtn.classList.add('btn-success');
+    } else {
+      walletLabel.textContent = 'Connect Wallet';
+    }
+  } catch (e) {
+    walletLabel.textContent = 'Connect Wallet';
+  }
+}
+
+walletBtn?.addEventListener('click', connectWallet);
+
+// Restore wallet on load if present
+(function restoreWallet(){
+  const a = localStorage.getItem('wallet.address');
+  const c = localStorage.getItem('wallet.chainId');
+  if (a) {
+  window['walletState'] = { connected:true, address:a, chainId: c || '0x1' };
+    const short = a.slice(0,6) + '…' + a.slice(-4);
+    walletLabel.textContent = short;
+    walletBtn.classList.remove('btn-ghost'); walletBtn.classList.add('btn-success');
+  }
+})();
 
 /** quote */
 document.getElementById("btnQuote").onclick = async ()=>{
@@ -351,15 +451,6 @@ document.getElementById("btnSimAccept").onclick = async ()=>{
     if (String(msg||"").toLowerCase().includes("metamask")) return true;
     return originalOnError ? originalOnError(msg,src,lin,col,err) : false;
   };
-  if (!g.ethereum){
-    g.ethereum={
-      request: async ({method})=>{
-        if (method==="eth_requestAccounts"||method==="eth_accounts") return [];
-        if (method==="eth_chainId") return "0x1";
-        return null;
-      }
-    };
-  }
 })();
 
 /** google maps referer noise silencer */
@@ -393,6 +484,26 @@ initGeo();
   out("[test] loc banner initially:", banner.style.display || "none");
 
   // 3) payload includes origin on quote click – covered by logs
+  // 4) wallet button no-provider click does not throw and sets label
+  try {
+  const saved = window.ethereum;
+  window.ethereum = null;
+  const btn = document.getElementById('btnWallet');
+    btn?.click();
+    const lbl = document.getElementById('walletLabel');
+    out('[test] wallet no-provider label:', lbl?.textContent||'');
+  window.ethereum = saved;
+  } catch {}
+
+  // 5) shim chainId returns 0x1
+  window.ethereum.request({ method:'eth_chainId' }).then((cid)=>{
+    out('[test] shim chainId:', String(cid));
+  }).catch(()=> out('[test] shim chainId failed'));
+
+  // 6) booking flow independent from wallet (uses fallback path if needed)
+  post('pricing', {}).then(()=> post('bookings', {})).then(()=> post('bookings_confirm', {})).then(()=>{
+    out('[test] booking flow independent of wallet: ok');
+  }).catch(()=> out('[test] booking flow independent of wallet: failed'));
 })();
 </script>
 </body>
