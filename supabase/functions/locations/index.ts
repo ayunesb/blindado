@@ -16,10 +16,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
   const url = new URL(req.url);
-  const supabase = createClient(
-    Deno.env.get("BLINDADO_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
+  // Prefer standard SUPABASE_* envs; fall back to BLINDADO_* (older naming)
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || Deno.env.get("BLINDADO_SUPABASE_URL");
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY");
+  if (!SUPABASE_URL || !SERVICE_ROLE) {
+    return j({ error: "server misconfigured" }, 500);
+  }
+  try { console.log("locations.env", { used: SUPABASE_URL.includes("supabase.co") ? "SUPABASE_*" : "BLINDADO_*" }); } catch {}
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   try {
     if (req.method === "POST") {
