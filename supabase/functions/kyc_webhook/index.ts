@@ -1,7 +1,7 @@
 // supabase/functions/kyc_webhook/index.ts
 // Simple authenticated webhook to update profiles.kyc_status
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0";
+import { serve } from "std/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",

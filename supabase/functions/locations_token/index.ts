@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { serve } from "std/http/server.ts";
 import * as jose from "https://esm.sh/jose@4.15.5";
 
 const ADMIN = Deno.env.get("ADMIN_API_SECRET") || "";

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0";
+import { serve } from "std/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
 import * as jose from "https://esm.sh/jose@4.15.5";
 
 const URL = Deno.env.get("BLINDADO_SUPABASE_URL") || Deno.env.get("SUPABASE_URL");

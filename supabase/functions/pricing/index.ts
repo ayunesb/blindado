@@ -1,18 +1,22 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0";
+import { serve } from "std/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Content-Type": "application/json"
-};
-
-const j = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: corsHeaders });
+function cors() {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-headers": "authorization,apikey,content-type",
+    "access-control-allow-methods": "POST,OPTIONS",
+  } as Record<string, string>;
+}
+function j(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json", ...cors() },
+  });
+}
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors() });
   if (req.method !== "POST") return j({ error: "POST only" }, 405);
 
   // Prefer standard env names, fallback to BLINDADO_* if present
