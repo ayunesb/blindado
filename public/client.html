@@ -357,8 +357,37 @@ document.getElementById("btnQuote").onclick = async ()=>{
   activate(2);
 };
 
-/** proceed to payment */
-document.getElementById("btnProceed").onclick = ()=> activate(3);
+/** proceed to payment: save quote + redirect to checkout */
+document.getElementById("btnProceed").onclick = ()=>{
+  try {
+    const city = (window.cityManual || window.cityDetected || document.getElementById("city").value);
+    const tier = document.getElementById("tier").value;
+    const armed_required = document.getElementById("armed").value === "true";
+    const vehicleSel = document.getElementById("vehicle").value;
+    const vehicle_required = vehicleSel !== "none";
+    const vehicle_type = vehicle_required ? (vehicleSel==="suv"?"suv":"armored") : null;
+    const start_ts = new Date(document.getElementById("start").value+":00Z").toISOString();
+    const end_ts   = new Date(document.getElementById("end").value+":00Z").toISOString();
+    const payload = {
+      booking_id: (window.bookingId || null),
+      amount_cents: Math.round((lastQuote?.amount||0) * 100),
+      amount: lastQuote?.amount||0,
+      currency: (lastQuote?.currency||"MXN"),
+      city, tier,
+      armed_required, vehicle_required, vehicle_type,
+      start_ts, end_ts,
+      center: center || { lat:19.4326,lng:-99.1332 },
+      hours: undefined
+    };
+    sessionStorage.setItem("blindado_quote", JSON.stringify(payload));
+    const url = new URL(location.href);
+    const anon = url.searchParams.get("anon")||"";
+    const sb = url.searchParams.get("url")||"https://isnezquuwepqcjkaupjh.supabase.co";
+    location.href = `checkout.html?anon=${encodeURIComponent(anon)}&sb=${encodeURIComponent(sb)}`;
+  } catch {
+    activate(3);
+  }
+};
 
 /** pay (preauth real or demo) */
 document.getElementById("btnPay").onclick = async ()=>{
