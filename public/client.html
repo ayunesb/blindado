@@ -56,10 +56,7 @@
   <img src="assets/brand/ic-shield.svg" width="16" height="16" alt="">
     <span id="cityHero">Detecting city…</span>
   </div>
-  <button id="btnWallet" class="btn btn-ghost gap-2" style="margin-left:10px">
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3h-6a3 3 0 1 0 0 6h6v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zM21 12h-6a1 1 0 1 0 0 2h6v-2z"/></svg>
-    <span id="walletLabel" aria-live="polite">Connect Wallet</span>
-  </button>
+  
 </header>
 
 <main>
@@ -298,14 +295,7 @@ function activate(step){
   if (step === 3) {
     const info = document.getElementById('walletInfo');
     if (info) {
-      const ws = window['walletState'];
-      if (ws && ws.connected && ws.address) {
-        const a = ws.address;
-        const short = a.slice(0,6) + '…' + a.slice(-4);
-        info.textContent = `Wallet connected: ${short}. On-chain payments are disabled in this demo.`;
-      } else {
-        info.textContent = 'Optional: Connect your wallet (header) — demo uses card preauth.';
-      }
+      info.textContent = 'Card pre-authorization (demo). Stripe wiring optional; fallback uses server stub.';
     }
   }
 }
@@ -340,51 +330,7 @@ document.getElementById("btnEnterAddress").onclick = ()=>{
 };
 document.getElementById("btnOpenMaps").onclick = ()=> center && openMapsLink(center.lat, center.lng);
 
-/** wallet connect (optional, never blocks flow) */
-const walletBtn = document.getElementById('btnWallet');
-const walletLabel = document.getElementById('walletLabel');
-;(function initWallet(){
-  window['walletState'] = { connected:false, address:null, chainId:null };
-})();
-
-async function connectWallet() {
-  try {
-    if (!window.ethereum || !window.ethereum.request) {
-      walletLabel.textContent = 'Wallet not detected';
-      walletBtn.classList.add('opacity-70','pointer-events-none');
-      return;
-    }
-    walletLabel.textContent = 'Connecting…';
-  const accounts = await window.ethereum.request({ method:'eth_requestAccounts' }).catch(() => []);
-    const chainId = await window.ethereum.request({ method:'eth_chainId' }).catch(()=> '0x1');
-    if (accounts && accounts.length) {
-  window['walletState'] = { connected:true, address:accounts[0], chainId: chainId };
-      const short = accounts[0].slice(0,6) + '…' + accounts[0].slice(-4);
-      walletLabel.textContent = short;
-      localStorage.setItem('wallet.address', accounts[0]);
-  localStorage.setItem('wallet.chainId', chainId);
-      walletBtn.classList.remove('btn-ghost'); walletBtn.classList.add('btn-success');
-    } else {
-      walletLabel.textContent = 'Connect Wallet';
-    }
-  } catch (e) {
-    walletLabel.textContent = 'Connect Wallet';
-  }
-}
-
-walletBtn?.addEventListener('click', connectWallet);
-
-// Restore wallet on load if present
-(function restoreWallet(){
-  const a = localStorage.getItem('wallet.address');
-  const c = localStorage.getItem('wallet.chainId');
-  if (a) {
-  window['walletState'] = { connected:true, address:a, chainId: c || '0x1' };
-    const short = a.slice(0,6) + '…' + a.slice(-4);
-    walletLabel.textContent = short;
-    walletBtn.classList.remove('btn-ghost'); walletBtn.classList.add('btn-success');
-  }
-})();
+// wallet UI removed for demo; EVM shim stays to keep legacy calls benign
 
 /** quote */
 document.getElementById("btnQuote").onclick = async ()=>{
@@ -501,39 +447,16 @@ initGeo();
 
 /** ------- self-tests for demo safety ------- */
 (function selfTests(){
-  // 1) ethereum shim never throws
-  Promise.resolve().then(async()=>{
-    const a = await window.ethereum.request({method:"eth_accounts"});
-    if (!Array.isArray(a)) out("[test] ethereum: ok");
-  }).catch(()=> out("[test] ethereum: failed"));
-
-  // 2) no map rendered; banner logic works
+  // 1) no map rendered; banner logic works
   const banner = document.getElementById("locBanner");
   out("[test] loc banner initially:", banner.style.display || "none");
 
-  // 3) payload includes origin on quote click – covered by logs
-  // 4) wallet button no-provider click does not throw and sets label
-  try {
-  const saved = window.ethereum;
-  window.ethereum = null;
-  const btn = document.getElementById('btnWallet');
-    btn?.click();
-    const lbl = document.getElementById('walletLabel');
-    out('[test] wallet no-provider label:', lbl?.textContent||'');
-  window.ethereum = saved;
-  } catch {}
-
-  // 5) shim chainId returns 0x1
-  window.ethereum.request({ method:'eth_chainId' }).then((cid)=>{
-    out('[test] shim chainId:', String(cid));
-  }).catch(()=> out('[test] shim chainId failed'));
-
-  // 6) booking flow independent from wallet (uses fallback path if needed)
+  // 2) booking flow independent from wallet (uses fallback path if needed)
   post('pricing', {}).then(()=> post('bookings', {})).then(()=> post('bookings_confirm', {})).then(()=>{
     out('[test] booking flow independent of wallet: ok');
   }).catch(()=> out('[test] booking flow independent of wallet: failed'));
 
-  // 7) booking payload contains origin_lat/origin_lng numbers
+  // 3) booking payload contains origin_lat/origin_lng numbers
   try {
     const latOk = typeof (center?.lat ?? 19.4326) === 'number';
     const lngOk = typeof (center?.lng ?? -99.1332) === 'number';
