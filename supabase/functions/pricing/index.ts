@@ -43,14 +43,15 @@ serve(async (req) => {
 
   const rawHours = Math.ceil((+end - +start) / 3_600_000);
 
-  const { data: rule, error } = await supabase
+  const { data: rules, error: ruleErr } = await supabase
     .from("pricing_rules")
-    .select("base_rate_guard, armed_multiplier, vehicle_rate_suv, vehicle_rate_armored, min_hours")
+    .select("*")
     .ilike("city", city)
     .ilike("tier", tier)
-    .single();
+    .limit(1);
 
-  if (error || !rule) return j({ error: "pricing rule not found for city/tier" }, 404);
+  const rule = rules?.[0] as any;
+  if (ruleErr || !rule) return j({ error: "pricing rule not found for city/tier" }, 400);
 
   const min_hours = rule.min_hours ?? 1;
   const hours = Math.max(min_hours, rawHours);
@@ -60,8 +61,8 @@ serve(async (req) => {
 
   let vehicleTotal = 0;
   if (vehicle_required) {
-    if (vehicle_type === "armored_suv") vehicleTotal = (rule.vehicle_rate_armored ?? 0) * hours;
-    else vehicleTotal = (rule.vehicle_rate_suv ?? 0) * hours;
+  if (vehicle_type === "armored_suv") vehicleTotal = (rule.vehicle_rate_armored ?? 0) * hours;
+  else vehicleTotal = (rule.vehicle_rate_suv ?? 0) * hours;
   }
 
   const quote_amount = Math.round((guardHourly * hours + vehicleTotal) * surge_mult);
