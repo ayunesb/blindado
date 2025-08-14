@@ -45,6 +45,12 @@
     .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#101623;border-radius:12px;padding:8px 10px}
     .success{border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08)}
     .ghostlink{background:none;border:none;color:#93c5fd;padding:0;cursor:pointer;text-decoration:underline}
+  /* debug console gating */
+  .debug{display:none;max-height:240px;overflow:auto;background:#0b1219;border:1px dashed #243344;padding:12px;border-radius:10px;font-size:12px;color:#9fb4c8}
+  body.show-debug .debug{display:block}
+  /* tiny toast for status */
+  .toast{position:fixed;right:16px;bottom:16px;background:#0b1219;border:1px solid #15324a;color:#cfe8ff;padding:10px 12px;border-radius:10px;box-shadow:0 6px 16px rgba(0,0,0,.35);display:none;z-index:50}
+  .toast.show{display:block}
   </style>
 </head>
 <body>
@@ -199,11 +205,25 @@
 
     <!-- DEV OUTPUT -->
     <div class="line"></div>
-    <pre id="out" class="muted" style="white-space:pre-wrap"></pre>
+  <pre id="debug" class="debug" aria-hidden="true"></pre>
   </div>
 </main>
 
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
 <script>
+// Debug gate: only show logs if URL has ?debug=1
+const SHOW_DEBUG = new URL(location.href).searchParams.get('debug') === '1';
+if (SHOW_DEBUG) document.body.classList.add('show-debug');
+// Safe logger: prints to <pre id="debug"> when debug=1, else to console only
+const debugEl = document.getElementById('debug');
+function out(...args){
+  if (SHOW_DEBUG && debugEl){
+    const line = args.map(a => typeof a === 'string' ? a : JSON.stringify(a,null,2)).join(' ');
+    debugEl.textContent += line + '\n';
+  }
+  try { console.log('[ui]', ...args); } catch {}
+}
 /** ------- EIP-1193 shim (safe) ------- */
 (function ensureEVMProvider(){
   const g = window;
@@ -383,7 +403,10 @@ document.getElementById("btnProceed").onclick = ()=>{
     const url = new URL(location.href);
     const anon = url.searchParams.get("anon")||"";
     const sb = url.searchParams.get("url")||"https://isnezquuwepqcjkaupjh.supabase.co";
-    location.href = `checkout.html?anon=${encodeURIComponent(anon)}&sb=${encodeURIComponent(sb)}`;
+  // toast before redirect
+  const toast = document.getElementById('toast');
+  if (toast){ toast.textContent = 'Redirecting to secure checkout…'; toast.classList.add('show'); }
+  setTimeout(()=>{ location.href = `checkout.html?anon=${encodeURIComponent(anon)}&sb=${encodeURIComponent(sb)}`; }, 100);
   } catch {
     activate(3);
   }
@@ -475,7 +498,7 @@ async function initGeo(promptRetry=false){
 initGeo();
 
 /** ------- self-tests for demo safety ------- */
-(function selfTests(){
+if (SHOW_DEBUG) (function selfTests(){
   // 1) no map rendered; banner logic works
   const banner = document.getElementById("locBanner");
   out("[test] loc banner initially:", banner.style.display || "none");
