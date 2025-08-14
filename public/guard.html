@@ -1,212 +1,121 @@
 <!doctype html>
-<html lang="en" class="h-full bg-black">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Blindado — Guard Console</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{brand:{500:"#00E0A4"}}}}};</script>
-  <script>
-    // Read from ?gmaps=... or fall back to embedded key string
-    const GMAPS_KEY = new URLSearchParams(location.search).get('gmaps') || 'AlzaSyDlQS_jV0dzGyXhaMZ6HQsV1eFSr4Kvy_s';
-    // Optional: if you made a dark styled Map in Google → Map Styles, put the mapId here
-    const GMAPS_MAP_ID = 'YOUR_MAP_ID_OR_EMPTY';
-    (function loadMaps() {
-      const s = document.createElement('script');
-      const libs = 'marker'; // add 'places' if you use autocomplete later
-      const cb = 'initMap';  // your page already defines initMap
-      s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=${libs}&callback=${cb}`;
-      s.async = true; s.defer = true;
-      document.head.appendChild(s);
-    })();
-  </script>
-  <style>.glass{backdrop-filter:blur(10px);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)} .btn{padding:.5rem .8rem;border:1px solid rgba(255,255,255,.1);border-radius:.75rem}</style>
+  <title>Blindado • Guard Console</title>
+  <link rel="stylesheet" href="styles/blindado.css" />
+  <style>
+    .input{background:var(--chip);border:1px solid var(--ring);border-radius:12px;color:var(--text);padding:10px 12px}
+    .row{display:flex;gap:10px;align-items:center}
+    .col{display:flex;flex-direction:column;gap:10px}
+    .pill{font-size:12px;padding:6px 10px;border:1px solid var(--ring);border-radius:999px;background:var(--chip);color:#cfd3da}
+    .btn-sm{background:#fff;color:#000;border-radius:9999px;padding:10px 14px;font-weight:600}
+    .btn-ol{background:transparent;border:1px solid #fff;color:#fff;border-radius:9999px;padding:8px 12px}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .item{border:1px solid var(--ring);border-radius:16px;padding:12px;background:var(--card)}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .status{font-size:12px;padding:4px 8px;border-radius:999px;background:var(--chip);border:1px solid var(--ring);color:#cfd3da}
+  </style>
 </head>
-<body class="h-full text-white">
-  <div class="max-w-6xl mx-auto p-6 space-y-6">
-    <header class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">Blindado — <span data-i18n="guard_console">Guard Console</span></h1>
-      <div class="flex items-center gap-2">
-        <input id="guard_id" class="glass rounded-lg px-3 py-2 text-sm bg-black/30 w-[360px]" placeholder="guard_id…" />
-        <button id="btnLoad" class="btn">Load</button>
-        <select id="lang" class="btn bg-black/30 text-sm">
-          <option value="es">ES</option><option value="en" selected>EN</option>
-        </select>
-      </div>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/assets/brand/blindado-logo.svg" alt="Blindado"/>
+      <div class="brand">Guard Console</div>
     </header>
 
-    <section class="grid md:grid-cols-2 gap-6">
-      <div class="glass rounded-2xl p-4">
-        <h2 class="font-semibold mb-3" data-i18n="offers">Job Offers</h2>
-        <!doctype html>
-        <html lang="es">
-        <head>
-          <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-          <title>Blindado • Guardia</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <script>tailwind.config={theme:{extend:{colors:{brand:"#00E5A8"}}}}</script>
-          <style> .chip{background:#111;border:1px solid #222;border-radius:9999px;padding:.25rem .6rem} </style>
-        </head>
-        <body class="bg-black text-white min-h-screen">
-          <div class="max-w-6xl mx-auto p-6 space-y-6">
-            <header class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <img src="https://i.pravatar.cc/64" class="w-10 h-10 rounded-full" alt="">
-                <div>
-                  <div class="font-semibold">Guard Console</div>
-                  <div id="gid" class="text-xs opacity-70"></div>
-                </div>
-              </div>
-              <div class="flex items-center gap-3">
-                <select id="lang" class="bg-zinc-800 rounded px-3 py-2"><option value="es">ES</option><option value="en">EN</option></select>
-                <button id="toggleOnline" class="chip">online</button>
-              </div>
-            </header>
+    <div class="card">
+      <div class="row" style="flex-wrap:wrap">
+        <label class="control"><span class="small" style="padding-right:6px">Guard</span>
+          <input id="guard" class="input mono" placeholder="guard_id"/>
+        </label>
+        <label class="control"><span class="small" style="padding-right:6px">ANON</span>
+          <input id="anon" class="input mono" placeholder="anon (optional)"/>
+        </label>
+        <button id="btn-refresh" class="btn-sm">Refresh</button>
+        <button id="btn-auto" class="btn-ol">Auto</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="control"><span class="small" style="padding-right:6px">Lat</span>
+          <input id="lat" class="input mono" style="width:120px" placeholder="lat"/>
+        </label>
+        <label class="control"><span class="small" style="padding-right:6px">Lng</span>
+          <input id="lng" class="input mono" style="width:120px" placeholder="lng"/>
+        </label>
+        <button id="btn-hb" class="btn-ol">Heartbeat</button>
+      </div>
+    </div>
 
-            <section class="grid lg:grid-cols-3 gap-6">
-              <div class="lg:col-span-1 space-y-4">
-                <div class="bg-zinc-900/60 p-4 rounded-2xl">
-                  <h2 class="text-lg font-medium mb-2" data-i18n="offers">Ofertas</h2>
-                  <div id="list" class="space-y-3"></div>
-                </div>
-                <div class="bg-zinc-900/60 p-4 rounded-2xl">
-                  <h2 class="text-lg font-medium mb-2" data-i18n="actions">Acciones</h2>
-                  <button id="btnRefresh" class="bg-zinc-800 rounded-xl px-4 py-3 w-full" data-i18n="refresh">Refrescar</button>
-                </div>
-              </div>
-              <div class="lg:col-span-2">
-                <div id="map" class="w-full h-[560px] rounded-2xl overflow-hidden border border-zinc-800"></div>
-              </div>
-            </section>
+    <div class="card" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between"><div class="section-title">My Jobs</div></div>
+      <div id="jobs" class="list"></div>
+      <div id="jobs-empty" class="small" style="display:none">No jobs</div>
+    </div>
 
-            <pre id="out" class="text-xs bg-black/50 p-3 rounded-xl h-[220px] overflow-auto"></pre>
+    <footer class="muted" style="margin-top:14px;font-size:12px">This console uses jobs/list, jobs/accept, jobs/status, and locations APIs. Optional ?anon and ?gmaps.</footer>
+  </div>
+
+  <script>
+    const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+    const params=new URLSearchParams(location.search);
+    const defaultGuard='c38efbac-fd1e-426b-a0ab-be59fd908c8c';
+    const savedGuard=localStorage.getItem('guard_id')||''; const savedAnon=localStorage.getItem('anon')||'';
+    $('#guard').value = params.get('guard') || savedGuard || defaultGuard;
+    $('#anon').value = params.get('anon') || savedAnon || '';
+
+    function headers(){ const a=$('#anon').value.trim(); const h={'content-type':'application/json'}; if(a){h['apikey']=a; h['Authorization']=`Bearer ${a}`;} return h; }
+    function $(q){return document.querySelector(q)}
+    function fmtTs(ts){try{const d=new Date(ts);return d.toLocaleString()}catch{return ts}}
+    function nextStatus(s){const order=["check_in","on_site","in_progress","check_out","completed"];const i=order.indexOf(s);return order[Math.min(i+1,order.length-1)]}
+    function persist(){ localStorage.setItem('guard_id',$('#guard').value.trim()); localStorage.setItem('anon',$('#anon').value.trim()); }
+    $('#guard').addEventListener('change', persist); $('#anon').addEventListener('change', persist);
+
+    async function listJobs(){
+      const g=$('#guard').value.trim(); if(!g) return;
+      const r=await fetch(`${FN}/jobs/list?guard_id=${encodeURIComponent(g)}`);
+      const data=await r.json(); renderJobs(data.items||data||[]);
+    }
+    function renderJobs(items){
+      const box=$('#jobs'); box.innerHTML=''; $('#jobs-empty').style.display = items.length? 'none':'block';
+      for(const j of items){
+        const el=document.createElement('div'); el.className='item';
+        el.innerHTML = `
+          <div class="row">
+            <div class="pill">${j.city||'-'}</div>
+            <div class="pill">${j.tier||'-'}</div>
+            <span class="status">${j.status}</span>
+            <div style="margin-left:auto" class="small">${fmtTs(j.start_ts)}</div>
           </div>
+          <div class="row" style="margin-top:6px;gap:8px">
+            <div class="small mono">booking: ${j.booking_id}</div>
+            <div class="small mono">assign: ${j.assignment_id}</div>
+            <div style="margin-left:auto;display:flex;gap:6px">
+              ${j.status==='offered' ? `<button class="btn-sm" data-accept="${j.assignment_id}">Accept</button>` : `<button class=\"btn-ol\" data-next=\"${j.assignment_id}\" data-cur=\"${j.status}\">Next</button>`}
+            </div>
+          </div>`;
+        el.querySelector('[data-accept]')?.addEventListener('click', async()=>{ await accept(j.assignment_id); });
+        el.querySelector('[data-next]')?.addEventListener('click', async(e)=>{ const cur=e.currentTarget.getAttribute('data-cur'); await setStatus(j.assignment_id, nextStatus(cur)); });
+        box.appendChild(el);
+      }
+    }
+    async function accept(assignment_id){ const r=await fetch(`${FN}/jobs/accept`,{method:'POST',headers:headers(),body:JSON.stringify({assignment_id})}); await listJobs(); }
+    async function setStatus(assignment_id,status){ const r=await fetch(`${FN}/jobs/status`,{method:'POST',headers:headers(),body:JSON.stringify({assignment_id,status})}); await listJobs(); }
+    async function hb(){ const g=$('#guard').value.trim(); const lat=parseFloat($('#lat').value)||19.44; const lng=parseFloat($('#lng').value)||-99.14; await fetch(`${FN}/locations`,{method:'POST',headers:headers(),body:JSON.stringify({op:'heartbeat',guard_id:g,lat,lng})}); }
 
-          <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-          <script>
-            // Config from query params (fallback to placeholders)
-            const q = new URLSearchParams(location.search);
-            const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
-            const GMAPS_API_KEY = q.get("gmaps") || "YOUR_GOOGLE_MAPS_API_KEY";
-            const SUPABASE_URL = "https://isnezquuwepqcjkaupjh.supabase.co";
-            const SUPABASE_ANON_KEY = q.get("anon") || "YOUR_SUPABASE_PUBLIC_ANON_KEY";
-            const DEFAULT_GUARD_ID = q.get("guard_id") || "c38efbac-fd1e-426b-a0ab-be59fd908c8c";
+    $('#btn-refresh').addEventListener('click', listJobs); $('#btn-hb').addEventListener('click', hb);
+    let auto=false, t=null; function setAuto(v){auto=v; $('#btn-auto').className=v?'btn-sm':'btn-ol'; if(t) clearInterval(t); t=v? setInterval(listJobs,15000):null;} $('#btn-auto').addEventListener('click',()=>setAuto(!auto));
+    listJobs();
+  </script>
 
-            // i18n
-            const DICT={es:{offers:"Ofertas",actions:"Acciones",refresh:"Refrescar",accept:"Aceptar",check_in:"Check-in",on_site:"En sitio",in_progress:"En progreso",check_out:"Cierre",completed:"Completado"},en:{offers:"Offers",actions:"Actions",refresh:"Refresh",accept:"Accept",check_in:"Check-in",on_site:"On-site",in_progress:"In progress",check_out:"Check-out",completed:"Completed"}};
-            const qs=new URL(location.href); const lang=qs.searchParams.get("lang")||"es"; const guardId=DEFAULT_GUARD_ID;
-            document.getElementById("lang").value=lang; document.getElementById("lang").onchange=e=>{qs.searchParams.set("lang",e.target.value); location.href=qs.toString()};
-            document.getElementById("gid").textContent=guardId;
-            function t(k){return (DICT[lang]||DICT.es)[k]||k} ; document.querySelectorAll("[data-i18n]").forEach(el=>el.textContent=t(el.dataset.i18n));
-            const out=(o)=>document.getElementById('out').textContent=(typeof o==='string'?o:JSON.stringify(o,null,2));
-
-            // Google Maps: dark style
-            let map, myMarker, others={};
-            const DARK_STYLE=[{elementType:"geometry",stylers:[{color:"#1d1d1d"}]},{elementType:"labels.text.fill",stylers:[{color:"#e0e0e0"}]},{featureType:"poi",stylers:[{visibility:"off"}]},{featureType:"road",elementType:"geometry",stylers:[{color:"#2c2c2c"}]},{featureType:"water",stylers:[{color:"#0b0b0b"}]}];
-            window.initMap = function(){
-              map = new google.maps.Map(document.getElementById('map'),{center:{lat:19.4326,lng:-99.1332},zoom:12,disableDefaultUI:true,styles:DARK_STYLE});
-              myMarker = new google.maps.Marker({map, position:{lat:19.4326,lng:-99.1332}, icon:{path:google.maps.SymbolPath.CIRCLE,scale:6,fillColor:"#00E5A8",fillOpacity:1,strokeWeight:0}, title:"you"});
-            }
-
-            // Realtime: subscribe to guards updates
-            let sbClient=null;
-            function startRealtime(){
-              if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_PUBLIC_ANON_KEY")) { out("Realtime disabled: missing anon key"); return; }
-              sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-              sbClient.channel('guards-updates')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'guards' }, (payload) => {
-                  const r = payload.new || payload.record || {};
-                  if (!r?.id || r.id === guardId) return;
-                  if (r.availability_status !== 'online') {
-                    if (others[r.id]) { others[r.id].setMap(null); delete others[r.id]; }
-                    return;
-                  }
-                  const pos = { lat: parseFloat(r.home_lat||0)||0, lng: parseFloat(r.home_lng||0)||0 };
-                  if (!others[r.id]) {
-                    others[r.id] = new google.maps.Marker({ map, position: pos, icon:{ path: google.maps.SymbolPath.CIRCLE, scale:4, fillColor:"#4CC9F0", fillOpacity:1, strokeWeight:0 }, title: r.id });
-                  } else { others[r.id].setPosition(pos); }
-                }).subscribe();
-            }
-
-            // Jobs list with license badges
-            async function listJobs(){
-              const r = await fetch(`${FN}/jobs/list?guard_id=${guardId}`);
-              const j = await r.json();
-              const box = document.getElementById('list'); box.innerHTML="";
-              (j.items||j||[]).forEach(item=>{
-                const avatar = item.guard_photo_url || item.photo_url || (item.guard_id?`/storage/v1/object/public/avatars/${item.guard_id}/avatar.jpg`:"https://i.pravatar.cc/100");
-                const badges = (item.license_badges||[]).map(b=>{
-                  const ok = (b.status||"").toLowerCase()==='valid' && (!b.valid_to || new Date(b.valid_to) > new Date());
-                  return `<span class="badge ${ok?'ok':'warn'}">${b.label || b.type}${ok?' ✓':' ⚠'}</span>`;
-                }).join(" ");
-                const div = document.createElement('div');
-                div.className="bg-black/40 border border-zinc-800 rounded-xl p-3 flex gap-3";
-                div.innerHTML = `
-                  <img src="${avatar}" class="w-14 h-14 rounded-lg object-cover" alt="">
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                      <div class="font-medium">${item.city||'CDMX'} · ${item.tier||'direct'}</div>
-                      <span class="chip">${item.status||'offered'}</span>
-                    </div>
-                    <div class="text-xs opacity-70">${item.start_ts?new Date(item.start_ts).toLocaleString():''}</div>
-                    <div class="mt-2">${badges}</div>
-                    <div class="mt-2 grid grid-cols-3 gap-2">
-                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="accept" data-id="${item.assignment_id||item.id}">${t('accept')}</button>
-                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="check_in" data-id="${item.assignment_id||item.id}">${t('check_in')}</button>
-                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="on_site" data-id="${item.assignment_id||item.id}">${t('on_site')}</button>
-                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="in_progress" data-id="${item.assignment_id||item.id}">${t('in_progress')}</button>
-                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="check_out" data-id="${item.assignment_id||item.id}">${t('check_out')}</button>
-                      <button class="bg-zinc-800 rounded px-2 py-1" data-action="completed" data-id="${item.assignment_id||item.id}">${t('completed')}</button>
-                    </div>
-                  </div>`;
-                box.appendChild(div);
-              });
-              box.onclick = async (e)=>{
-                const btn=e.target.closest("button"); if(!btn) return;
-                const assignment_id=btn.dataset.id; const action=btn.dataset.action;
-                const path = action==="accept" ? "accept" : "status";
-                const body = action==="accept" ? {assignment_id} : {assignment_id, status:action};
-                const r = await fetch(`${FN}/jobs/${path}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-                out(await r.json());
-              };
-            }
-
-            // Heartbeat via JWT (locations_heartbeat)
-            const tokenKey = `hb_token_${guardId}`;
-            document.getElementById('btnToken')?.addEventListener('click',()=>{
-              const cur = localStorage.getItem(tokenKey)||"";
-              const v = prompt("Paste Heartbeat JWT (short-lived):", cur);
-              if (v!==null) localStorage.setItem(tokenKey, v.trim());
-            });
-            let watchId=null;
-            function startHeartbeat(){
-              if(!('geolocation' in navigator)) { out("No geolocation"); return; }
-              const token = localStorage.getItem(tokenKey)||"";
-              if(!token){ out("No heartbeat token set (Token button)"); }
-              watchId = navigator.geolocation.watchPosition(async p=>{
-                const {latitude:lat, longitude:lng} = p.coords;
-                if (myMarker) { myMarker.setPosition({lat,lng}); map.setCenter({lat,lng}); }
-                await fetch(`${FN}/locations_heartbeat`,{
-                  method:'POST', headers:{'content-type':'application/json', ...(token?{authorization:`Bearer ${token}`}:{})},
-                  body: JSON.stringify({ lat, lng, guard_id: guardId })
-                }).catch(()=>{});
-              }, err => out(err.message), { enableHighAccuracy:true, maximumAge:5e3, timeout:2e4 });
-            }
-
-            document.getElementById('btnRefresh').onclick=listJobs;
-            window.addEventListener('load', ()=>{ listJobs(); startRealtime(); startHeartbeat(); });
-          </script>
-          <script>
-            // Dynamically load Google Maps API at the end to ensure initMap is defined; require key via ?gmaps=
-            (function loadMaps(){
-              const params=new URLSearchParams(location.search);
-              const key=params.get('gmaps');
-              if(!key){ console.warn('GMAPS key missing. Append ?gmaps=YOUR_KEY to the URL.'); return; }
-              const s=document.createElement('script');
-              const libs='marker';
-              s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=${libs}&v=weekly&loading=async&callback=initMap`;
-              s.async=true; s.defer=true; document.body.appendChild(s);
-            })();
-          </script>
-        </body>
-        </html>
+  <script>
+    // Optional tiny map when ?gmaps= is present
+    (function(){
+      const GMAPS_KEY=new URLSearchParams(location.search).get('gmaps'); if(!GMAPS_KEY) return;
+      const map=document.createElement('div'); map.className='map'; document.querySelector('.wrap').appendChild(map);
+      window.initMap=function(){ const center={lat:19.4326,lng:-99.1332}; const m=new google.maps.Map(map,{center,zoom:12,disableDefaultUI:true}); if(google?.maps?.marker?.AdvancedMarkerElement){ new google.maps.marker.AdvancedMarkerElement({position:center,map:m}); } };
+      const s=document.createElement('script'); s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_KEY)}&libraries=marker&v=weekly&loading=async&callback=initMap`; s.async=s.defer=true; document.head.appendChild(s);
+    })();
+  </script>
+</body>
+</html>
