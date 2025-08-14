@@ -15,10 +15,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return j({ error: "POST only" }, 405);
 
-  const supabase = createClient(
-    Deno.env.get("BLINDADO_SUPABASE_URL")!,
-    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!
-  );
+  // Prefer standard env names, fallback to BLINDADO_* if present
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || Deno.env.get("BLINDADO_SUPABASE_URL");
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY");
+  if (!SUPABASE_URL || !SERVICE_ROLE) {
+    try { console.error("missing env SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY"); } catch {}
+    return j({ error: "server misconfigured" }, 500);
+  }
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   let payload: any = {};
   try { payload = await req.json(); } catch { return j({ error: "invalid JSON body" }, 400); }
@@ -43,15 +47,30 @@ serve(async (req) => {
 
   const rawHours = Math.ceil((+end - +start) / 3_600_000);
 
-  const { data: rules, error: ruleErr } = await supabase
-    .from("pricing_rules")
-    .select("*")
-    .ilike("city", city)
-    .ilike("tier", tier)
-    .limit(1);
+  // Debug trace (can be removed later)
+  try { console.log("pricing.lookup", { city, tier }); } catch {}
 
-  const rule = rules?.[0] as any;
-  if (ruleErr || !rule) return j({ error: "pricing rule not found for city/tier" }, 400);
+  // Prefer RPC (case-insensitive, index-friendly), fallback to ilike if RPC is missing
+  let rule: any | null = null;
+  try {
+    const { data: rpcRule, error: rpcErr } = await admin
+      .rpc("get_pricing_rule_ci", { p_city: city, p_tier: tier })
+      .single();
+    if (!rpcErr && rpcRule) rule = rpcRule;
+  } catch (_) {
+    // ignore; will fall back to ilike
+  }
+
+  if (!rule) {
+    const { data: rules, error: ruleErr } = await admin
+      .from("pricing_rules")
+      .select("*")
+      .ilike("city", city)
+      .ilike("tier", tier)
+      .limit(1);
+    rule = rules?.[0] as any;
+    if (ruleErr || !rule) return j({ error: "pricing rule not found for city/tier" }, 400);
+  }
 
   const min_hours = rule.min_hours ?? 1;
   const hours = Math.max(min_hours, rawHours);

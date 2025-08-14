@@ -7,7 +7,7 @@ set -euo pipefail
 #   CLIENT_ID, GUARD_ID, CITY, TIER, HOURS, ARMED, VEHICLE, VEHICLE_TYPE, SURGE_NIGHT, SURGE_EXPECT_MIN
 
 FN=${FN:-"https://isnezquuwepqcjkaupjh.supabase.co/functions/v1"}
-# Optional: supply your project's anon key to satisfy the API gateway for Edge Functions
+# Supply your project's anon key to satisfy the API gateway for Edge Functions
 ANON=${ANON:-}
 CLIENT_ID=${CLIENT_ID:-"1b387371-6711-485c-81f7-79b2174b90fb"}
 GUARD_ID=${GUARD_ID:-"c38efbac-fd1e-426b-a0ab-be59fd908c8c"}
@@ -53,6 +53,14 @@ if [ -n "$ANON" ]; then
   AUTH+=( -H "apikey: $ANON" -H "Authorization: Bearer $ANON" )
 fi
 
+# Hard-require ANON to avoid 401 Invalid API key responses from the gateway
+if [ -z "$ANON" ]; then
+  echo "[ERROR] ANON is not set. Export your Supabase anon key:"
+  echo "        export ANON=\"<YOUR_SUPABASE_PUBLIC_ANON_KEY>\""
+  echo "        FN=\"$FN\" ./scripts/at.sh"
+  exit 1
+fi
+
 echo "FN=$FN"
 echo "Running acceptance tests..."; echo
 
@@ -71,7 +79,7 @@ fi
 R1=$(curl -s -S -X POST "$FN/pricing" -H 'Content-Type: application/json' "${AUTH[@]}" -d "$REQ_PRICING" || true)
 quote_amount=$(extract_number "$R1" quote_amount)
 [ -n "$quote_amount" ] || fail "AT-1 Pricing quote (no quote_amount)" "$R1"
-surge_mult=$(json_field "$R1" surge_mult || echo "")
+surge_mult=$(extract_number "$R1" surge_mult)
 if [ -n "$SURGE_EXPECT_MIN" ]; then
   awk_check=$(awk -v a="${surge_mult}" -v b="${SURGE_EXPECT_MIN}" 'BEGIN{ if (a+0 < b+0) print "fail"; }')
   [ -z "$awk_check" ] || fail "AT-1 Surge expectation (got $surge_mult, expected >= $SURGE_EXPECT_MIN)" "$R1"
