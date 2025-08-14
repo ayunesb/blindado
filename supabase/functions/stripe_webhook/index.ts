@@ -149,7 +149,12 @@ serve(async (req) => {
     const body = formEncode({ amount, currency, destination, description: `${booking_id} • ${label}`, transfer_group: booking_id });
     const res = await fetch("https://api.stripe.com/v1/transfers", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${STRIPE_SECRET_KEY}`, "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Authorization": `Bearer ${STRIPE_SECRET_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        // Idempotency per booking_id+bucket
+        "Idempotency-Key": `${booking_id}:${label}`
+      },
       body,
     });
     const j = await res.json();
