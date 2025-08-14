@@ -57,15 +57,15 @@
   </div>
 
   <script>
-    const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
-    const params=new URLSearchParams(location.search);
-    const defaultGuard='c38efbac-fd1e-426b-a0ab-be59fd908c8c';
-    const savedGuard=localStorage.getItem('guard_id')||''; const savedAnon=localStorage.getItem('anon')||'';
-    $('#guard').value = params.get('guard') || savedGuard || defaultGuard;
-    $('#anon').value = params.get('anon') || savedAnon || '';
+  function $(q){return document.querySelector(q)}
+  const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+  const params=new URLSearchParams(location.search);
+  const defaultGuard='c38efbac-fd1e-426b-a0ab-be59fd908c8c';
+  const savedGuard=localStorage.getItem('guard_id')||''; const savedAnon=localStorage.getItem('anon')||'';
+  $('#guard').value = params.get('guard') || savedGuard || defaultGuard;
+  $('#anon').value = params.get('anon') || savedAnon || '';
 
-    function headers(){ const a=$('#anon').value.trim(); const h={'content-type':'application/json'}; if(a){h['apikey']=a; h['Authorization']=`Bearer ${a}`;} return h; }
-    function $(q){return document.querySelector(q)}
+  function headers(){ const a=$('#anon').value.trim(); const h={'content-type':'application/json'}; if(a){h['apikey']=a; h['Authorization']=`Bearer ${a}`;} return h; }
     function fmtTs(ts){try{const d=new Date(ts);return d.toLocaleString()}catch{return ts}}
     function nextStatus(s){const order=["check_in","on_site","in_progress","check_out","completed"];const i=order.indexOf(s);return order[Math.min(i+1,order.length-1)]}
     function persist(){ localStorage.setItem('guard_id',$('#guard').value.trim()); localStorage.setItem('anon',$('#anon').value.trim()); }
@@ -73,7 +73,7 @@
 
     async function listJobs(){
       const g=$('#guard').value.trim(); if(!g) return;
-      const r=await fetch(`${FN}/jobs/list?guard_id=${encodeURIComponent(g)}`);
+      const r=await fetch(`${FN}/jobs/list?guard_id=${encodeURIComponent(g)}`,{headers:headers()});
       const data=await r.json(); renderJobs(data.items||data||[]);
     }
     function renderJobs(items){
