@@ -1,59 +1,267 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Blindado • Dispatcher</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-black text-white min-h-screen">
-  <div class="max-w-3xl mx-auto p-6 space-y-4">
-    <header class="flex items-center justify-between">
-      <h1 class="text-2xl">Dispatcher</h1>
-      <select id="lang" class="bg-zinc-800 rounded px-3 py-2"><option value="es">ES</option><option value="en">EN</option></select>
-    </header>
-    <div class="bg-zinc-900/60 p-4 rounded-2xl space-y-3">
-      <label class="text-sm block">
-        <span data-i18n="booking_id">booking_id</span>
-        <input id="booking_id" class="mt-1 w-full bg-zinc-800 rounded px-3 py-2"/>
-      </label>
-      <button id="btn" class="bg-brand text-black font-semibold rounded-xl px-4 py-3">Match</button>
-    </div>
-  <pre id="out" class="text-xs bg-black/50 p-3 rounded-xl h-[360px] overflow-auto"></pre>
-  <div id="map" class="w-full h-[300px] rounded-2xl border border-neutral-800 bg-black/30 hidden"></div>
-  </div>
+  <link rel="preload" as="image" href="/assets/brand/blindado-logo.svg"/>
+  <link rel="stylesheet" href="styles/blindado.css"/>
+  <style>
+    .section-title{font-weight:600;margin:8px 0 6px}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .item{border:1px solid var(--ring);border-radius:16px;padding:12px;background:var(--card)}
+    .item .row{gap:8px}
+    .status{font-size:12px;padding:4px 8px;border-radius:999px;background:var(--chip);border:1px solid var(--ring);color:#cfd3da}
+    .pill{font-size:12px;padding:6px 10px;border:1px solid var(--ring);border-radius:999px;background:var(--chip);color:#cfd3da}
+    .small{font-size:12px;color:var(--muted)}
+    .grid-2{display:grid;gap:16px}
+    @media(min-width:900px){.grid-2{grid-template-columns:2fr 1fr}}
+    .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .input{background:var(--chip);border:1px solid var(--ring);border-radius:12px;color:var(--text);padding:10px 12px;min-width:260px}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .link{color:#7dd3fc;text-decoration:none}
+    .link:hover{text-decoration:underline}
+  </style>
   <script>
-  const DICT={es:{booking_id:"ID de reserva",run:"Correr matching"},en:{booking_id:"Booking ID",run:"Run matching"}};
-  const FN="https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
-  const ANON = new URLSearchParams(location.search).get('anon') || '';
-    const out=(o)=>document.getElementById('out').textContent=JSON.stringify(o,null,2);
-    function langInit(){const p=new URL(location).searchParams;const l=p.get("lang")||"es";document.getElementById("lang").value=l;document.querySelector("[data-i18n]").textContent=DICT[l].booking_id;document.getElementById("btn").textContent=DICT[l].run;document.getElementById("lang").onchange=e=>{p.set("lang",e.target.value);location.search=p.toString()}}
-    langInit();
-    document.getElementById('btn').onclick=async()=>{
-      const id=document.getElementById('booking_id').value.trim(); if(!id) return;
-      const headers = ANON ? {'content-type':'application/json','apikey':ANON,'Authorization':`Bearer ${ANON}`} : {'content-type':'application/json'};
-      const r = await fetch(`${FN}/matching`,{method:'POST',headers,body:JSON.stringify({booking_id:id})});
-      out(await r.json());
+    const FN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1";
+    const DICT = {
+      es: {
+        dispatcher: "Consola Dispatcher",
+        guard: "ID del guardia",
+        anon: "ANON",
+        refresh: "Actualizar",
+        auto: "Auto",
+        offered: "Ofrecidos",
+        active: "Activos",
+        accept: "Aceptar",
+        next: "Siguiente",
+        heartbeat: "Heartbeat",
+        loc: "Ubicación",
+        empty: "Sin elementos",
+        copylink: "Copiar link"
+      },
+      en: {
+        dispatcher: "Dispatcher Console",
+        guard: "Guard ID",
+        anon: "ANON",
+        refresh: "Refresh",
+        auto: "Auto",
+        offered: "Offered",
+        active: "Active",
+        accept: "Accept",
+        next: "Next",
+        heartbeat: "Heartbeat",
+        loc: "Location",
+        empty: "No items",
+        copylink: "Copy link"
+      }
     };
   </script>
   <script>
-    // --- Google Maps loader (reads ?gmaps=) ---
+    function $(q){return document.querySelector(q)}
+    function $all(q){return Array.from(document.querySelectorAll(q))}
+    function fmtTs(ts){try{const d=new Date(ts);return d.toLocaleString()}catch{return ts}}
+    function mapLink(lat,lng){return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
+    function nextStatus(s){const order=["check_in","on_site","in_progress","check_out","completed"];const i=order.indexOf(s);return order[Math.min(i+1,order.length-1)]}
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/assets/brand/blindado-logo.svg" alt="Blindado"/>
+      <div class="brand">Blindado</div>
+      <div class="muted" style="margin-left:auto"></div>
+    </header>
+
+    <h1 id="title">Dispatcher Console</h1>
+    <div class="card">
+      <div class="controls">
+        <label class="control"><span id="lbl-guard" class="small" style="padding-right:6px"></span>
+          <input id="guard" class="input mono" placeholder="guard_id"/>
+        </label>
+        <label class="control"><span id="lbl-anon" class="small" style="padding-right:6px"></span>
+          <input id="anon" class="input mono" placeholder="anon (opcional)"/>
+        </label>
+        <button id="btn-refresh" class="btn">Refresh</button>
+        <button id="btn-auto" class="btn-outline">Auto</button>
+        <button id="btn-copy" class="btn-outline">Copy link</button>
+      </div>
+      <div class="small" style="margin-top:8px">
+        Tip: add ?guard=...&anon=... to the URL to prefill.
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:16px">
+      <div class="card">
+        <div class="row"><div class="section-title" id="lbl-offered">Offered</div></div>
+        <div id="offered" class="list"></div>
+        <div id="offered-empty" class="small" style="display:none"></div>
+        <hr style="border:0;border-top:1px solid var(--ring);margin:12px 0"/>
+        <div class="row"><div class="section-title" id="lbl-active">Active</div></div>
+        <div id="active" class="list"></div>
+        <div id="active-empty" class="small" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div class="section-title">Logs</div>
+          <div class="controls">
+            <input id="lat" class="input mono" style="width:120px" placeholder="lat"/>
+            <input id="lng" class="input mono" style="width:120px" placeholder="lng"/>
+            <button id="btn-hb" class="btn-outline">Heartbeat</button>
+          </div>
+        </div>
+        <pre id="log" class="mono" style="font-size:12px;max-height:420px;overflow:auto"></pre>
+      </div>
+    </div>
+
+    <footer>
+      <span class="muted">Dispatcher UI uses jobs/list, jobs/accept, jobs/status, and locations APIs.</span>
+    </footer>
+  </div>
+
+  <script>
+    const params=new URLSearchParams(location.search);
+    let lang=params.get('lang')||'es';
+    function applyLang(){
+      const d=DICT[lang]||DICT.es;
+      $('#title').textContent=d.dispatcher;
+      $('#lbl-guard').textContent=d.guard;
+      $('#lbl-anon').textContent=d.anon;
+      $('#btn-refresh').textContent=d.refresh;
+      $('#btn-auto').textContent=d.auto;
+      $('#btn-copy').textContent=d.copylink;
+      $('#lbl-offered').textContent=d.offered;
+      $('#lbl-active').textContent=d.active;
+      $('#offered-empty').textContent=d.empty;
+      $('#active-empty').textContent=d.empty;
+      $('#btn-hb').textContent=d.heartbeat;
+    }
+    applyLang();
+
+    const defaultGuard='c38efbac-fd1e-426b-a0ab-be59fd908c8c';
+    const savedGuard=localStorage.getItem('guard_id')||'';
+    const savedAnon=localStorage.getItem('anon')||'';
+    const guard = params.get('guard') || savedGuard || defaultGuard;
+    const anon  = params.get('anon')  || savedAnon  || '';
+    $('#guard').value = guard;
+    $('#anon').value  = anon;
+
+    function headers(){
+      const a=$('#anon').value.trim();
+      const h={'content-type':'application/json'};
+      if(a){ h['apikey']=a; h['Authorization']=`Bearer ${a}`; }
+      return h;
+    }
+    function log(obj){
+      try{$('#log').textContent = (typeof obj==='string')?obj:JSON.stringify(obj,null,2);}catch{ $('#log').textContent=String(obj) }
+    }
+
+    async function listJobs(){
+      const g=$('#guard').value.trim(); if(!g){ return; }
+      const url=`${FN}/jobs/list?guard_id=${encodeURIComponent(g)}`;
+      const r=await fetch(url,{headers:headers()});
+      const data=await r.json();
+      renderJobs(data.items||data||[]);
+      return data;
+    }
+
+    function renderJobs(items){
+      const offered=items.filter(x=>x.status==='offered');
+      const active=items.filter(x=>x.status!=='completed' && x.status!=='offered');
+      const offeredEl=$('#offered'); offeredEl.innerHTML='';
+      const activeEl=$('#active'); activeEl.innerHTML='';
+      $('#offered-empty').style.display=offered.length? 'none':'block';
+      $('#active-empty').style.display=active.length? 'none':'block';
+
+      for(const j of offered){ offeredEl.appendChild(jobItem(j,true)); }
+      for(const j of active){ activeEl.appendChild(jobItem(j,false)); }
+    }
+
+    function jobItem(j,isOffered){
+      const el=document.createElement('div'); el.className='item';
+      const when=`${fmtTs(j.start_ts)} → ${fmtTs(j.end_ts)}`;
+      const loc=j.origin_lat!=null && j.origin_lng!=null ? `<a class="link" href="${mapLink(j.origin_lat,j.origin_lng)}" target="_blank">${j.origin_lat.toFixed?.(4)||j.origin_lat}, ${j.origin_lng.toFixed?.(4)||j.origin_lng}</a>` : '-';
+      el.innerHTML=`
+        <div class="row">
+          <div class="pill">${j.city||'-'}</div>
+          <div class="pill">${j.tier||'-'}</div>
+          <span class="status">${j.status}</span>
+          <div style="margin-left:auto" class="small">${when}</div>
+        </div>
+        <div class="row" style="margin-top:6px;gap:12px;align-items:center">
+          <div class="small mono">booking_id: ${j.booking_id}</div>
+          <div class="small mono">assign: ${j.assignment_id}</div>
+          <div class="small">loc: ${loc}</div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            ${isOffered ? `<button class="btn" data-accept="${j.assignment_id}">Accept</button>` : ''}
+            ${!isOffered ? `<button class="btn-outline" data-next="${j.assignment_id}" data-cur="${j.status}">Next</button>` : ''}
+          </div>
+        </div>
+      `;
+
+      el.querySelectorAll('[data-accept]').forEach(b=>{
+        b.addEventListener('click', async ()=>{
+          await acceptJob(b.getAttribute('data-accept'));
+        });
+      });
+      el.querySelectorAll('[data-next]').forEach(b=>{
+        b.addEventListener('click', async ()=>{
+          const cur=b.getAttribute('data-cur');
+          const nxt=nextStatus(cur);
+          await setStatus(b.getAttribute('data-next'), nxt);
+        });
+      });
+      return el;
+    }
+
+    async function acceptJob(assignment_id){
+      const r=await fetch(`${FN}/jobs/accept`,{method:'POST',headers:headers(),body:JSON.stringify({assignment_id})});
+      const j=await r.json(); log(j); await listJobs();
+    }
+    async function setStatus(assignment_id,status){
+      const r=await fetch(`${FN}/jobs/status`,{method:'POST',headers:headers(),body:JSON.stringify({assignment_id,status})});
+      const j=await r.json(); log(j); await listJobs();
+    }
+    async function heartbeat(){
+      const g=$('#guard').value.trim(); if(!g){ return; }
+      const lat=parseFloat($('#lat').value)||19.44; const lng=parseFloat($('#lng').value)||-99.14;
+      const r=await fetch(`${FN}/locations`,{method:'POST',headers:headers(),body:JSON.stringify({op:'heartbeat',guard_id:g,lat,lng})});
+      const j=await r.json(); log(j);
+    }
+
+    // Wire controls
+    $('#btn-refresh').addEventListener('click', listJobs);
+    let auto=false, timer=null;
+    function setAuto(v){ auto=v; $('#btn-auto').className = v? 'btn' : 'btn-outline'; if(timer) clearInterval(timer); timer = v? setInterval(listJobs, 15000): null; }
+    $('#btn-auto').addEventListener('click',()=> setAuto(!auto));
+    $('#btn-hb').addEventListener('click', heartbeat);
+    $('#btn-copy').addEventListener('click',()=>{
+      const g=$('#guard').value.trim(); const a=$('#anon').value.trim();
+      const p=new URLSearchParams(location.search);
+      if(g) p.set('guard',g); if(a) p.set('anon',a); p.set('lang',lang);
+      const url=`${location.origin}${location.pathname}?${p.toString()}`; navigator.clipboard.writeText(url); log({copied:url});
+    });
+    // Persist inputs
+    function persist(){ localStorage.setItem('guard_id',$('#guard').value.trim()); localStorage.setItem('anon',$('#anon').value.trim()); }
+    $('#guard').addEventListener('change', persist);
+    $('#anon').addEventListener('change', persist);
+
+    // Initial
+    listJobs().catch(e=>log(String(e)));
+  </script>
+
+  <script>
+    // Optional Google Maps loader (reads ?gmaps=) — shows a tiny preview marker if element #map exists
     (function(){
       const params=new URLSearchParams(location.search);
       const GMAPS_KEY=params.get('gmaps');
       if(!GMAPS_KEY){ return; }
-      const mapEl=document.getElementById('map'); if(!mapEl){ return; }
-      mapEl.classList.remove('hidden');
+      let mapEl=document.getElementById('map');
+      if(!mapEl){ mapEl=document.createElement('div'); mapEl.id='map'; mapEl.className='map'; document.querySelector('.wrap').appendChild(mapEl); }
       window.initMap=function(){
         const center={lat:19.4326,lng:-99.1332};
-        const map=new google.maps.Map(mapEl,{center,zoom:12,disableDefaultUI:true,styles:[
-          {elementType:"geometry",stylers:[{color:"#0b0b0c"}]},
-          {elementType:"labels.text.stroke",stylers:[{color:"#0b0b0c"}]},
-          {elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
-          {featureType:"poi",elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
-          {featureType:"road",elementType:"geometry",stylers:[{color:"#1f1f1f"}]},
-          {featureType:"road",elementType:"labels.text.fill",stylers:[{color:"#9aa0a6"}]},
-          {featureType:"water",elementType:"geometry",stylers:[{color:"#111315"}]}
-        ]});
+        const map=new google.maps.Map(mapEl,{center,zoom:12,disableDefaultUI:true});
         if (google?.maps?.marker?.AdvancedMarkerElement) {
           new google.maps.marker.AdvancedMarkerElement({position:center, map});
         }
