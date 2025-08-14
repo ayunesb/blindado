@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Billetera • Escolta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0'
+    const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co'
+    const SUPABASE_ANON_KEY = new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY'
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    function qs(id){ return document.getElementById(id) }
+    function peso(n){ if(n==null) return '-'; const v = Number(n); return 'MXN $' + v.toLocaleString('es-MX',{maximumFractionDigits:2}) }
+
+    async function load(){
+      const { data:{ session } } = await supabase.auth.getSession()
+      if(!session) return location.href='/auth.html'
+      const user = session.user
+
+      // Load client-side payments linked to user's bookings
+      const { data: bookings } = await supabase.from('bookings').select('id').eq('client_id', user.id).limit(200)
+      const ids = (bookings||[]).map(b=>b.id)
+      let payments = []
+      if(ids.length){
+        const { data: pays } = await supabase.from('payments').select('*').in('booking_id', ids).order('created_at', { ascending:false }).limit(100)
+        payments = pays||[]
+      }
+      const preauth = payments.filter(p=>p.status==='preauthorized').reduce((a,p)=>a+Number(p.amount_preauth||0),0)
+      const captured = payments.filter(p=>p.status==='captured').reduce((a,p)=>a+Number(p.amount_captured||0),0)
+      qs('preauth_total').textContent = peso(preauth)
+      qs('captured_total').textContent = peso(captured)
+      qs('payments_body').innerHTML = payments.map(p=>
+        `<tr class="border-b border-zinc-800"><td class="px-3 py-2">${p.provider}</td><td class="px-3 py-2">${p.status}</td><td class="px-3 py-2">${p.created_at? new Date(p.created_at).toLocaleString(): '-'}</td><td class="px-3 py-2 text-right">${peso(p.amount_preauth||p.amount_captured)}</td></tr>`
+      ).join('') || '<tr><td class="p-4 text-zinc-500" colspan="4">Sin movimientos</td></tr>'
+
+      // Load guard payouts if this user is a guard
+      const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+      if((prof?.role||'client') === 'guard'){
+        const { data: payouts } = await supabase.from('payouts').select('*').eq('guard_id', user.id).order('period_end', { ascending:false }).limit(100)
+        const pending = (payouts||[]).filter(x=>x.status==='pending').reduce((a,p)=>a+Number(p.amount||0),0)
+        const paid = (payouts||[]).filter(x=>x.status==='paid').reduce((a,p)=>a+Number(p.amount||0),0)
+        qs('payout_pending').textContent = peso(pending)
+        qs('payout_paid').textContent = peso(paid)
+        qs('payouts_body').innerHTML = (payouts||[]).map(p=>
+          `<tr class="border-b border-zinc-800"><td class="px-3 py-2">${p.period_start||''} → ${p.period_end||''}</td><td class="px-3 py-2">${p.status}</td><td class="px-3 py-2 text-right">${peso(p.amount)}</td></tr>`
+        ).join('') || '<tr><td class="p-4 text-zinc-500" colspan="3">Sin pagos</td></tr>'
+        qs('guard_section').classList.remove('hidden')
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', load)
+  </script>
+</head>
+<body class="bg-black text-zinc-200 min-h-screen">
+  <header class="p-4 border-b border-zinc-800 flex items-center justify-between">
+    <div class="font-semibold">Billetera</div>
+    <div class="space-x-2">
+      <a href="/book.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Reservar</a>
+      <a href="/history.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Historial</a>
+      <a href="/profile.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Perfil</a>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6 grid lg:grid-cols-2 gap-6">
+    <section class="border border-zinc-800 rounded-2xl p-5">
+      <h2 class="font-medium mb-3">Cliente</h2>
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="rounded-xl bg-zinc-900 p-4">
+          <div class="text-xs text-zinc-400">Preautorizado</div>
+          <div id="preauth_total" class="text-xl font-semibold">MXN $0</div>
+        </div>
+        <div class="rounded-xl bg-zinc-900 p-4">
+          <div class="text-xs text-zinc-400">Cobrado</div>
+          <div id="captured_total" class="text-xl font-semibold">MXN $0</div>
+        </div>
+      </div>
+      <h3 class="text-sm text-zinc-400 mb-2">Pagos</h3>
+      <table class="w-full text-sm">
+        <thead class="text-zinc-400">
+          <tr class="border-b border-zinc-800"><th class="px-3 py-2 text-left">Proveedor</th><th class="px-3 py-2 text-left">Estatus</th><th class="px-3 py-2 text-left">Fecha</th><th class="px-3 py-2 text-right">Monto</th></tr>
+        </thead>
+        <tbody id="payments_body"></tbody>
+      </table>
+    </section>
+
+    <section id="guard_section" class="border border-zinc-800 rounded-2xl p-5 hidden">
+      <h2 class="font-medium mb-3">Guardia</h2>
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="rounded-xl bg-zinc-900 p-4">
+          <div class="text-xs text-zinc-400">Payouts pendientes</div>
+          <div id="payout_pending" class="text-xl font-semibold">MXN $0</div>
+        </div>
+        <div class="rounded-xl bg-zinc-900 p-4">
+          <div class="text-xs text-zinc-400">Pagado</div>
+          <div id="payout_paid" class="text-xl font-semibold">MXN $0</div>
+        </div>
+      </div>
+      <h3 class="text-sm text-zinc-400 mb-2">Payouts</h3>
+      <table class="w-full text-sm">
+        <thead class="text-zinc-400">
+          <tr class="border-b border-zinc-800"><th class="px-3 py-2 text-left">Periodo</th><th class="px-3 py-2 text-left">Estatus</th><th class="px-3 py-2 text-right">Monto</th></tr>
+        </thead>
+        <tbody id="payouts_body"></tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

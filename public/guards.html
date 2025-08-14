@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Escoltas • Galería</title>
+  <meta name="color-scheme" content="dark" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass{background:linear-gradient(180deg,rgba(24,24,27,.95),rgba(9,9,11,.95));}
+  .line-clamp-2{display:-webkit-box;line-clamp:2;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  </style>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0'
+
+    // ─── Config ────────────────────────────────────────────────────────────────
+    const SUPABASE_URL  = 'https://isnezquuwepqcjkaupjh.supabase.co'
+    const params        = new URL(location).searchParams
+    const ANON          = params.get('anon') || 'YOUR_SUPABASE_ANON_KEY'
+    const FN_NAME       = params.get('fn')   || 'guard_gallery'   // your SECURITY DEFINER RPC
+    const PAGE_SIZE     = 24
+
+    const supabase = createClient(SUPABASE_URL, ANON)
+
+    // Simple i18n
+    const lang=(params.get('lang')||'es').toLowerCase()
+    const T=(k)=>({
+      es:{gallery:'Galería de Escoltas',search:'Buscar por nombre…',armed:'Armado',vehicle:'Vehículo',minExp:'Años mín.',city:'Ciudad',avail:'Disponible ahora',sort:'Ordenar por',rating:'Calificación',experience:'Experiencia',availability:'Disponibilidad',details:'Detalles',years:'años',license:'Licencia',valid:'Válida',expired:'Vencida',pending:'Pendiente',close:'Cerrar',hire:'Solicitar',empty:'No hay escoltas que coincidan.'},
+      en:{gallery:'Protector Gallery',search:'Search by name…',armed:'Armed',vehicle:'Vehicle',minExp:'Min. years',city:'City',avail:'Available now',sort:'Sort by',rating:'Rating',experience:'Experience',availability:'Availability',details:'Details',years:'yrs',license:'License',valid:'Valid',expired:'Expired',pending:'Pending',close:'Close',hire:'Hire',empty:'No protectors match.'}
+    })[lang][k]
+
+    // ─── State ────────────────────────────────────────────────────────────────
+    let items=[], page=0, loading=false, hasMore=true
+    let currentSort='rating', sortDir='desc' // numeric desc by default
+    const $$=s=>document.querySelector(s); const $=id=>document.getElementById(id)
+
+    const debounce=(fn,ms=250)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}}
+
+    // ─── RPC loader (SECURITY DEFINER, executable from browser) ───────────────
+    async function fetchPage({reset=false}={}) {
+      if (loading||(!hasMore&&!reset)) return
+      loading=true; $('spinner').classList.remove('hidden')
+
+      if (reset){ page=0; hasMore=true; items=[]; $('grid').innerHTML=''; }
+
+      const q       = $('q').value.trim() || null
+      const armed   = $('f-armed').checked || null
+      const vehicle = $('f-vehicle').checked || null
+      const min_exp = Number($('f-exp').value||0)
+      const city    = $('f-city').value.trim() || null
+      const available_only = $('f-avail').checked || null
+
+      // City/availability: alphabetical → default asc if user picks those
+      if (currentSort==='city' || currentSort==='availability') { if (sortDir!=='asc') sortDir='asc' }
+
+      const args = {
+        q, city, armed, vehicle, min_exp,
+        available_only,
+        sort_by: currentSort,         // 'rating' | 'experience' | 'city' | 'availability'
+        sort_dir: sortDir,            // 'asc' | 'desc'
+        limit: PAGE_SIZE,
+        offset: page*PAGE_SIZE
+      }
+
+      let data=null, error=null
+
+      // Try your RPC first
+      ;({ data, error } = await supabase.rpc(FN_NAME, args))
+      // Fallback: client-side join if RPC name differs / not created yet
+      if (error) {
+        console.warn('RPC failed, fallback to joins:', error?.message)
+        ;({ data, error } = await fallbackJoin(args))
+      }
+      if (error) {
+        console.error(error); loading=false; $('spinner').classList.add('hidden'); return
+      }
+
+      // Append & render
+      if (!Array.isArray(data)) data = []
+      items.push(...data)
+      renderCards(data)
+      page++
+      if (data.length < PAGE_SIZE) hasMore=false
+
+      $('spinner').classList.add('hidden')
+      loading=false
+      $('empty').classList.toggle('hidden', items.length>0)
+    }
+
+    // Fallback join using tables (kept compact)
+    async function fallbackJoin({ q, city, armed, vehicle, min_exp, sort_by, sort_dir, limit, offset }) {
+      let qGuards = supabase.from('guards')
+        .select('user_id, armed, weapon_type, experience_years, city, availability, rating')
+        .order(sort_by==='experience'?'experience_years':(sort_by||'rating'), { ascending: sort_dir!=='desc' })
+        .range(offset, offset+limit-1)
+
+      if (armed===true) qGuards = qGuards.eq('armed', true)
+      if (vehicle===true) { /* vehicle join later, filter client side */ }
+      if (min_exp) qGuards = qGuards.gte('experience_years', min_exp)
+      if (city)    qGuards = qGuards.ilike('city', city)
+
+      const { data: gRows, error } = await qGuards
+      if (error) return { data:null, error }
+
+      const ids=[...new Set(gRows.map(g=>g.user_id))]
+      const [{ data: pRows }, { data: vRows }, { data: lRows }] = await Promise.all([
+        supabase.from('profiles').select('id, full_name, photo_url, bio').in('id', ids),
+        supabase.from('vehicles').select('guard_id, make, model, plate, color, year').in('guard_id', ids),
+        supabase.from('licenses').select('guard_id, type, status, valid_to, number').in('guard_id', ids).order('valid_to',{ascending:false})
+      ])
+
+      const prof = new Map((pRows||[]).map(x=>[x.id,x]))
+      const veh  = new Map((vRows||[]).map(x=>[x.guard_id,x]))
+      const lic  = new Map()
+      for (const l of (lRows||[])) if (!lic.has(l.guard_id)) lic.set(l.guard_id,l)
+
+      const merged = gRows
+        .map(g=>({
+          ...g,
+          profile: prof.get(g.user_id)||{},
+          vehicle: veh.get(g.user_id)||null,
+          license: lic.get(g.user_id)||null
+        }))
+        .filter(g => vehicle? !!g.vehicle : true)
+        .filter(g => q? (g.profile.full_name||'').toLowerCase().includes(q.toLowerCase()):true)
+
+      return { data: merged, error:null }
+    }
+
+    // ─── Render ────────────────────────────────────────────────────────────────
+    function badge(status){
+      status = status || 'pending'
+      const classes = status==='valid'   ? 'bg-emerald-600/20 text-emerald-400 border-emerald-700/40' :
+                      status==='expired' ? 'bg-rose-600/20 text-rose-400 border-rose-700/40' :
+                                           'bg-amber-500/20 text-amber-300 border-amber-700/40'
+      const txt = status==='valid'?T('valid'):status==='expired'?T('expired'):T('pending')
+      return `<span class="px-2 py-0.5 rounded-md border text-[10px] uppercase tracking-wide ${classes}">${txt}</span>`
+    }
+    function stars(r=0){
+      const s=Math.max(0,Math.min(5,Number(r)||0))
+      return `<span class="text-amber-300 text-xs">${'★'.repeat(Math.round(s))}<span class="text-zinc-600">${'★'.repeat(5-Math.round(s))}</span></span>`
+    }
+
+    function renderCards(batch){
+      const grid=$('grid')
+      grid.insertAdjacentHTML('beforeend', batch.map(g=>{
+        const p = g.profile||{}
+        const v = g.vehicle
+        const l = g.license
+        const lStatus = l?.status ?? (l?.valid_to ? (new Date(l.valid_to)>=new Date()?'valid':'expired') : 'pending')
+        const img = p.photo_url || 'https://dummyimage.com/300x420/0a0a0b/ffffff&text=%20'
+        return `
+        <article class="glass rounded-3xl overflow-hidden border border-zinc-800 hover:border-zinc-600 transition cursor-pointer group" data-card data-id="${g.user_id}">
+          <div class="aspect-[3/4] bg-black">
+            <img src="${img}" alt="${p.full_name||'guard'}" class="w-full h-full object-cover group-hover:scale-[1.02] transition">
+          </div>
+          <div class="p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold">${p.full_name||'—'}</h3>
+              <div class="flex items-center gap-2">
+                ${stars(g.rating)}
+                ${g.armed?'<span class="text-xs px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700">🔒</span>':''}
+                ${v?'<span class="text-xs px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700">🚗</span>':''}
+              </div>
+            </div>
+            <div class="text-xs text-zinc-400 line-clamp-2">${p.bio||''}</div>
+            <div class="flex items-center gap-2">
+              ${badge(lStatus)}
+              <span class="text-[11px] text-zinc-400">• ${g.experience_years||0} ${T('years')}</span>
+              <span class="text-[11px] text-zinc-500">• ${g.city||''}</span>
+              <span class="text-[11px] ${g.availability==='available'?'text-emerald-400':'text-zinc-500'}">• ${g.availability||''}</span>
+            </div>
+            <div class="pt-2 flex flex-wrap gap-2 text-[11px]">
+              <span class="px-2 py-1 rounded-full border border-zinc-700 text-zinc-300">Formal</span>
+              <span class="px-2 py-1 rounded-full border border-zinc-700 text-zinc-300">Ejecutivo</span>
+              <span class="px-2 py-1 rounded-full border border-zinc-700 text-zinc-300">Encubierto</span>
+              <span class="px-2 py-1 rounded-full border border-zinc-700 text-zinc-300">Táctico</span>
+            </div>
+          </div>
+        </article>`
+      }).join(''))
+
+      document.querySelectorAll('[data-card]').forEach(el=>{
+        el.onclick=()=>openModal(el.dataset.id)
+      })
+    }
+
+    function setUIStrings(){
+      $('title-h').textContent=T('gallery')
+      $('q').placeholder=T('search')
+      $('lbl-armed').textContent=T('armed')
+      $('lbl-vehicle').textContent=T('vehicle')
+      $('lbl-exp').textContent=T('minExp')
+      $('lbl-city').textContent=T('city')
+      $('lbl-avail').textContent=T('avail')
+      $('lbl-sort').textContent=T('sort')
+      $('opt-rating').textContent=T('rating')
+      $('opt-exp').textContent=T('experience')
+      $('opt-city').textContent=T('city')
+      $('opt-avail').textContent=T('availability')
+      $('empty').textContent=T('empty')
+      $('m-close').textContent=T('close')
+      $('m-hire').textContent=T('hire')
+      $('m-lic-l').textContent=T('license')
+    }
+
+    // ─── Modal ────────────────────────────────────────────────────────────────
+    function openModal(id){
+      const g = items.find(x=>x.user_id===id); if(!g) return
+      const p=g.profile||{}, v=g.vehicle, l=g.license
+      $('m-name').textContent = p.full_name||'—'
+      $('m-img').src = p.photo_url || 'https://dummyimage.com/600x800/0a0a0b/ffffff&text=%20'
+      $('m-bio').textContent = p.bio || ''
+      $('m-meta').innerHTML = `
+        <div class="text-sm text-zinc-400">${g.city||''} • ${g.experience_years||0} ${T('years')} • ${g.armed?'🔒':''} ${v?'🚗':''}</div>
+        <div class="text-sm mt-1">${stars(g.rating)} <span class="text-zinc-500 text-xs">(${(g.rating||0).toFixed?.(1) ?? g.rating ?? ''})</span></div>`
+      $('m-lic').innerHTML = l ? `${badge(l.status ?? (l.valid_to && new Date(l.valid_to)>=new Date()?'valid':'expired'))}
+        <span class="text-xs text-zinc-400 ml-2">${l.type||''} ${l.number?`• ${l.number}`:''}</span>` : `<span class="text-xs text-zinc-500">${T('pending')}</span>`
+      $('m-hire').onclick=()=>location.href=`/book.html?guard_id=${id}`
+      $('modal').classList.remove('hidden'); document.body.style.overflow='hidden'
+    }
+    function closeModal(){ $('modal').classList.add('hidden'); document.body.style.overflow='' }
+
+    // ─── Infinite scroll ──────────────────────────────────────────────────────
+    const io=new IntersectionObserver((entries)=>{
+      if(entries.some(e=>e.isIntersecting)) fetchPage()
+    },{rootMargin:'800px'})
+    function attachIO(){ io.observe($('sentinel')) }
+
+    // ─── Init ────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      setUIStrings()
+
+      $('sort').onchange = ()=>{
+        currentSort = $('sort').value
+        // default directions
+        sortDir = (currentSort==='city' || currentSort==='availability') ? 'asc' : 'desc'
+        $('dir').textContent = sortDir==='desc' ? '↓' : '↑'
+        fetchPage({reset:true})
+      }
+      $('dir').onclick = ()=>{ sortDir = sortDir==='desc'?'asc':'desc'; $('dir').textContent = sortDir==='desc'?'↓':'↑'; fetchPage({reset:true}) }
+
+      $('q').oninput = debounce(()=>fetchPage({reset:true}), 250)
+      $('f-armed').onchange = ()=>fetchPage({reset:true})
+      $('f-vehicle').onchange = ()=>fetchPage({reset:true})
+      $('f-exp').oninput = debounce(()=>fetchPage({reset:true}), 200)
+      $('f-city').oninput = debounce(()=>fetchPage({reset:true}), 250)
+      $('f-avail').onchange = ()=>fetchPage({reset:true})
+
+      $('modal-x').onclick=closeModal
+      $('m-close').onclick=closeModal
+      $('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal() })
+
+      attachIO()
+      fetchPage({reset:true})
+    })
+  </script>
+</head>
+
+<body class="bg-black text-zinc-200 min-h-screen selection:bg-emerald-500/30">
+  <!-- Header -->
+  <header class="px-6 py-4 border-b border-zinc-900 bg-zinc-950/70 backdrop-blur">
+    <div class="max-w-7xl mx-auto flex items-center gap-4">
+      <div class="w-9 h-9 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center">🛡️</div>
+      <h1 id="title-h" class="text-lg font-semibold">Galería</h1>
+      <div class="ml-auto flex items-center gap-3">
+        <a href="/client.html" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition">Reservar</a>
+        <a href="/profile.html" class="text-sm px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700">Perfil</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <section class="px-6 py-5 border-b border-zinc-900">
+    <div class="max-w-7xl mx-auto grid lg:grid-cols-12 gap-3">
+      <div class="lg:col-span-4">
+        <input id="q" class="w-full px-4 py-3 rounded-2xl bg-zinc-950 border border-zinc-800 focus:ring-2 focus:ring-emerald-600" placeholder="Search">
+      </div>
+      <div class="lg:col-span-3 grid grid-cols-3 items-center gap-3">
+        <label class="flex items-center gap-2 text-sm"><input id="f-armed" type="checkbox" class="accent-emerald-500"><span id="lbl-armed">Armado</span></label>
+        <label class="flex items-center gap-2 text-sm"><input id="f-vehicle" type="checkbox" class="accent-emerald-500"><span id="lbl-vehicle">Vehículo</span></label>
+        <label class="flex items-center gap-2 text-sm"><input id="f-avail" type="checkbox" class="accent-emerald-500"><span id="lbl-avail">Disponible ahora</span></label>
+      </div>
+      <div class="lg:col-span-2 flex items-center gap-2">
+        <span class="text-sm text-zinc-400" id="lbl-exp">Años mín.</span>
+        <input id="f-exp" type="number" min="0" value="0" class="w-20 px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800">
+      </div>
+      <div class="lg:col-span-3 flex items-center gap-2">
+        <span class="text-sm text-zinc-400" id="lbl-city">Ciudad</span>
+        <input id="f-city" type="text" placeholder="CDMX" class="flex-1 px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800">
+      </div>
+
+      <div class="lg:col-span-12 flex items-center gap-3 pt-1">
+        <span class="text-sm text-zinc-400" id="lbl-sort">Ordenar por</span>
+        <select id="sort" class="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800">
+          <option id="opt-rating" value="rating">Calificación</option>
+          <option id="opt-exp" value="experience">Experiencia</option>
+          <option id="opt-city" value="city">Ciudad</option>
+          <option id="opt-avail" value="availability">Disponibilidad</option>
+        </select>
+        <button id="dir" class="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800">↓</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grid -->
+  <main class="px-6 py-8">
+    <div id="grid" class="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+    <div id="empty" class="max-w-7xl mx-auto hidden text-center text-zinc-500 p-10"></div>
+    <div id="spinner" class="hidden text-center text-zinc-500 py-6">Cargando…</div>
+    <div id="sentinel" class="h-1"></div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-3xl rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-950">
+      <div class="grid md:grid-cols-2">
+        <div class="relative aspect-[3/4] bg-black">
+          <img id="m-img" src="" alt="portrait" class="w-full h-full object-cover">
+          <button id="modal-x" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 border border-zinc-800">✕</button>
+        </div>
+        <div class="p-6 space-y-3">
+          <h3 id="m-name" class="text-xl font-semibold">—</h3>
+          <div id="m-meta" class="text-sm text-zinc-400"></div>
+          <p id="m-bio" class="text-sm text-zinc-300"></p>
+          <div class="pt-2">
+            <div class="text-zinc-400 text-sm mb-1" id="m-lic-l">Licencia</div>
+            <div id="m-lic"></div>
+          </div>
+          <div class="pt-4 flex gap-2">
+            <a id="m-hire" class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 cursor-pointer select-none"></a>
+            <button id="m-close" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

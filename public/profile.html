@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Perfil • Escolta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0'
+
+    const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co'
+    const SUPABASE_ANON_KEY = new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY'
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  let user, profile
+
+    function qs(id){ return document.getElementById(id) }
+    function toast(msg, bad=false){
+      const t = qs('toast'); t.textContent = msg
+      t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-sm ' + (bad?'bg-red-600':'bg-emerald-600')
+      setTimeout(()=> t.className='hidden', 3000)
+    }
+
+    async function load(){
+      const { data: { session } } = await supabase.auth.getSession()
+      if(!session){ location.href = '/auth.html'; return }
+      user = session.user
+
+      // fetch profile
+      let { data: rows } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+      profile = rows || {}
+  // hydrate
+      qs('email').value = user.email || ''
+  qs('name').value = profile.first_name ? `${profile.first_name} ${profile.last_name||''}`.trim() : ''
+  // Map external roles to our enum: freelancer->guard, company_admin->client
+  const rawRole = profile.role || (user.user_metadata?.role ?? 'client')
+  const roleMap = (r)=> r==='freelancer' ? 'guard' : (r==='company_admin' ? 'client' : r)
+  const effectiveRole = roleMap(rawRole)
+  qs('role').textContent = effectiveRole
+
+      if(profile.photo_url){ qs('avatar_preview').src = profile.photo_url }
+
+      // guard/freelancer extended fields (if role)
+  const role = effectiveRole
+      if(role === 'freelancer' || role === 'company_guard' || role === 'guard'){
+        qs('guardBlock').classList.remove('hidden')
+        // try guard row (guards table uses profiles.id as foreign key id)
+        const { data: g } = await supabase.from('guards').select('*').eq('id', user.id).maybeSingle()
+        if(g){
+          qs('armed').checked = !!g.skills?.armed || false
+          qs('weapon').value = g.skills?.weapon_type || ''
+          qs('exp').value = g.skills?.experience_years ?? ''
+        }
+        // vehicles table (owned_by guard)
+        const { data: vrows } = await supabase.from('vehicles').select('*').eq('guard_id', user.id).limit(1)
+        const v = vrows?.[0]
+        if(v){
+          qs('make').value = v.type||''; qs('model').value = ''
+          qs('plate').value = v.plates||''
+          qs('color').value = v.color||''
+          qs('year').value = ''
+        }
+      }
+    }
+
+    async function saveProfile(){
+  const [first_name, ...rest] = qs('name').value.trim().split(' ')
+  const last_name = rest.join(' ')
+  const rawRole = (profile.role || (user.user_metadata?.role ?? 'client'))
+  const role = rawRole === 'freelancer' ? 'guard' : (rawRole === 'company_admin' ? 'client' : rawRole)
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id, first_name, last_name,
+        role, photo_url: profile.photo_url || null,
+        updated_at: new Date().toISOString()
+      })
+      if(error) return toast(error.message, true)
+      toast('Perfil guardado')
+    }
+
+    async function uploadAvatar(){
+      const f = qs('avatar').files?.[0]; if(!f) return
+      const path = `${user.id}/avatar_${Date.now()}.jpg`
+      const { error } = await supabase.storage.from('avatars').upload(path, f, { upsert:true })
+      if(error) return toast(error.message, true)
+      const { data:{ publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+      qs('avatar_preview').src = publicUrl
+      profile.photo_url = publicUrl
+      await supabase.from('profiles').update({ photo_url: publicUrl }).eq('id', user.id)
+      toast('Foto actualizada')
+    }
+
+    async function saveGuard(){
+      const armed = qs('armed').checked
+      const weapon_type = qs('weapon').value.trim()
+      const experience_years = Number(qs('exp').value||0)
+      // guards table: store in skills json
+      const { error } = await supabase.from('guards').upsert({
+        id: user.id,
+        skills: { ...(profile.skills||{}), armed, weapon_type, experience_years }
+      })
+      if(error) return toast(error.message, true)
+
+      // vehicles table per current schema: create simple guard-owned vehicle as record
+      const make=qs('make').value.trim(), model=qs('model').value.trim(), plate=qs('plate').value.trim(),
+            color=qs('color').value.trim(), year=Number(qs('year').value||null)
+      await supabase.from('vehicles').upsert({ guard_id: user.id, owned_by: 'guard', type: make||'vehicle', plates: plate, docs: [], active: true })
+      toast('Datos de guardia/vehículo guardados')
+    }
+
+    async function uploadLicense(){
+      const f = qs('license').files?.[0]; if(!f) return
+      const path = `licenses/${user.id}/license_${Date.now()}.jpg`
+      const { error } = await supabase.storage.from('licenses').upload(path, f, { upsert:true })
+      if(error) return toast(error.message, true)
+      toast('Licencia cargada (privada)')
+    }
+
+    async function logout(){ await supabase.auth.signOut(); location.href='/auth.html' }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      load()
+      qs('saveProfile').addEventListener('click', saveProfile)
+      qs('uploadAvatar').addEventListener('click', uploadAvatar)
+      qs('saveGuard').addEventListener('click', saveGuard)
+      qs('uploadLicense').addEventListener('click', uploadLicense)
+      qs('logout').addEventListener('click', logout)
+    })
+  </script>
+</head>
+<body class="bg-black text-zinc-200 min-h-screen">
+  <header class="p-4 border-b border-zinc-800 flex items-center justify-between">
+    <div class="font-semibold">Perfil</div>
+    <button id="logout" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Salir</button>
+  </header>
+
+  <main class="max-w-5xl mx-auto p-6 grid md:grid-cols-2 gap-6">
+    <section class="border border-zinc-800 rounded-2xl p-5">
+      <h2 class="font-medium mb-4">Información básica</h2>
+      <div class="flex gap-4 items-center mb-4">
+        <img id="avatar_preview" class="w-16 h-16 rounded-xl object-cover border border-zinc-700" src="/avatar-placeholder.png" alt="avatar" />
+        <div class="space-x-2">
+          <input id="avatar" type="file" accept="image/*" class="text-sm" />
+          <button id="uploadAvatar" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Subir foto</button>
+        </div>
+      </div>
+  <div class="space-y-3">
+        <input id="name" placeholder="Nombre completo" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+        <input id="email" disabled class="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800" />
+        <div class="text-xs text-zinc-500">Rol: <span id="role"></span></div>
+        <button id="saveProfile" class="w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-xl py-2 font-medium">Guardar</button>
+      </div>
+    </section>
+
+    <section id="guardBlock" class="border border-zinc-800 rounded-2xl p-5 hidden">
+      <h2 class="font-medium mb-4">Datos del guardia / vehículo</h2>
+      <div class="flex items-center gap-2 mb-3">
+        <input id="armed" type="checkbox" class="accent-emerald-500">
+        <label for="armed">Armado</label>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <input id="weapon" placeholder="Tipo de arma" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+        <input id="exp" type="number" min="0" placeholder="Años de experiencia" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+      </div>
+      <h3 class="text-sm text-zinc-400 mb-2">Vehículo</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="make"  placeholder="Marca" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+        <input id="model" placeholder="Modelo" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+        <input id="plate" placeholder="Placas" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+        <input id="color" placeholder="Color" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+        <input id="year"  type="number" min="1980" max="2099" placeholder="Año" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+      </div>
+      <div class="mt-4 flex items-center gap-2">
+        <input id="license" type="file" accept="image/*" class="text-sm" />
+        <button id="uploadLicense" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Subir licencia (privada)</button>
+      </div>
+      <button id="saveGuard" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-xl py-2 font-medium">Guardar guardia</button>
+    </section>
+  </main>
+
+  <div id="toast" class="hidden"></div>
+</body>
+</html>

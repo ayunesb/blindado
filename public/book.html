@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reserva • Escolta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0'
+    const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co'
+    const SUPABASE_ANON_KEY = new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY'
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const FN = `${SUPABASE_URL}/functions/v1`
+
+    let user, booking
+
+    function qs(id){ return document.getElementById(id) }
+    const anon = new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY'
+    async function authHeaders(){
+      const { data:{ session } } = await supabase.auth.getSession()
+      const h = { 'content-type':'application/json', apikey: anon }
+      if(session?.access_token) h['Authorization'] = `Bearer ${session.access_token}`
+      return h
+    }
+    function log(o){ qs('out').textContent = JSON.stringify(o, null, 2) }
+    function isoLocal(s){ return new Date(s).toISOString() }
+    function nowPlus(h){ return new Date(Date.now()+h*3600e3).toISOString().slice(0,16) }
+
+    async function ensureAuth(){
+      const { data:{ session } } = await supabase.auth.getSession()
+      if(!session) location.href='/auth.html'
+      user = session.user
+      qs('start').value = nowPlus(1)
+      qs('end').value = nowPlus(5)
+    }
+
+    function hoursBetween(a,b){ return Math.max(1, Math.ceil((new Date(b) - new Date(a))/3600e3)) }
+
+    async function quote(){
+      const start_ts = isoLocal(qs('start').value)
+      const end_ts = isoLocal(qs('end').value)
+      const payload = {
+        city: qs('city').value, tier: qs('tier').value,
+        armed_required: qs('armed').checked, vehicle_required: qs('vehicle').checked,
+        start_ts, end_ts
+      }
+  const res = await fetch(`${FN}/pricing`, { method:'POST', headers: await authHeaders(), body: JSON.stringify(payload) })
+      const json = await res.json(); log(json)
+    }
+
+    async function createBooking(){
+      const payload = {
+        client_id: user.id,
+        city: qs('city').value, tier: qs('tier').value,
+        armed_required: qs('armed').checked, vehicle_required: qs('vehicle').checked,
+        start_ts: isoLocal(qs('start').value), end_ts: isoLocal(qs('end').value),
+        origin_lat: Number(qs('lat').value), origin_lng: Number(qs('lng').value),
+        notes: qs('notes').value
+      }
+  const res = await fetch(`${FN}/bookings`, { method:'POST', headers: await authHeaders(), body:JSON.stringify(payload) })
+      const json = await res.json(); log(json)
+      const id = json?.booking_id || json?.data?.id || json?.id
+      if(id) booking = { id }
+    }
+
+    async function preauth(){
+      if(!booking?.id) return log({error:'no booking'})
+  const res = await fetch(`${FN}/payments_preauth`, { method:'POST', headers: await authHeaders(), body:JSON.stringify({ booking_id: booking.id }) })
+      log(await res.json())
+    }
+
+    async function confirm(){
+      if(!booking?.id) return log({error:'no booking'})
+  const res = await fetch(`${FN}/bookings_confirm`, { method:'POST', headers: await authHeaders(), body:JSON.stringify({ booking_id: booking.id }) })
+      log(await res.json())
+    }
+
+    async function panic(){
+      if(!user) return
+      await supabase.from('panic_events').insert({ user_id: user.id, booking_id: booking?.id || null, notes:'User pressed panic' })
+      alert('Alerta enviada. Estamos contigo.')
+    }
+
+    async function checkin(){
+      if(!booking?.id) return alert('Crea/selecciona una reserva')
+      await supabase.from('checkins').insert({ booking_id: booking.id, who:'client', status:'arrived' })
+      alert('Check-in registrado')
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      ensureAuth()
+      qs('btnQuote').onclick = quote
+      qs('btnCreate').onclick = createBooking
+      qs('btnPre').onclick = preauth
+      qs('btnConfirm').onclick = confirm
+      qs('btnCheck').onclick = checkin
+      qs('panic').onclick = panic
+    })
+  </script>
+</head>
+<body class="bg-black text-zinc-200 min-h-screen">
+  <header class="p-4 border-b border-zinc-800 flex items-center justify-between">
+    <div class="font-semibold">Reserva</div>
+    <a href="/history.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Historial</a>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6 grid lg:grid-cols-2 gap-6">
+    <section class="border border-zinc-800 rounded-2xl p-5 space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs">Ciudad</label>
+          <select id="city" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800">
+            <option>CDMX</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs">Nivel</label>
+          <select id="tier" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800">
+            <option value="direct">Directo</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="flex items-center gap-2"><input id="armed" type="checkbox" class="accent-emerald-500"> Armado</label>
+        <label class="flex items-center gap-2"><input id="vehicle" type="checkbox" class="accent-emerald-500"> Vehículo</label>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs">Inicio</label><input id="start" type="datetime-local" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800"></div>
+        <div><label class="text-xs">Fin</label><input id="end" type="datetime-local" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs">Lat</label><input id="lat" value="19.4326" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800"></div>
+        <div><label class="text-xs">Lng</label><input id="lng" value="-99.1332" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800"></div>
+      </div>
+      <textarea id="notes" rows="3" placeholder="Notas" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800"></textarea>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button id="btnQuote"  class="bg-zinc-800 hover:bg-zinc-700 rounded-xl py-2">Cotizar</button>
+        <button id="btnCreate" class="bg-emerald-600 hover:bg-emerald-500 rounded-xl py-2">Crear reserva</button>
+        <button id="btnPre"    class="bg-zinc-800 hover:bg-zinc-700 rounded-xl py-2">Preautorización</button>
+        <button id="btnConfirm" class="bg-zinc-800 hover:bg-zinc-700 rounded-xl py-2">Confirmar</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button id="btnCheck" class="bg-indigo-600 hover:bg-indigo-500 rounded-xl py-2">Check-in (cliente)</button>
+        <a href="/guard.html" class="text-center bg-zinc-800 hover:bg-zinc-700 rounded-xl py-2">Consola guardia</a>
+      </div>
+
+    </section>
+
+    <section class="border border-zinc-800 rounded-2xl p-5">
+      <h3 class="text-sm text-zinc-400 mb-2">Salida</h3>
+      <pre id="out" class="bg-zinc-950 p-4 rounded-xl overflow-auto h-[520px] text-xs">Listo…</pre>
+    </section>
+  </main>
+
+  <!-- Panic button -->
+  <button id="panic" title="Pánico"
+    class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-red-600 hover:bg-red-500 shadow-lg shadow-red-900/40 text-white text-xl">!</button>
+</body>
+</html>

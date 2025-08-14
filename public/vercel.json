@@ -1,7 +1,15 @@
 {
   "version": 2,
   "cleanUrls": true,
-  "rewrites": [{ "source": "/", "destination": "/client.html" }],
+  "rewrites": [
+    { "source": "/", "destination": "/client.html" },
+    { "source": "/login", "destination": "/auth.html" },
+    { "source": "/profile", "destination": "/profile.html" },
+    { "source": "/book", "destination": "/book.html" },
+  { "source": "/history", "destination": "/history.html" },
+  { "source": "/wallet", "destination": "/wallet.html" },
+  { "source": "/guards", "destination": "/guards.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)\\.(js|css|png|jpg|jpeg|webp|svg|ico|woff2?)",
