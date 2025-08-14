@@ -18,12 +18,22 @@
     <div class="grid">
       <section class="pane" style="grid-column: span 2;">
         <div style="max-width:560px">
-          <h1>Protección privada, en minutos</h1>
+          <h1>
+            Book Armed Protectors
+            <span class="chip" id="cityHero">in your city</span>
+          </h1>
           <p class="muted">Escoltas certificados bajo demanda. Tarifa transparente por ciudad y nivel de servicio.</p>
           <div style="height:16px"></div>
           <div class="row">
             <button id="btnQuote" class="cta">Cotizar ahora</button>
             <div class="chip" id="statusChip">Esperando ubicación…</div>
+          </div>
+          <div id="locBanner" class="bullet" style="display:none;margin-top:10px">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l7 4v6c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6l7-4z" stroke="currentColor" stroke-width="1.2"/></svg>
+            <div>
+              <div class="muted">No pudimos acceder a tu ubicación.</div>
+              <button id="enterAddress" class="btn-outline" style="margin-top:6px">Enter address instead</button>
+            </div>
           </div>
           <div style="height:12px"></div>
           <div class="bullet"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l7 4v6c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6l7-4z" stroke="currentColor" stroke-width="1.2"/></svg><div>
@@ -36,6 +46,14 @@
       <section class="card" style="grid-column: span 1;">
         <div class="row"><div class="muted">Parámetros</div><div class="chip">Demo</div></div>
         <div style="height:10px"></div>
+        <div class="row"><div class="muted">Ciudad</div>
+          <select id="citySel" class="control" aria-label="Ciudad">
+            <option value="CDMX">CDMX</option>
+            <option value="NYC">NYC</option>
+            <option value="LA">LA</option>
+          </select>
+        </div>
+        <div style="height:8px"></div>
         <div class="row"><div class="muted">Nivel</div>
           <select id="tier" class="control" aria-label="Nivel">
             <option value="direct">Direct</option>
@@ -72,7 +90,18 @@
         <div class="muted" style="margin-bottom:6px">Salida</div>
         <pre id="out" style="background:#0b0c10;border:1px solid var(--ring);border-radius:16px;padding:12px;height:420px;overflow:auto"></pre>
         <div style="height:8px"></div>
+        <div id="locCard" class="bullet" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l7 4v6c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6l7-4z" stroke="currentColor" stroke-width="1.2"/></svg>
+          <div>
+            <div><strong>Location:</strong> <span id="locCity">Near You</span></div>
+            <div class="muted">Using your device location</div>
+            <div style="height:6px"></div>
+            <a id="rereqGeo" class="btn-outline" href="#">Update location</a>
+          </div>
+        </div>
         <div id="map" class="map" style="display:none"></div>
+        <div style="height:8px"></div>
+        <button id="btnDirections" class="btn-outline" style="display:none">Open in Maps</button>
       </section>
     </div>
 
@@ -84,12 +113,14 @@
     const FN = 'https://isnezquuwepqcjkaupjh.supabase.co/functions/v1';
     const params = new URLSearchParams(location.search);
     const ANON = params.get('anon') || '';
-    const GMAPS_KEY = params.get('gmaps');
+  const GMAPS_KEY = params.get('gmaps');
     const headers = ANON ? { 'content-type':'application/json', 'apikey':ANON, 'Authorization':`Bearer ${ANON}` } : { 'content-type':'application/json' };
 
-    // State (coords hidden in UI)
-    let origin = { lat: 19.4326, lng: -99.1332 }; // default CDMX
-    let city = 'CDMX';
+  // State (coords hidden in UI)
+  let center = { lat: 19.4326, lng: -99.1332 }; // default CDMX
+  let cityFromGPS = 'CDMX';
+  let cityManual = '';
+  let city = 'CDMX';
     let lastBookingId = null, lastPreauth = 0;
 
     const outEl = document.getElementById('out');
@@ -115,19 +146,31 @@
     async function geolocate(){
       const cityChip = document.getElementById('cityChip');
       const statusChip = document.getElementById('statusChip');
+      const heroChip = document.getElementById('cityHero');
+      const locCard = document.getElementById('locCard');
+      const locCity = document.getElementById('locCity');
+      const locBanner = document.getElementById('locBanner');
       try{
         if(!('geolocation' in navigator)) throw new Error('Geoloc no disponible');
         const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:8000,maximumAge:60000}));
-        origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        city = cityFromLatLng(origin.lat, origin.lng);
+  center = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        cityFromGPS = cityFromLatLng(center.lat, center.lng);
+        city = cityManual || cityFromGPS;
         cityChip.textContent = city;
+        if(heroChip) heroChip.textContent = `in ${city}`;
+  const sel = document.getElementById('citySel'); if(sel) sel.value = ['CDMX','NYC','LA'].includes(city) ? city : 'CDMX';
         statusChip.textContent = 'Listo';
-        maybeInitMap();
+        if(!GMAPS_KEY){ locCard.style.display='flex'; locCity.textContent = city; }
+        maybeInitMap(); if(locBanner) locBanner.style.display='none';
       }catch(e){
-        city = 'CDMX';
-        cityChip.textContent = city + ' (aprox)';
+        cityFromGPS = 'Near You';
+        city = cityManual || cityFromGPS;
+        cityChip.textContent = city;
+        if(heroChip) heroChip.textContent = `in ${city}`;
+  const sel = document.getElementById('citySel'); if(sel) sel.value = ['CDMX','NYC','LA'].includes(city) ? city : 'CDMX';
         statusChip.textContent = 'Sin permisos de ubicación';
-        maybeInitMap();
+        if(!GMAPS_KEY){ locCard.style.display='flex'; locCity.textContent = city; }
+        maybeInitMap(); if(locBanner) locBanner.style.display='';
       }
     }
 
@@ -142,6 +185,17 @@
       };
       const r = await fetch(`${FN}/pricing`, { method:'POST', headers, body: JSON.stringify(body) });
       const j = await r.json(); out(j); lastPreauth = j.preauth_amount || j.quote_amount || 0;
+      // Show directions deep link if we have a center
+      const btnDir = document.getElementById('btnDirections');
+      if(center && typeof center.lat==='number' && typeof center.lng==='number'){
+        btnDir.style.display='inline-block';
+        btnDir.onclick = ()=>{
+          const lat=center.lat, lng=center.lng;
+          const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          const url = isiOS ? `http://maps.apple.com/?ll=${lat},${lng}&q=Client` : `https://maps.google.com/?q=${lat},${lng}`;
+          window.open(url, '_blank');
+        };
+      }
     }
 
     async function createBooking(){
@@ -153,8 +207,8 @@
         vehicle_required: document.getElementById('vehicle').checked,
         start_ts: new Date(document.getElementById('start').value || Date.now()).toISOString(),
         end_ts: new Date(document.getElementById('end').value || Date.now()+4*3600e3).toISOString(),
-        origin_lat: origin.lat,
-        origin_lng: origin.lng
+  origin_lat: center.lat,
+  origin_lng: center.lng
       };
       const r = await fetch(`${FN}/bookings`, { method:'POST', headers, body: JSON.stringify(body) });
       const j = await r.json(); out(j);
@@ -185,7 +239,7 @@
       const mapEl = document.getElementById('map');
       mapEl.style.display = 'block';
       window.initMap = function(){
-        const map = new google.maps.Map(mapEl,{ center: origin, zoom: 13, disableDefaultUI:true, styles:[
+        const map = new google.maps.Map(mapEl,{ center: center, zoom: 13, disableDefaultUI:true, styles:[
           {elementType:'geometry',stylers:[{color:'#0b0b0c'}]},
           {elementType:'labels.text.stroke',stylers:[{color:'#0b0b0c'}]},
           {elementType:'labels.text.fill',stylers:[{color:'#9aa0a6'}]},
@@ -195,7 +249,7 @@
           {featureType:'water',elementType:'geometry',stylers:[{color:'#111315'}]}
         ]});
         const mk = google?.maps?.marker?.AdvancedMarkerElement;
-        if(mk) new mk({ position: origin, map }); else new google.maps.Marker({ position: origin, map });
+        if(mk) new mk({ position: center, map }); else new google.maps.Marker({ position: center, map });
       };
       const s=document.createElement('script');
       s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_KEY)}&libraries=marker&v=weekly&callback=initMap`;
@@ -208,8 +262,55 @@
     document.getElementById('btnPreauth').onclick = preauth;
     document.getElementById('btnConfirm').onclick = confirm;
     document.getElementById('btnMatch').onclick = match;
+    const rereq = document.getElementById('rereqGeo'); if(rereq){ rereq.onclick = (e)=>{ e.preventDefault(); geolocate(); }; }
+    const enterAddr = document.getElementById('enterAddress'); if(enterAddr){ enterAddr.onclick = ()=>{
+      const val = prompt('Enter address or city');
+      if(val && val.trim()){
+        const v = val.trim().toUpperCase();
+        if(['CDMX','MEXICO CITY','MEXICO CITY, MX'].includes(v)) cityManual='CDMX';
+        else if(['NYC','NEW YORK'].includes(v)) cityManual='NYC';
+        else if(['LA','LOS ANGELES'].includes(v)) cityManual='LA';
+        else cityManual = val.trim();
+        city = cityManual || cityFromGPS;
+        document.getElementById('cityChip').textContent = city;
+        const heroChip = document.getElementById('cityHero'); if(heroChip) heroChip.textContent = `in ${city}`;
+        const sel = document.getElementById('citySel'); if(sel) sel.value = ['CDMX','NYC','LA'].includes(city) ? city : 'CDMX';
+        const locCity = document.getElementById('locCity'); if(locCity) locCity.textContent = city;
+      }
+    }; }
+    const sel = document.getElementById('citySel'); if(sel){ sel.addEventListener('change', (e)=>{
+      cityManual = e.target.value || '';
+      city = cityManual || cityFromGPS;
+      document.getElementById('cityChip').textContent = city;
+      const heroChip = document.getElementById('cityHero'); if(heroChip) heroChip.textContent = `in ${city}`;
+      const locCity = document.getElementById('locCity'); if(locCity) locCity.textContent = city;
+    }); }
     setDateDefaults();
     geolocate();
+
+    // --- Self-tests (lightweight, non-blocking) ---
+    function isMetaMaskNoise(msg){
+      return typeof msg === 'string' && /MetaMask: RPC Error/i.test(msg);
+    }
+    (function selfTests(){
+      try{
+        const tests = [];
+        tests.push({ name:'isMetaMaskNoise', ok: isMetaMaskNoise('MetaMask: RPC Error: Internal JSON-RPC error.') });
+        const mapEl = document.getElementById('map');
+        const noMapVisible = !GMAPS_KEY && mapEl && getComputedStyle(mapEl).display === 'none';
+        tests.push({ name:'no-map map hidden', ok: !GMAPS_KEY ? noMapVisible : true });
+        const payloadHasOrigin = !!(center && typeof center.lat==='number' && typeof center.lng==='number');
+        tests.push({ name:'booking payload origin present', ok: payloadHasOrigin });
+        out({ self_tests: tests });
+        if(!GMAPS_KEY){ setTimeout(()=>{
+          try{
+            const locCard = document.getElementById('locCard');
+            const vis = locCard && getComputedStyle(locCard).display !== 'none';
+            out({ self_tests_late: [{ name:'no-map loc card visible', ok: !!vis }]});
+          }catch{}
+        }, 800); }
+      }catch{ /* silence */ }
+    })();
   </script>
 </body>
 </html>
