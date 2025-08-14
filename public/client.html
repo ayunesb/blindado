@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Blindado — Book Armed Protectors</title>
-  <link rel="preload" as="image" href="/assets/brand/blindado-logo.svg">
+  <link rel="preload" as="image" href="assets/brand/blindado-logo.svg">
   <style>
     :root{
       --bg:#0b0f17;--card:#111827;--muted:#6b7280;--text:#e5e7eb;--accent:#10b981;--danger:#ef4444;--chip:#1f2937;--line:#1f2937;
@@ -49,11 +49,11 @@
 </head>
 <body>
 <header>
-  <img src="/assets/brand/blindado-logo.svg" alt="Blindado logo"/>
+  <img src="assets/brand/blindado-logo.svg" alt="Blindado logo"/>
   <div class="brand">BLINDADO</div>
-  <a href="/index.html" class="ghostlink" aria-label="Back to demos" style="margin-left:8px">← Demos</a>
+  <a href="index.html" class="ghostlink" aria-label="Back to demos" style="margin-left:8px">← Demos</a>
   <div style="margin-left:auto" class="chip" id="cityChip">
-    <img src="/assets/brand/ic-shield.svg" width="16" height="16" alt="">
+  <img src="assets/brand/ic-shield.svg" width="16" height="16" alt="">
     <span id="cityHero">Detecting city…</span>
   </div>
   <button id="btnWallet" class="btn btn-ghost gap-2" style="margin-left:10px">
@@ -179,7 +179,7 @@
       <div class="line"></div>
       <div class="card success" style="border-radius:12px">
         <div style="display:flex;gap:10px;align-items:center">
-          <img src="/assets/brand/ic-shield.svg" width="18" height="18" alt="">
+          <img src="assets/brand/ic-shield.svg" width="18" height="18" alt="">
           <div>
             <div style="font-weight:700">Booking confirmed</div>
             <div class="muted" id="confirmMsg">We’re offering this job to nearby protectors…</div>
@@ -461,8 +461,8 @@ document.getElementById("btnSimAccept").onclick = async ()=>{
   const label = document.getElementById("vehicleLabel");
   let text = "Client vehicle / on foot";
   let src = "";
-  if (sel === "armored") { text = "Armored"; src = "/assets/brand/ic-car-armored.svg"; }
-  else if (sel === "suv") { text = "SUV"; src = "/assets/brand/ic-car-suv.svg"; }
+  if (sel === "armored") { text = "Armored"; src = "assets/brand/ic-car-armored.svg"; }
+  else if (sel === "suv") { text = "SUV"; src = "assets/brand/ic-car-suv.svg"; }
   label.textContent = text;
   if (src) { icon.src = src; icon.style.display = "inline-block"; icon.alt = text; }
   else { icon.style.display = "none"; }
