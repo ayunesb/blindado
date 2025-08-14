@@ -46,8 +46,8 @@ serve(async (req) => {
   const { data: rule, error } = await supabase
     .from("pricing_rules")
     .select("base_rate_guard, armed_multiplier, vehicle_rate_suv, vehicle_rate_armored, min_hours")
-    .eq("city", city)
-    .eq("tier", tier)
+    .ilike("city", city)
+    .ilike("tier", tier)
     .single();
 
   if (error || !rule) return j({ error: "pricing rule not found for city/tier" }, 404);
