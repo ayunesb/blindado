@@ -13,10 +13,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
   const url = new URL(req.url);
-  const supa = createClient(
-    Deno.env.get("BLINDADO_SUPABASE_URL")!,
-    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!
-  );
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || Deno.env.get("BLINDADO_SUPABASE_URL");
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY");
+  const supa = createClient(SUPABASE_URL!, SERVICE_ROLE!);
 
   try {
     if (req.method === "GET" && url.pathname.endsWith("/list")) {

@@ -14,10 +14,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return j({ error: "POST only" }, 405);
 
-  const supabase = createClient(
-    Deno.env.get("BLINDADO_SUPABASE_URL")!,
-    Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY")!
-  );
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || Deno.env.get("BLINDADO_SUPABASE_URL");
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("BLINDADO_SUPABASE_SERVICE_ROLE_KEY");
+  const supabase = createClient(SUPABASE_URL!, SERVICE_ROLE!);
 
   const body = await req.json().catch(() => ({}));
   const { booking_id, amount } = body;
