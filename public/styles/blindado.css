@@ -1,0 +1,29 @@
+:root{
+  --bg:#0b0c10; --card:#121418; --muted:#8b8f98; --text:#f3f4f6; --accent:#e5e7eb;
+  --ring:#2a2f37; --chip:#1a1d23; --radius:16px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding:24px}
+header{display:flex;align-items:center;gap:12px;margin:8px 0 20px}
+header img{width:28px;height:28px}
+header .brand{font-weight:600;letter-spacing:.4px}
+h1{font-size:34px;line-height:1.1;margin:0 0 14px}
+.muted{color:var(--muted)}
+.grid{display:grid;gap:18px}
+@media (min-width:1000px){.grid{grid-template-columns:repeat(4,1fr)}}
+.card{background:var(--card);border:1px solid var(--ring);border-radius:24px;padding:16px;position:relative;overflow:hidden}
+.pane{display:flex;flex-direction:column;justify-content:flex-end;min-height:520px;background:radial-gradient(120% 90% at 50% 10%,#272a31 0%,#121418 55%,#0b0c10 100%);padding:16px;border-radius:24px;border:1px solid var(--ring)}
+.cta{display:flex;gap:10px;align-items:center;background:#fff;color:#000;border-radius:9999px;padding:14px 18px;font-weight:600;justify-content:center}
+.bullet{display:flex;gap:10px;align-items:flex-start;background:var(--chip);border-radius:16px;padding:12px}
+.bullet svg{width:18px;height:18px;color:#cfd3da}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.chip{background:var(--chip);border:1px solid var(--ring);padding:8px 12px;border-radius:999px;color:#cfd3da;font-size:12px}
+.control{display:flex;align-items:center;gap:10px;background:var(--chip);border:1px solid var(--ring);border-radius:999px;padding:10px 12px}
+button{all:unset;cursor:pointer}
+.btn{background:#fff;color:#000;border-radius:9999px;padding:12px 16px;font-weight:600;text-align:center}
+.btn-outline{background:transparent;border:1px solid #fff;color:#fff;border-radius:9999px;padding:10px 14px}
+.map{height:320px;border-radius:18px;border:1px solid var(--ring);overflow:hidden}
+footer{margin:20px 0;color:var(--muted);font-size:12px}
