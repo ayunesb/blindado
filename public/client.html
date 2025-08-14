@@ -186,6 +186,11 @@
         </div>
       </div>
 
+      <div id="vehicleLine" class="pill" style="margin-top:8px; display:none">
+        <img id="vehicleIcon" width="18" height="18" alt=""/>
+        <span id="vehicleLabel"></span>
+      </div>
+
       <div class="row" style="margin-top:12px;align-items:center;justify-content:space-between">
         <button id="btnOpenMaps" class="ghost hidden">Open in Maps</button>
         <div class="right">
@@ -414,7 +419,18 @@ document.getElementById("btnPay").onclick = async ()=>{
   payNote.textContent = "Processing pre-authorization…";
 
   // 1) create booking
-  const booking = await post("bookings", { quote: lastQuote, origin:center });
+  const origin_lat = center?.lat ?? 19.4326;
+  const origin_lng = center?.lng ?? -99.1332;
+  const city = (window.cityManual || window.cityDetected || document.getElementById("city").value);
+  const tier = document.getElementById("tier").value;
+  const armed_required = document.getElementById("armed").value === "true";
+  const vehicleSel = document.getElementById("vehicle").value;
+  const vehicle_required = vehicleSel !== "none";
+  const vehicle_type = vehicle_required ? (vehicleSel==="suv"?"suv":"armored") : null;
+  const start_ts = new Date(document.getElementById("start").value+":00Z").toISOString();
+  const end_ts   = new Date(document.getElementById("end").value+":00Z").toISOString();
+  const bookingPayload = { city, tier, armed_required, vehicle_required, vehicle_type, start_ts, end_ts, origin_lat, origin_lng };
+  const booking = await post("bookings", bookingPayload);
   bookingId = booking.booking_id || booking.id || "demo-booking";
   // 2) try to preauth
   const pre = await post("payments_preauth", { booking_id: bookingId, amount: lastQuote?.amount||0, currency: lastQuote?.currency||"MXN" });
@@ -436,9 +452,20 @@ document.getElementById("btnSimAccept").onclick = async ()=>{
   const res = await post("jobs", { action:"accept", booking_id: bookingId });
   const accepted = !res.fallback || true; // UI proceeds anyway for demo
   if (accepted) {
-    document.getElementById("confirmMsg").textContent = "Protector assigned. Vehicle: " +
-      (document.getElementById("vehicle").value === "armored" ? "Armored" :
-       document.getElementById("vehicle").value === "suv" ? "SUV" : "Client vehicle / on foot");
+  document.getElementById("confirmMsg").textContent = "Protector assigned.";
+  // show vehicle line with icon when applicable
+  const sel = document.getElementById("vehicle").value;
+  const line = document.getElementById("vehicleLine");
+  const icon = document.getElementById("vehicleIcon");
+  const label = document.getElementById("vehicleLabel");
+  let text = "Client vehicle / on foot";
+  let src = "";
+  if (sel === "armored") { text = "Armored"; src = "/assets/brand/ic-car-armored.svg"; }
+  else if (sel === "suv") { text = "SUV"; src = "/assets/brand/ic-car-suv.svg"; }
+  label.textContent = text;
+  if (src) { icon.src = src; icon.style.display = "inline-block"; icon.alt = text; }
+  else { icon.style.display = "none"; }
+  line.style.display = "inline-flex";
     out("✓ protector accepted");
   }
 };
@@ -504,6 +531,13 @@ initGeo();
   post('pricing', {}).then(()=> post('bookings', {})).then(()=> post('bookings_confirm', {})).then(()=>{
     out('[test] booking flow independent of wallet: ok');
   }).catch(()=> out('[test] booking flow independent of wallet: failed'));
+
+  // 7) booking payload contains origin_lat/origin_lng numbers
+  try {
+    const latOk = typeof (center?.lat ?? 19.4326) === 'number';
+    const lngOk = typeof (center?.lng ?? -99.1332) === 'number';
+    out('[test] booking payload lat/lng numeric:', String(latOk && lngOk));
+  } catch {}
 })();
 </script>
 </body>
