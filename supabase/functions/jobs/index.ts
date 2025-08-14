@@ -18,6 +18,40 @@ serve(async (req) => {
   const supa = createClient(SUPABASE_URL!, SERVICE_ROLE!);
 
   try {
+    // Quick status/heartbeat for a specific booking (for ETA on client confirm)
+    if (req.method === "GET") {
+      const bookingId = url.searchParams.get("booking_id");
+      if (bookingId) {
+        // Find latest assignment for this booking
+        const { data: asg, error: eA } = await supa
+          .from("assignments")
+          .select("id, status, guard_id, booking_id")
+          .eq("booking_id", bookingId)
+          .order("id", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (eA) throw eA;
+        if (!asg) {
+          return new Response(JSON.stringify({ status: "unknown", accepted: false, assignment_id: null, last_heartbeat: null }), { headers: cors });
+        }
+        const acceptedStatuses = new Set(["accepted", "check_in", "on_site", "in_progress"]);
+        const accepted = acceptedStatuses.has(asg.status);
+        let last_heartbeat: any = null;
+        if (asg.guard_id) {
+          // Use guard's last known coordinates (updated by locations heartbeat)
+          const { data: g } = await supa
+            .from("guards")
+            .select("home_lat, home_lng, updated_at")
+            .eq("id", asg.guard_id)
+            .maybeSingle();
+          if (g && g.home_lat != null && g.home_lng != null) {
+            last_heartbeat = { lat: g.home_lat, lng: g.home_lng, ts: g.updated_at || null };
+          }
+        }
+        return new Response(JSON.stringify({ status: asg.status, accepted, assignment_id: asg.id, last_heartbeat }), { headers: cors });
+      }
+    }
+
     if (req.method === "GET" && url.pathname.endsWith("/list")) {
       const guard_id = url.searchParams.get("guard_id");
       if (!guard_id) return new Response(JSON.stringify({ error: "guard_id required" }), { status: 400, headers: cors });
