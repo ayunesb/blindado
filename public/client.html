@@ -1,520 +1,279 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Blindado — Book Armed Protectors</title>
-  <link rel="preload" as="image" href="assets/brand/blindado-logo.svg">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blindado — Client</title>
+  <link rel="preload" as="image" href="assets/brand/blindado-logo.svg" />
   <style>
-    :root{
-      --bg:#0b0f17;--card:#111827;--muted:#6b7280;--text:#e5e7eb;--accent:#10b981;--danger:#ef4444;--chip:#1f2937;--line:#1f2937;
-      --btn:#111827;--btnText:#e5e7eb;
-    }
+    :root{--bg:#0b0f17;--card:#111827;--ring:#1f2937;--muted:#94a3b8;--text:#e5e7eb;--accent:#10b981;--danger:#ef4444}
     *{box-sizing:border-box}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial;background:var(--bg);color:var(--text)}
-    header{display:flex;gap:12px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,15,23,.85);backdrop-filter:saturate(160%) blur(8px)}
-    header img{height:32px}
-    header .brand{font-weight:800;letter-spacing:.5px}
-    main{max-width:760px;margin:16px auto;padding:0 16px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;background:var(--bg);color:var(--text)}
+    header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--ring);position:sticky;top:0;background:rgba(11,15,23,.85);backdrop-filter:saturate(140%) blur(8px)}
+    header img{height:28px}
+    main{max-width:820px;margin:16px auto;padding:0 14px}
+    .card{background:var(--card);border:1px solid var(--ring);border-radius:16px;padding:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
     .col{flex:1 1 240px}
     label{display:block;font-size:12px;color:var(--muted);margin:6px 0}
-    input,select,button{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#0d1320;color:var(--text)}
-    button{cursor:pointer;background:#0f172a}
-    .primary{background:var(--accent);color:#062817;border-color:#14b08a;font-weight:700}
+    input,select,button,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--ring);background:#0d1320;color:var(--text)}
+    button{cursor:pointer}
+    .primary{background:var(--accent);color:#062817;border:1px solid #14b08a;font-weight:700}
     .ghost{background:#0d1320}
     .muted{color:var(--muted)}
-    .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px}
-    .stepper{display:flex;gap:10px;align-items:center;margin:8px 0 16px}
-    .dot{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--muted);color:var(--muted);font-size:11px}
+    .stepper{display:flex;gap:8px;align-items:center;margin:10px 0 14px}
+    .dot{width:20px;height:20px;border-radius:999px;display:grid;place-items:center;border:2px solid #334155;color:#64748b;font-size:11px}
     .dot.active{border-color:var(--accent);color:var(--accent)}
-    .dot.done{background:var(--accent);border-color:var(--accent);color:#062817}
+    .dot.done{background:var(--accent);color:#062817;border-color:var(--accent)}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .line{height:1px;background:var(--line);margin:12px 0}
-    .banner{display:none;margin:8px 0;padding:10px;border-radius:12px;background:#1a1f2b;border:1px dashed var(--line);color:#cbd5e1}
-    .ok{color:#34d399}
-    .warn{color:#f59e0b}
-    .err{color:#f87171}
+    .line{height:1px;background:var(--ring);margin:12px 0}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:#0f172a;border:1px solid var(--ring);border-radius:999px;padding:6px 10px;font-size:12px}
+    .right{display:flex;gap:10px;justify-content:flex-end}
+    .ghostlink{background:none;border:none;color:#93c5fd;padding:0;text-decoration:underline;cursor:pointer}
     .hidden{display:none}
-    .right{display:flex;justify-content:flex-end;gap:10px}
-    .title{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .title h1{margin:0;font-size:20px}
-    .title small{font-weight:600}
     .price{font-weight:800;font-size:20px}
-    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#101623;border-radius:12px;padding:8px 10px}
-    .success{border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08)}
-    .ghostlink{background:none;border:none;color:#93c5fd;padding:0;cursor:pointer;text-decoration:underline}
-  /* debug console gating */
-  .debug{display:none;max-height:240px;overflow:auto;background:#0b1219;border:1px dashed #243344;padding:12px;border-radius:10px;font-size:12px;color:#9fb4c8}
-  body.show-debug .debug{display:block}
-  /* tiny toast for status */
-  .toast{position:fixed;right:16px;bottom:16px;background:#0b1219;border:1px solid #15324a;color:#cfe8ff;padding:10px 12px;border-radius:10px;box-shadow:0 6px 16px rgba(0,0,0,.35);display:none;z-index:50}
-  .toast.show{display:block}
+    .debug{display:none;max-height:220px;overflow:auto;background:#0b1219;border:1px dashed #243344;padding:10px;border-radius:10px;font-size:12px;color:#9fb4c8}
+    body.show-debug .debug{display:block}
+    .success{border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08);border-radius:12px;padding:10px}
   </style>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script type="importmap">{"imports":{"@supabase/supabase-js":"https://esm.sh/@supabase/supabase-js@2.55.0"}}</script>
 </head>
 <body>
-<header>
-  <img src="assets/brand/blindado-logo.svg" alt="Blindado logo"/>
-  <div class="brand">BLINDADO</div>
-  <a href="index.html" class="ghostlink" aria-label="Back to demos" style="margin-left:8px">← Demos</a>
-  <div style="margin-left:auto" class="chip" id="cityChip">
-  <img src="assets/brand/ic-shield.svg" width="16" height="16" alt="">
-    <span id="cityHero">Detecting city…</span>
-  </div>
-  
-</header>
-
-<main>
-  <!-- banner if geolocation denied -->
-  <div id="locBanner" class="banner">
-    We couldn’t access your location. <button id="btnEnterAddress" class="ghostlink">Enter address instead</button> or <button id="btnRetryGeo" class="ghostlink">retry</button>.
-  </div>
-
-  <!-- Stepper -->
-  <div class="stepper">
-    <div id="s1" class="dot active">1</div><span class="muted">Details</span>
-    <div id="s2" class="dot">2</div><span class="muted">Quote</span>
-    <div id="s3" class="dot">3</div><span class="muted">Payment</span>
-    <div id="s4" class="dot">4</div><span class="muted">Confirm</span>
-  </div>
-
-  <!-- Card -->
-  <div class="card">
-    <div class="title">
-      <h1>Book Armed Protectors</h1>
-      <span class="pill"><small id="locStatus">Using your device location</small></span>
+  <header>
+    <img src="assets/brand/blindado-logo.svg" alt="Blindado" />
+    <div style="font-weight:800;letter-spacing:.5px">BLINDADO</div>
+    <a href="index.html" class="ghostlink" style="margin-left:6px">← Demos</a>
+    <div style="margin-left:auto" class="chip"><img src="assets/brand/ic-shield.svg" width="14" height="14" alt=""/><span id="cityChip">Detecting…</span></div>
+  </header>
+  <main>
+    <div class="stepper">
+      <div id="d0" class="dot active">0</div><span class="muted">Welcome</span>
+      <div id="d1" class="dot">1</div><span class="muted">Details</span>
+      <div id="d2" class="dot">2</div><span class="muted">Quote</span>
+      <div id="d3" class="dot">3</div><span class="muted">Payment</span>
+      <div id="d4" class="dot">4</div><span class="muted">Confirm</span>
     </div>
 
-    <!-- FORM: Step 1 -->
-    <div id="step1">
-      <div class="grid2">
-        <div class="col">
-          <label>City</label>
-          <select id="city">
-            <option value="CDMX">CDMX</option>
-            <option value="NYC">New York</option>
-            <option value="LA">Los Angeles</option>
-          </select>
+    <div class="card">
+      <!-- 0) Welcome gate -->
+      <section id="step0">
+        <h2 style="margin:6px 0 2px">Welcome</h2>
+        <p class="muted" style="margin:0 0 8px">Please sign in to continue.</p>
+        <div class="grid2">
+          <div class="col">
+            <label>Email (magic link)</label>
+            <input id="email" type="email" placeholder="you@example.com" />
+          </div>
+          <div class="col">
+            <label>&nbsp;</label>
+            <button id="btn-magic" class="primary">Send magic link</button>
+          </div>
         </div>
-        <div class="col">
-          <label>Tier</label>
-          <select id="tier">
-            <option value="direct">Direct</option>
-            <option value="premium">Premium</option>
-          </select>
-        </div>
-      </div>
-      <div class="grid2" style="margin-top:8px">
-        <div class="col">
-          <label>Start (UTC)</label>
-          <input id="start" type="datetime-local"/>
-        </div>
-        <div class="col">
-          <label>End (UTC)</label>
-          <input id="end" type="datetime-local"/>
-        </div>
-      </div>
+        <p id="magic-msg" class="muted" style="margin-top:8px"></p>
+      </section>
 
-      <div class="grid2" style="margin-top:8px">
-        <div class="col">
-          <label>Guard</label>
-          <select id="armed">
-            <option value="false">Unarmed</option>
-            <option value="true">Armed</option>
-          </select>
+      <!-- 1) Details -->
+      <section id="step1" class="hidden">
+        <div class="row" style="justify-content:space-between">
+          <div class="muted">Enter your trip details</div>
+          <div id="authUser" class="muted"></div>
         </div>
-        <div class="col">
-          <label>Vehicle</label>
-          <select id="vehicle">
-            <option value="none">None</option>
-            <option value="suv">SUV</option>
-            <option value="armored">Armored</option>
-          </select>
+        <div class="grid2" style="margin-top:6px">
+          <div class="col">
+            <label>City</label>
+            <select id="city"></select>
+          </div>
+          <div class="col">
+            <label>Pickup address</label>
+            <input id="pickup_address" placeholder="Street, number, area" />
+          </div>
         </div>
-      </div>
+        <div class="grid2" style="margin-top:6px">
+          <div class="col">
+            <label>Tier</label>
+            <select id="tier"><option value="direct">Direct</option><option value="premium">Premium</option></select>
+          </div>
+          <div class="col">
+            <label>Dress code</label>
+            <select id="dress_code"><option>Business Formal</option><option>Business Casual</option><option>Tactical Casual</option></select>
+          </div>
+        </div>
+        <div class="grid2" style="margin-top:6px">
+          <div class="col">
+            <label>Guard</label>
+            <select id="armed"><option value="false">Unarmed</option><option value="true">Armed</option></select>
+          </div>
+          <div class="col">
+            <label>Vehicle</label>
+            <select id="vehicle"><option value="none">None</option><option value="suv">SUV</option><option value="armored">Armored</option></select>
+          </div>
+        </div>
+        <div class="grid2" style="margin-top:6px">
+          <div class="col"><label>Protectees</label><input id="protectees" type="number" min="1" value="1" /></div>
+          <div class="col"><label>Protectors</label><input id="protectors" type="number" min="1" value="1" /></div>
+        </div>
+        <div class="grid2" style="margin-top:6px">
+          <div class="col"><label>Vehicles</label><input id="vehicles" type="number" min="0" value="0" /></div>
+          <div class="col"><label>Start</label><input id="start" type="datetime-local" /></div>
+        </div>
+        <div class="grid2" style="margin-top:6px">
+          <div class="col"><label>End</label><input id="end" type="datetime-local" /></div>
+          <div class="col" style="align-self:end;text-align:right"><button id="btn-quote" class="primary">Get quote</button></div>
+        </div>
+        <div id="geoBanner" class="muted" style="margin-top:6px"></div>
+      </section>
 
-      <div class="right" style="margin-top:12px">
-        <button id="btnQuote" class="primary">Get Quote</button>
-      </div>
-    </div>
-
-    <!-- QUOTE: Step 2 -->
-    <div id="step2" class="hidden">
-      <div class="line"></div>
-      <div>
-        <div class="row" style="align-items:center;justify-content:space-between">
+      <!-- 2) Quote -->
+      <section id="step2" class="hidden">
+        <div class="row" style="justify-content:space-between">
           <div>
             <div class="muted">Estimated total</div>
-            <div class="price" id="quote">—</div>
+            <div class="price" id="quotePrice">—</div>
           </div>
-          <button id="btnProceed" class="primary">Proceed to Payment</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- PAYMENT (sim or real): Step 3 -->
-    <div id="step3" class="hidden">
-      <div class="line"></div>
-      <div class="grid2">
-        <div class="col">
-          <label>Name on card</label>
-          <input id="cardName" placeholder="Investor Demo"/>
-        </div>
-        <div class="col">
-          <label>Card (demo)</label>
-          <input id="cardNum" placeholder="4242 4242 4242 4242"/>
-        </div>
-      </div>
-      <div class="grid2" style="margin-top:8px">
-        <div class="col"><label>Exp</label><input id="cardExp" placeholder="12/28"/></div>
-        <div class="col"><label>CVC</label><input id="cardCvc" placeholder="123"/></div>
-      </div>
-  <div id="walletInfo" class="muted" style="margin-top:8px"></div>
-      <div class="right" style="margin-top:12px">
-        <button id="btnPay" class="primary">Pay & Reserve</button>
-      </div>
-      <div id="payNote" class="muted" style="margin-top:8px"></div>
-    </div>
-
-    <!-- CONFIRM + ACCEPTANCE: Step 4 -->
-    <div id="step4" class="hidden">
-      <div class="line"></div>
-      <div class="card success" style="border-radius:12px">
-        <div style="display:flex;gap:10px;align-items:center">
-          <img src="assets/brand/ic-shield.svg" width="18" height="18" alt="">
-          <div>
-            <div style="font-weight:700">Booking confirmed</div>
-            <div class="muted" id="confirmMsg">We’re offering this job to nearby protectors…</div>
+          <div class="right">
+            <button id="btn-back-edit" class="ghost">Back to edit</button>
+            <button id="btn-to-pay" class="primary">Proceed to Payment</button>
           </div>
         </div>
-      </div>
+        <div class="line"></div>
+        <div id="summary" class="muted"></div>
+      </section>
 
-      <div id="vehicleLine" class="pill" style="margin-top:8px; display:none">
-        <img id="vehicleIcon" width="18" height="18" alt=""/>
-        <span id="vehicleLabel"></span>
-      </div>
+      <!-- 3) Payment -->
+      <section id="step3" class="hidden">
+        <div id="payment-element"></div>
+        <div class="right" style="margin-top:8px"><button id="btn-pay" class="primary">Pay</button></div>
+        <div id="payMsg" class="muted" style="margin-top:6px"></div>
+      </section>
 
-      <div class="row" style="margin-top:12px;align-items:center;justify-content:space-between">
-        <button id="btnOpenMaps" class="ghost hidden">Open in Maps</button>
-        <div class="right">
-          <button id="btnSimAccept" class="primary">Simulate Protector Acceptance</button>
+      <!-- 4) Confirm -->
+      <section id="step4" class="hidden">
+        <div class="success"><strong>Booking confirmed.</strong> <span id="confirmText" class="muted"></span></div>
+        <div class="row" style="margin-top:10px;justify-content:space-between">
+          <div id="etaBox" class="muted">We’ll notify you closer to your pickup time.</div>
+          <button id="btnMaps" class="ghost hidden">Open in Maps</button>
         </div>
-      </div>
+      </section>
+
+      <div class="line"></div>
+      <pre id="debug" class="debug" aria-hidden="true"></pre>
     </div>
+  </main>
 
-    <!-- DEV OUTPUT -->
-    <div class="line"></div>
-  <pre id="debug" class="debug" aria-hidden="true"></pre>
-  </div>
-</main>
+  <script type="module">
+    import { createClient } from "@supabase/supabase-js";
+    const params = new URLSearchParams(location.search);
+    const SHOW_DEBUG = params.get("debug") === "1"; if (SHOW_DEBUG) document.body.classList.add("show-debug");
+    const debugEl = document.getElementById('debug');
+    const log = (...a)=>{ if(SHOW_DEBUG){ debugEl.textContent += a.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(' ')+'\n'; } };
 
-<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    // EVM shim (silence MetaMask errors)
+    (function(){ const g=window; const d={request:async(r)=>{if(r?.method==='eth_requestAccounts'||r?.method==='eth_accounts')return[]; if(r?.method==='eth_chainId')return '0x1'; return null;},enable:async()=>[],isConnected:()=>false,on:()=>{},off:()=>{},isMetaMask:false}; if(!g.ethereum) g.ethereum=d; })();
+    window.addEventListener('error',e=>{ const m=(e?.message||'').toLowerCase(); if(m.includes('google maps javascript api error')) e.preventDefault(); });
 
-<script>
-// Debug gate: only show logs if URL has ?debug=1
-const SHOW_DEBUG = new URL(location.href).searchParams.get('debug') === '1';
-if (SHOW_DEBUG) document.body.classList.add('show-debug');
-// Safe logger: prints to <pre id="debug"> when debug=1, else to console only
-const debugEl = document.getElementById('debug');
-function out(...args){
-  if (SHOW_DEBUG && debugEl){
-    const line = args.map(a => typeof a === 'string' ? a : JSON.stringify(a,null,2)).join(' ');
-    debugEl.textContent += line + '\n';
-  }
-  try { console.log('[ui]', ...args); } catch {}
-}
-/** ------- EIP-1193 shim (safe) ------- */
-(function ensureEVMProvider(){
-  const g = window;
-  const defaults = {
-    request: async (req)=>{
-      try {
-        if (req && (req.method === 'eth_requestAccounts' || req.method === 'eth_accounts')) return [];
-        if (req && req.method === 'eth_chainId') return '0x1';
-        return null;
-      } catch { return null; }
-    },
-    enable: async ()=>[],
-    isConnected: ()=>false,
-    on: ()=>{},
-    off: ()=>{},
-    isMetaMask: false
-  };
-  if (!g.ethereum){
-    g.ethereum = defaults;
-  } else if (g.ethereum && typeof g.ethereum.request === 'function') {
-    const orig = g.ethereum.request.bind(g.ethereum);
-    g.ethereum.request = async (req)=>{
-      try { return await orig(req); } catch (e){
-        const m = req && req.method;
-        if (m === 'eth_requestAccounts' || m === 'eth_accounts') return [];
-        if (m === 'eth_chainId') return '0x1';
-        console && console.warn && console.warn('ethereum.request error', e);
-        return null;
-      }
-    };
-    if (typeof g.ethereum.enable !== 'function') g.ethereum.enable = async ()=>[];
-    if (typeof g.ethereum.isConnected !== 'function') g.ethereum.isConnected = ()=>true;
-    if (typeof g.ethereum.on !== 'function') g.ethereum.on = ()=>{};
-    if (typeof g.ethereum.off !== 'function') g.ethereum.off = ()=>{};
-  }
-})();
-/** ------- helpers ------- */
-const q = new URL(location).searchParams;
-const SUPABASE_URL = q.get("url") || "https://isnezquuwepqcjkaupjh.supabase.co";
-const ANON = q.get("anon") || ""; // pass ?anon=... for real calls
-const FN = `${SUPABASE_URL}/functions/v1`;
+    // Supabase
+    const SUPABASE_URL = params.get('sb') || params.get('url') || 'https://isnezquuwepqcjkaupjh.supabase.co';
+    const ANON = params.get('anon') || window.BLINDADO_ANON || '';
+    const supa = createClient(SUPABASE_URL, ANON || '');
+    const FN = `${SUPABASE_URL}/functions/v1`;
+    const headers = ()=>{ const h={ 'content-type':'application/json' }; if(ANON){ h['apikey']=ANON; h['Authorization']=`Bearer ${ANON}`; } return h; };
+    const post = async(path, body)=>{ try{ const r=await fetch(`${FN}/${path}`,{method:'POST',headers:headers(),body:JSON.stringify(body)}); const t=await r.text(); const j=t?JSON.parse(t):{}; if(!r.ok) throw new Error(`${r.status}`); return j; }catch(e){ log('POST fail',path,e.message); return {_demo:true, fallback:true}; } };
 
-const out = (...a)=>{ const el=document.getElementById("out"); el.textContent += a.join(" ") + "\n"; }
+    // State
+    const state = { user:null, city:'', pickup_address:'', center:{lat:null,lng:null}, tier:'direct', armed_required:false, vehicle_required:false, vehicle_type:'none', dress_code:'Business Formal', protectees:1, protectors:1, vehicles:0, start_ts:'', end_ts:'', quote:null, bookingId:null, paymentIntentId:null };
 
-function headers() {
-  const h = { "content-type":"application/json" };
-  if (ANON) { h["apikey"] = ANON; h["Authorization"] = `Bearer ${ANON}`; }
-  return h;
-}
+    // UI helpers
+    const steps=['step0','step1','step2','step3','step4'];
+    function activate(i){ steps.forEach((id,idx)=>{ document.getElementById(id).classList.toggle('hidden', idx!==i); }); ['d0','d1','d2','d3','d4'].forEach((id,idx)=>{ const el=document.getElementById(id); el.classList.toggle('active', idx===i); el.classList.toggle('done', idx<i); }); }
+    function setCityChip(c){ document.getElementById('cityChip').textContent = c || 'Unknown'; }
+    function isoNowPlus(h){ const d=new Date(Date.now()+h*3600e3); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
 
-async function post(path, body) {
-  try {
-    const res = await fetch(`${FN}/${path}`, { method:"POST", headers:headers(), body:JSON.stringify(body) });
-    const txt = await res.text();
-    let data;
-    try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
-    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { data });
-    return data;
-  } catch (e) {
-    out("[warn] POST /"+path+" failed:", e.message, JSON.stringify(e.data||{},null,2));
-    return { _demo:true, ok:true, fallback:true, path, body };
-  }
-}
-/** ------- state ------- */
-let center=null, cityDetected="CDMX", cityManual=null, lastQuote=null, bookingId=null;
+    // Geolocation → naive city
+    async function geolocate(){ return new Promise(res=>{ if(!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p=>{ const {latitude,longitude}=p.coords; state.center={lat:latitude,lng:longitude}; const c=Math.abs(latitude-19.4326)<2?'CDMX':Math.abs(latitude-40.7128)<2?'NYC':Math.abs(latitude-34.0522)<2?'LA':'CDMX'; state.city=c; setCityChip(c); res(true); },()=>res(null),{enableHighAccuracy:true,timeout:6000}); }); }
 
-/** geo + city */
-function isoNowPlus(hours=1){ const d=new Date(Date.now()+hours*3600e3);
-  d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
-
-function platformIsIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent); }
-
-function openMapsLink(lat,lng){
-  const url = platformIsIOS()
-    ? `http://maps.apple.com/?ll=${lat},${lng}`
-    : `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-  window.open(url, "_blank");
-}
-
-function activate(step){
-  ["s1","s2","s3","s4"].forEach((id,i)=>{
-    const el=document.getElementById(id);
-    el.classList.toggle("active", i===step-1);
-    el.classList.toggle("done", i<step-1);
-  });
-  ["step1","step2","step3","step4"].forEach((id,i)=>{
-    document.getElementById(id).classList.toggle("hidden", i!==step-1);
-  });
-  if (step === 3) {
-    const info = document.getElementById('walletInfo');
-    if (info) {
-      info.textContent = 'Card pre-authorization (demo). Stripe wiring optional; fallback uses server stub.';
+    // Magic link gate
+  async function handleMagic(){ const emailEl = document.getElementById('email'); const email = emailEl && 'value' in emailEl ? String(emailEl.value).trim() : ''; const msg=document.getElementById('magic-msg'); if(!email){ msg.textContent='Enter your email'; return; }
+      try{ const { error } = await supa.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href.split('#')[0] } }); if(error) throw error; msg.textContent='Check your email for a magic link.'; }catch(e){ msg.textContent='Failed to send magic link.'; }
     }
-  }
-}
+    async function readSessionFromHash(){ const h=new URL(location.href).hash.slice(1); if(!h) return; const sp=new URLSearchParams(h); const at=sp.get('access_token'); const rt=sp.get('refresh_token'); if(at&&rt){ try{ await supa.auth.setSession({ access_token:at, refresh_token:rt }); }catch{} history.replaceState({},'',location.pathname+location.search); } }
+    async function ensureAuth(){ const { data } = await supa.auth.getSession(); if(data.session){ state.user=data.session.user; return true; } return false; }
 
-async function geolocate() {
-  return new Promise((resolve)=>{
-    if (!navigator.geolocation) { resolve(null); return; }
-    navigator.geolocation.getCurrentPosition(
-      (pos)=>{
-        const { latitude, longitude } = pos.coords;
-        center = { lat: latitude, lng: longitude };
-        // naive city detection by lat band (ok for demo)
-        cityDetected = Math.abs(latitude-19.4326)<2 ? "CDMX" :
-                       Math.abs(latitude-40.7128)<2 ? "NYC"  :
-                       Math.abs(latitude-34.0522)<2 ? "LA"   : "CDMX";
-        resolve(center);
-      },
-      ()=> resolve(null),
-      { enableHighAccuracy:true, timeout:6000 }
-    );
-  });
-}
+    // Pricing
+    async function fetchQuote(){ const payload={ city:state.city, tier:state.tier, armed_required:state.armed_required, vehicle_required:state.vehicle_required, vehicle_type: state.vehicle_type==='none'?null:state.vehicle_type, start_ts:state.start_ts, end_ts:state.end_ts, origin: state.center };
+      const data=await post('pricing', payload); const amount=data.quote_amount||data.amount||0; const currency=(data.currency||'USD').toUpperCase(); state.quote={ total:amount, currency };
+      document.getElementById('quotePrice').textContent = amount ? `${amount} ${currency}` : 'N/A';
+      const s = document.getElementById('summary'); s.textContent = JSON.stringify({ city:state.city, pickup_address:state.pickup_address, tier:state.tier, armed_required:state.armed_required, vehicle_required:state.vehicle_required, vehicle_type:state.vehicle_type, dress_code:state.dress_code, protectees:state.protectees, protectors:state.protectors, vehicles:state.vehicles, start_ts:state.start_ts, end_ts:state.end_ts }, null, 2);
+    }
 
-/** ------- init UI ------- */
-document.getElementById("start").value = isoNowPlus(1);
-document.getElementById("end").value   = isoNowPlus(5);
-document.getElementById("btnRetryGeo").onclick = ()=> initGeo(true);
-document.getElementById("btnEnterAddress").onclick = ()=>{
-  cityManual = prompt("Enter city: CDMX, NYC, LA", cityDetected) || cityDetected;
-  document.getElementById("city").value = cityManual;
-  document.getElementById("cityHero").textContent = cityManual;
-};
-document.getElementById("btnOpenMaps").onclick = ()=> center && openMapsLink(center.lat, center.lng);
+    // Payment (Stripe Elements)
+    let stripe=null, elements=null, clientSecret=null;
+    async function setupPayment(){ const amount=Math.round((state.quote?.total||0)*100); const res=await post('payments_create_intent', { amount, currency:'usd', city:state.city, tier:state.tier, customer_email: state.user?.email||'' }); if(res.demo){ document.getElementById('payMsg').textContent='Demo mode (no real charge). Click Pay to simulate.'; return; }
+      clientSecret=res.client_secret; stripe = Stripe(res.publishable_key); elements = stripe.elements({ clientSecret });
+      const pe = elements.create('payment'); pe.mount('#payment-element');
+    }
+    async function confirmPayment(){ const msg=document.getElementById('payMsg'); if(!state.quote){ msg.textContent='No quote.'; return; }
+      if(!stripe){ // demo fallback
+        msg.textContent='Simulated payment approved (demo).';
+      } else {
+        const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect:'if_required' }); if(error){ msg.textContent=error.message||'Payment failed'; return; }
+        state.paymentIntentId = paymentIntent?.id || null; msg.textContent='Payment succeeded.';
+      }
+      // Create booking after payment
+      const payload={ city:state.city, pickup_address:state.pickup_address, tier:state.tier, armed_required:state.armed_required, vehicle_required:state.vehicle_required, vehicle_type: state.vehicle_type==='none'?null:state.vehicle_type, dress_code:state.dress_code, protectees:state.protectees, protectors:state.protectors, vehicles:state.vehicles, start_ts:state.start_ts, end_ts:state.end_ts, origin_lat: state.center?.lat, origin_lng: state.center?.lng };
+      const b=await post('bookings', payload); state.bookingId = b.booking_id || b.id || null; activate(4);
+      document.getElementById('confirmText').textContent = ` #${state.bookingId || 'pending'} • ${state.city} • ${new Date(state.start_ts).toLocaleString()} → ${new Date(state.end_ts).toLocaleString()} • ${state.pickup_address||''}`;
+      startConfirmPolling();
+    }
 
-// wallet UI removed for demo; EVM shim stays to keep legacy calls benign
+    // Confirm polling — placeholder: try GET /jobs?booking_id, else show default text
+    function isSameDayAndWithinHour(startIso){ const now=new Date(); const start=new Date(startIso); const same = now.toDateString()===start.toDateString(); const diff=start.getTime()-now.getTime(); return same && diff<=60*60*1000 && diff>=0; }
+    function haversineKm(a,b){ const R=6371, toRad=d=>d*Math.PI/180; const dLat=toRad(b.lat-a.lat); const dLng=toRad(b.lng-a.lng); const s1=Math.sin(dLat/2)**2; const s2=Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(s1+s2)); }
+    function etaMinutes(from,to,avg=30){ const km=haversineKm(from,to); return Math.max(1, Math.round((km/avg)*60)); }
+    function mapsLink(lat,lng){ const apple=`http://maps.apple.com/?ll=${lat},${lng}`; const google=`https://maps.google.com/?q=${lat},${lng}`; return /iPhone|iPad|Macintosh/.test(navigator.userAgent)?apple:google; }
+    async function pollOnce(){ try{ const r=await fetch(`${FN}/jobs?booking_id=${encodeURIComponent(state.bookingId||'')}`,{headers:headers()}); if(!r.ok) return null; const j=await r.json(); return j; }catch{return null;} }
+    function startConfirmPolling(){ const etaBox=document.getElementById('etaBox'); const btn=document.getElementById('btnMaps'); let t=null; async function tick(){ const ok=isSameDayAndWithinHour(state.start_ts); if(!ok){ etaBox.textContent='We’ll notify you closer to your pickup time.'; btn.classList.add('hidden'); return; } const info = await pollOnce(); if(info && info.accepted && info.last_heartbeat){ etaBox.textContent = `ETA ${etaMinutes(info.last_heartbeat, {lat:state.center.lat,lng:state.center.lng})} min`; btn.classList.remove('hidden'); btn.onclick=()=>{ const u=mapsLink(state.center.lat, state.center.lng); window.open(u,'_blank'); }; } else { etaBox.textContent='We’ll notify you closer to your pickup time.'; btn.classList.add('hidden'); } }
+      tick(); setInterval(tick, 10000);
+    }
 
-/** quote */
-document.getElementById("btnQuote").onclick = async ()=>{
-  const city = cityManual || cityDetected || document.getElementById("city").value;
-  const tier = document.getElementById("tier").value;
-  const armed_required = document.getElementById("armed").value === "true";
-  const vehicleSel = document.getElementById("vehicle").value;
-  const vehicle_required = vehicleSel !== "none";
-  const vehicle_type = vehicle_required ? (vehicleSel==="suv"?"suv":"armored") : null;
-  const start_ts = new Date(document.getElementById("start").value+":00Z").toISOString();
-  const end_ts   = new Date(document.getElementById("end").value+":00Z").toISOString();
+    // Wire UI
+    document.getElementById('btn-magic').onclick = handleMagic;
+    document.getElementById('btn-back-edit').onclick = ()=> activate(1);
+    document.getElementById('btn-to-pay').onclick = ()=> activate(3);
+    document.getElementById('btn-pay').onclick = confirmPayment;
 
-  const payload = {
-    city, tier, armed_required, vehicle_required, vehicle_type,
-    start_ts, end_ts,
-    origin: center || { lat:19.4326,lng:-99.1332 }
-  };
-  out("→ pricing", JSON.stringify(payload));
-  const data = await post("pricing", payload);
-  const qEl = document.getElementById("quote");
-  const amount = data.quote_amount || data.amount || 0;
-  lastQuote = { amount, currency: data.currency || "MXN" };
-  qEl.textContent = amount ? `${amount} ${lastQuote.currency}` : "N/A";
-  activate(2);
-};
+    // Initialize
+    document.getElementById('start').value = isoNowPlus(1);
+    document.getElementById('end').value = isoNowPlus(5);
+    await readSessionFromHash();
+    const authed = await ensureAuth();
+    if(authed){ activate(1); document.getElementById('authUser').textContent = (await supa.auth.getUser()).data.user?.email || 'Signed in'; }
+    else { activate(0); }
+    await geolocate();
+    const citySel=document.getElementById('city'); ['CDMX','NYC','LA'].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; citySel.appendChild(o); }); citySel.value = state.city || 'CDMX';
+    citySel.addEventListener('change', ()=>{ state.city = citySel.value; setCityChip(state.city); }); setCityChip(state.city || 'CDMX');
 
-/** proceed to payment: save quote + redirect to checkout */
-document.getElementById("btnProceed").onclick = ()=>{
-  try {
-    const city = (window.cityManual || window.cityDetected || document.getElementById("city").value);
-    const tier = document.getElementById("tier").value;
-    const armed_required = document.getElementById("armed").value === "true";
-    const vehicleSel = document.getElementById("vehicle").value;
-    const vehicle_required = vehicleSel !== "none";
-    const vehicle_type = vehicle_required ? (vehicleSel==="suv"?"suv":"armored") : null;
-    const start_ts = new Date(document.getElementById("start").value+":00Z").toISOString();
-    const end_ts   = new Date(document.getElementById("end").value+":00Z").toISOString();
-    const payload = {
-      booking_id: (window.bookingId || null),
-      amount_cents: Math.round((lastQuote?.amount||0) * 100),
-      amount: lastQuote?.amount||0,
-      currency: (lastQuote?.currency||"MXN"),
-      city, tier,
-      armed_required, vehicle_required, vehicle_type,
-      start_ts, end_ts,
-      center: center || { lat:19.4326,lng:-99.1332 },
-      hours: undefined
+    // Details handlers
+    document.getElementById('btn-quote').onclick = async()=>{
+      state.city = citySel.value;
+      const pickup = document.getElementById('pickup_address'); state.pickup_address = pickup && 'value' in pickup ? String(pickup.value).trim() : '';
+      const tierEl = document.getElementById('tier'); state.tier = tierEl && 'value' in tierEl ? String(tierEl.value) : 'direct';
+      const dcEl = document.getElementById('dress_code'); state.dress_code = dcEl && 'value' in dcEl ? String(dcEl.value) : 'Business Formal';
+      const armedEl = document.getElementById('armed'); state.armed_required = armedEl && 'value' in armedEl ? String(armedEl.value)==='true' : false;
+      const vehEl = document.getElementById('vehicle'); const v = vehEl && 'value' in vehEl ? String(vehEl.value) : 'none'; state.vehicle_type=v; state.vehicle_required = v!=='none';
+      const protEs = document.getElementById('protectees'); state.protectees = protEs && 'value' in protEs ? parseInt(String(protEs.value)||'1') : 1;
+      const protOrs = document.getElementById('protectors'); state.protectors = protOrs && 'value' in protOrs ? parseInt(String(protOrs.value)||'1') : 1;
+      const vehs = document.getElementById('vehicles'); state.vehicles = vehs && 'value' in vehs ? parseInt(String(vehs.value)||'0') : 0;
+      const startEl = document.getElementById('start'); const endEl = document.getElementById('end');
+      const sVal = startEl && 'value' in startEl ? String(startEl.value) : '';
+      const eVal = endEl && 'value' in endEl ? String(endEl.value) : '';
+      state.start_ts = sVal ? new Date(sVal+':00Z').toISOString() : '';
+      state.end_ts = eVal ? new Date(eVal+':00Z').toISOString() : '';
+      await fetchQuote(); activate(2);
     };
-    sessionStorage.setItem("blindado_quote", JSON.stringify(payload));
-    const url = new URL(location.href);
-    const anon = url.searchParams.get("anon")||"";
-    const sb = url.searchParams.get("url")||"https://isnezquuwepqcjkaupjh.supabase.co";
-  // toast before redirect
-  const toast = document.getElementById('toast');
-  if (toast){ toast.textContent = 'Redirecting to secure checkout…'; toast.classList.add('show'); }
-  setTimeout(()=>{ location.href = `checkout.html?anon=${encodeURIComponent(anon)}&sb=${encodeURIComponent(sb)}`; }, 100);
-  } catch {
-    activate(3);
-  }
-};
 
-/** pay (preauth real or demo) */
-document.getElementById("btnPay").onclick = async ()=>{
-  const payNote = document.getElementById("payNote");
-  payNote.textContent = "Processing pre-authorization…";
-
-  // 1) create booking
-  const origin_lat = center?.lat ?? 19.4326;
-  const origin_lng = center?.lng ?? -99.1332;
-  const city = (window.cityManual || window.cityDetected || document.getElementById("city").value);
-  const tier = document.getElementById("tier").value;
-  const armed_required = document.getElementById("armed").value === "true";
-  const vehicleSel = document.getElementById("vehicle").value;
-  const vehicle_required = vehicleSel !== "none";
-  const vehicle_type = vehicle_required ? (vehicleSel==="suv"?"suv":"armored") : null;
-  const start_ts = new Date(document.getElementById("start").value+":00Z").toISOString();
-  const end_ts   = new Date(document.getElementById("end").value+":00Z").toISOString();
-  const bookingPayload = { city, tier, armed_required, vehicle_required, vehicle_type, start_ts, end_ts, origin_lat, origin_lng };
-  const booking = await post("bookings", bookingPayload);
-  bookingId = booking.booking_id || booking.id || "demo-booking";
-  // 2) try to preauth
-  const pre = await post("payments_preauth", { booking_id: bookingId, amount: lastQuote?.amount||0, currency: lastQuote?.currency||"MXN" });
-
-  // 3) confirm booking
-  await post("bookings_confirm", { booking_id: bookingId, preauth_id: pre.payment_id || pre.id || "demo-preauth" });
-
-  payNote.textContent = pre.fallback ? "Pre-auth simulated for demo." : "Pre-auth approved.";
-  document.getElementById("confirmMsg").textContent = "Confirmed. Offering this job to nearby protectors…";
-  if (center) document.getElementById("btnOpenMaps").classList.remove("hidden");
-  activate(4);
-
-  // kick matching (non-blocking)
-  post("matching", { booking_id: bookingId }).then(()=> out("matching started"));
-};
-
-/** simulate acceptance (tries real first, then UI only) */
-document.getElementById("btnSimAccept").onclick = async ()=>{
-  const res = await post("jobs", { action:"accept", booking_id: bookingId });
-  const accepted = !res.fallback || true; // UI proceeds anyway for demo
-  if (accepted) {
-  document.getElementById("confirmMsg").textContent = "Protector assigned.";
-  // show vehicle line with icon when applicable
-  const sel = document.getElementById("vehicle").value;
-  const line = document.getElementById("vehicleLine");
-  const icon = document.getElementById("vehicleIcon");
-  const label = document.getElementById("vehicleLabel");
-  let text = "Client vehicle / on foot";
-  let src = "";
-  if (sel === "armored") { text = "Armored"; src = "assets/brand/ic-car-armored.svg"; }
-  else if (sel === "suv") { text = "SUV"; src = "assets/brand/ic-car-suv.svg"; }
-  label.textContent = text;
-  if (src) { icon.src = src; icon.style.display = "inline-block"; icon.alt = text; }
-  else { icon.style.display = "none"; }
-  line.style.display = "inline-flex";
-    out("✓ protector accepted");
-  }
-};
-
-/** meta mask noise silencer (keeps demo resilient) */
-(function useMetaMaskSilencer(){
-  const g=window;
-  const originalOnError=g.onerror;
-  g.onerror=function(msg,src,lin,col,err){
-    if (String(msg||"").toLowerCase().includes("metamask")) return true;
-    return originalOnError ? originalOnError(msg,src,lin,col,err) : false;
-  };
-})();
-
-/** google maps referer noise silencer */
-window.addEventListener("error",(e)=>{
-  const msg=(e?.message||"").toLowerCase();
-  if (msg.includes("google maps javascript api error")) e.preventDefault();
-});
-
-/** init geo + city/hero */
-async function initGeo(promptRetry=false){
-  const ok = await geolocate();
-  const banner = document.getElementById("locBanner");
-  if (!ok){ banner.style.display="block"; document.getElementById("locStatus").textContent="Location needed — using default CDMX"; }
-  else { banner.style.display="none"; document.getElementById("locStatus").textContent="Using your device location"; }
-  const citySel = document.getElementById("city");
-  citySel.value = cityDetected;
-  document.getElementById("cityHero").textContent = cityDetected;
-}
-initGeo();
-
-/** ------- self-tests for demo safety ------- */
-if (SHOW_DEBUG) (function selfTests(){
-  // 1) no map rendered; banner logic works
-  const banner = document.getElementById("locBanner");
-  out("[test] loc banner initially:", banner.style.display || "none");
-
-  // 2) booking flow independent from wallet (uses fallback path if needed)
-  post('pricing', {}).then(()=> post('bookings', {})).then(()=> post('bookings_confirm', {})).then(()=>{
-    out('[test] booking flow independent of wallet: ok');
-  }).catch(()=> out('[test] booking flow independent of wallet: failed'));
-
-  // 3) booking payload contains origin_lat/origin_lng numbers
-  try {
-    const latOk = typeof (center?.lat ?? 19.4326) === 'number';
-    const lngOk = typeof (center?.lng ?? -99.1332) === 'number';
-    out('[test] booking payload lat/lng numeric:', String(latOk && lngOk));
-  } catch {}
-})();
-</script>
+    // When entering payment, setup Stripe Elements
+    const toPayBtn=document.getElementById('btn-to-pay'); toPayBtn.addEventListener('click', async()=>{ await setupPayment(); });
+  </script>
 </body>
 </html>

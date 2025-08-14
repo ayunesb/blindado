@@ -77,10 +77,28 @@
       const r=await fetch(`${FN}/jobs/list?guard_id=${encodeURIComponent(g)}`,{headers:headers()});
       const data=await r.json(); renderJobs(data.items||data||[]);
     }
-    function renderJobs(items){
+    function isSameDayAndWithinHour(startIso){ const now=new Date(); const s=new Date(startIso); const same=now.toDateString()===s.toDateString(); const diff=s-now; return same && diff<=60*60*1000 && diff>=0; }
+    function haversineKm(a,b){ const R=6371, toRad=d=>d*Math.PI/180; const dLat=toRad(b.lat-a.lat), dLng=toRad(b.lng-a.lng); const s1=Math.sin(dLat/2)**2; const s2=Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(s1+s2)); }
+    function etaMinutes(from,to,avg=30){ const km=haversineKm(from,to); return Math.max(1, Math.round((km/avg)*60)); }
+
+    async function computeEtaIfAllowed(job){
+      if(job.status!=='accepted') return { show:false, text:'Waiting for protector to start' };
+      if(!isSameDayAndWithinHour(job.start_ts)) return { show:false, text:'Waiting for protector to start' };
+      try{
+        const r=await fetch(`${FN}/locations?guard_id=${encodeURIComponent(job.guard_id)}`,{headers:headers()});
+        if(!r.ok) return { show:false, text:'Waiting for protector to start' };
+        const j=await r.json();
+        if(j.home_lat==null||j.home_lng==null||job.origin_lat==null||job.origin_lng==null) return { show:false, text:'Waiting for protector to start' };
+        const mins = etaMinutes({lat:j.home_lat,lng:j.home_lng},{lat:job.origin_lat,lng:job.origin_lng});
+        return { show:true, text:`ETA ${mins} min` };
+      }catch{return { show:false, text:'Waiting for protector to start' }}
+    }
+
+    async function renderJobs(items){
       const box=$('#jobs'); box.innerHTML=''; $('#jobs-empty').style.display = items.length? 'none':'block';
       for(const j of items){
         const el=document.createElement('div'); el.className='item';
+        const eta = await computeEtaIfAllowed(j);
         el.innerHTML = `
           <div class="row">
             <div class="pill">${j.city||'-'}</div>
@@ -91,7 +109,8 @@
           <div class="row" style="margin-top:6px;gap:8px">
             <div class="small mono">booking: ${j.booking_id}</div>
             <div class="small mono">assign: ${j.assignment_id}</div>
-            <div style="margin-left:auto;display:flex;gap:6px">
+            <div class="small" style="margin-left:auto">${eta.show ? eta.text : 'Waiting for protector to start'}</div>
+            <div style="display:flex;gap:6px">
               ${j.status==='offered' ? `<button class="btn-sm" data-accept="${j.assignment_id}">Accept</button>` : `<button class=\"btn-ol\" data-next=\"${j.assignment_id}\" data-cur=\"${j.status}\">Next</button>`}
             </div>
           </div>`;

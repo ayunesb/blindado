@@ -30,29 +30,60 @@ serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   const body = await req.json().catch(() => ({}));
+  // Accept richer payload; normalize origin
+  const originObj = (body && typeof body.origin === "object") ? body.origin : null;
+  const origin_lat = Number.isFinite(originObj?.lat) ? Number(originObj.lat) : (Number.isFinite(body.origin_lat) ? Number(body.origin_lat) : null);
+  const origin_lng = Number.isFinite(originObj?.lng) ? Number(originObj.lng) : (Number.isFinite(body.origin_lng) ? Number(body.origin_lng) : null);
+
   const {
-    client_id, city: cityInput, tier = "direct",
-    armed_required = false, vehicle_required = false, vehicle_type = null,
-    start_ts, end_ts, origin_lat, origin_lng, dest_lat = null, dest_lng = null,
-    notes = null
+    client_id = null,
+    city: cityInput,
+    tier = "direct",
+    armed_required = false,
+    vehicle_required = false,
+    vehicle_type = null,
+    start_ts,
+    end_ts,
+    dest_lat = null,
+    dest_lng = null,
+    pickup_address = null,
+    dress_code = null,
+    protectees = null,
+    protectors = null,
+    vehicles = null,
+    notes = null,
   } = body;
 
   const derivedCity = cityFromLatLng(origin_lat, origin_lng);
   const city = derivedCity ?? cityInput;
 
-  if (!client_id || !start_ts || !end_ts || !city) {
-    return j({ error: "client_id, city, start_ts, end_ts are required" }, 400);
+  // Keep validation on city/tier/start/end; client_id is optional in this flow
+  if (!start_ts || !end_ts || !city) {
+    return j({ error: "city, start_ts, end_ts are required" }, 400);
   }
 
   const { data, error } = await supabase
     .from("bookings")
     .insert([{
-      client_id, city, tier,
-      armed_required, vehicle_required, vehicle_type,
-      start_ts, end_ts,
-      origin_lat, origin_lng, dest_lat, dest_lng,
+      client_id,
+      city,
+      tier,
+      armed_required,
+      vehicle_required,
+      vehicle_type,
+      start_ts,
+      end_ts,
+      origin_lat,
+      origin_lng,
+      dest_lat,
+      dest_lng,
+      pickup_address,
+      dress_code,
+      protectees,
+      protectors,
+      vehicles,
       notes,
-      status: "quoted"
+      status: "quoted",
     }])
     .select("id")
     .single();

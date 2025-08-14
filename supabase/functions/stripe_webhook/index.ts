@@ -122,13 +122,41 @@ serve(async (req) => {
   try { event = JSON.parse(payload); } catch { return bad("Invalid JSON payload"); }
 
   if (event.type !== "payment_intent.succeeded") {
+    // Acknowledge unrelated events (e.g., setup_intent.*, payment_intent.payment_failed)
     return json({ ok: true, ignored: event.type });
   }
 
-  const STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY");
+  // Handle Thin payloads by expanding the event to include data.object
+  let STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY");
+  let pi: PI | null = (event?.data?.object && typeof event.data.object === "object" && event.data.object.object === "payment_intent")
+    ? (event.data.object as PI)
+    : null;
+
+  if (!pi) {
+    if (!STRIPE_SECRET_KEY) {
+      return bad("Thin payload received but STRIPE_SECRET_KEY not configured to expand event. Use Snapshot payload or set secret.", 501);
+    }
+    try {
+      const res = await fetch(`https://api.stripe.com/v1/events/${encodeURIComponent(event.id)}?expand[]=data.object`, {
+        headers: { "Authorization": `Bearer ${STRIPE_SECRET_KEY}` }
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        return bad(`Failed to expand Stripe event: ${res.status} ${txt}`);
+      }
+      const expanded = await res.json();
+      const obj = expanded?.data?.object;
+      if (!obj || obj.object !== "payment_intent") return bad("Expanded event missing PaymentIntent", 400);
+      event = expanded;
+      pi = obj as PI;
+    } catch (e) {
+      return bad(`Error expanding Stripe event: ${String(e)}`);
+    }
+  }
+  // Ensure secret key exists for transfers even if expansion happened
+  STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY");
   if (!STRIPE_SECRET_KEY) return bad("Stripe secret not configured", 501);
 
-  const pi: PI = event.data?.object;
   const booking_id = pi?.metadata?.booking_id || pi.transfer_group || pi.id;
   const total = pi.amount_received ?? pi.amount ?? 0;
   const currency = (pi.currency || "mxn").toLowerCase();
