@@ -1,14 +1,21 @@
--- Bookings: new optional fields for the investor demo & prod
+-- 1) Ensure extension
+create extension if not exists "pgcrypto";
+
+-- 2) Add columns to bookings (safe if they already exist)
 alter table public.bookings
   add column if not exists pickup_address text,
   add column if not exists dress_code text,
-  add column if not exists protectees integer not null default 1 check (protectees >= 1),
-  add column if not exists protectors integer not null default 1 check (protectors >= 1),
-  add column if not exists vehicles integer  not null default 0 check (vehicles >= 0);
+  add column if not exists protectees integer default 1,
+  add column if not exists protectors integer default 1,
+  add column if not exists vehicles integer default 0;
 
--- Helpful index for upcoming lists and ETAs
-create index if not exists bookings_start_ts_idx on public.bookings (start_ts);
+-- 3) Helpful indexes (idempotent)
+create index if not exists idx_bookings_start_ts on public.bookings (start_ts);
+create index if not exists idx_bookings_city on public.bookings (city);
 
--- (Optional) comment docs
-comment on column public.bookings.pickup_address is 'Freeform address provided by client';
-comment on column public.bookings.dress_code is 'Business Formal | Business Casual | Tactical Casual';
+-- 4) Optional comments (nice for admin UI)
+comment on column public.bookings.pickup_address is 'Human-readable pickup address entered by client';
+comment on column public.bookings.dress_code is 'Business Formal, Business Casual, or Tactical Casual';
+comment on column public.bookings.protectees is 'How many principals we are protecting';
+comment on column public.bookings.protectors is 'How many protectors requested';
+comment on column public.bookings.vehicles is 'How many vehicles requested (0 = none)';

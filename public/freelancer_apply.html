@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aplicación Freelancer • Escolta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0'
+
+    const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co'
+    const SUPABASE_ANON_KEY = new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY'
+    const FN = `${SUPABASE_URL}/functions/v1`
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const qs = (id)=>document.getElementById(id)
+    function toast(msg, bad=false){
+      const t=qs('toast'); t.textContent=msg
+      t.className='fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-sm '+(bad?'bg-red-600':'bg-emerald-600')
+      setTimeout(()=>t.className='hidden', 3200)
+    }
+
+    async function init(){
+      const { data: { session } } = await supabase.auth.getSession()
+      if(!session) { location.href = '/auth.html'; return }
+      qs('email').textContent = session.user.email || ''
+      qs('photo').addEventListener('change', preview)
+      qs('apply').addEventListener('click', ()=> apply(session))
+    }
+
+    function preview(){
+      const f = qs('photo').files?.[0]
+      if(!f) return
+      const previewUrl = URL.createObjectURL(f)
+      qs('photo_preview').src = previewUrl
+    }
+
+    async function uploadTo(bucket, filePath, file){
+      const { error } = await supabase.storage.from(bucket).upload(filePath, file, { upsert:true })
+      if(error) throw error
+      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath)
+      return publicUrl
+    }
+
+    async function apply(session){
+      const first_name = qs('first_name').value.trim()
+      const last_name = qs('last_name').value.trim()
+      const armed = qs('armed').checked
+      const dress_codes = Array.from(document.querySelectorAll('input[name=dress]:checked')).map(i=>i.value)
+
+      let photo_url = null
+      const pf = qs('photo').files?.[0]
+      if(pf){ photo_url = await uploadTo('avatars', `${session.user.id}/guard_${Date.now()}.jpg`, pf) }
+
+      // Collect simple document uploads
+      const docs = []
+      for(const input of document.querySelectorAll('input[type=file][data-doc]')){
+        const f = input.files?.[0]; if(!f) continue
+        const url = await uploadTo('documents', `${session.user.id}/${input.dataset.doc}_${Date.now()}.pdf`, f)
+        docs.push({ type: input.dataset.doc, url })
+      }
+
+      const res = await fetch(FN + '/freelancer_apply', {
+        method:'POST', headers:{ 'authorization': `Bearer ${session.access_token}`, 'content-type':'application/json' },
+        body: JSON.stringify({ first_name, last_name, armed, dress_codes, photo_url, documents: docs })
+      })
+      const j = await res.json().catch(()=>({}))
+      if(!res.ok) return toast(j.error||'Error', true)
+      toast('Aplicación enviada')
+    }
+
+    document.addEventListener('DOMContentLoaded', init)
+  </script>
+</head>
+<body class="bg-black text-zinc-200 min-h-screen">
+  <header class="p-4 border-b border-zinc-800 flex items-center justify-between">
+    <div class="font-semibold">Aplicación Freelancer</div>
+    <a href="/profile.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Perfil</a>
+  </header>
+  <main class="max-w-2xl mx-auto p-6 space-y-6">
+    <div class="border border-zinc-800 rounded-2xl p-5 space-y-3">
+      <div class="text-sm text-zinc-400">Sesión: <span id="email"></span></div>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="first_name" placeholder="Nombre" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+        <input id="last_name" placeholder="Apellido" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
+      </div>
+      <div class="flex items-center gap-2">
+        <input id="armed" type="checkbox" class="accent-emerald-500">
+        <label for="armed">Armado</label>
+      </div>
+      <div class="space-y-1">
+        <div class="text-sm text-zinc-400">Código de vestimenta</div>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="dress" value="formal" class="accent-emerald-500"> Formal</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="dress" value="tactical" class="accent-emerald-500"> Táctico</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="dress" value="casual" class="accent-emerald-500"> Casual</label>
+      </div>
+      <div class="flex items-center gap-3">
+        <img id="photo_preview" class="w-16 h-16 rounded-xl object-cover border border-zinc-700" src="/avatar-placeholder.svg" alt="avatar" />
+        <input id="photo" type="file" accept="image/*" />
+      </div>
+    </div>
+
+    <div class="border border-zinc-800 rounded-2xl p-5 space-y-3">
+      <div class="text-sm text-zinc-400">Documentos</div>
+      <label class="block text-sm">INE/ID: <input type="file" data-doc="id" accept="image/*,application/pdf" class="mt-1" /></label>
+      <label class="block text-sm">Licencia de conducir: <input type="file" data-doc="driver_license" accept="image/*,application/pdf" class="mt-1" /></label>
+      <label class="block text-sm">Cert. arma (si aplica): <input type="file" data-doc="weapon_permit" accept="image/*,application/pdf" class="mt-1" /></label>
+    </div>
+
+    <button id="apply" class="w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-xl py-2 font-medium">Enviar aplicación</button>
+  </main>
+  <div id="toast" class="hidden"></div>
+</body>
+</html>
