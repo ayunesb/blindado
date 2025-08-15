@@ -1,6 +1,7 @@
 // supabase/functions/jobs/index.ts
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
+import { preflight } from '../_shared/http.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -10,7 +11,8 @@ const cors = {
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const pf = preflight(req);
+  if (pf) return pf;
 
   const url = new URL(req.url);
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || Deno.env.get('BLINDADO_SUPABASE_URL');

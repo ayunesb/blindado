@@ -1,5 +1,6 @@
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
+import { preflight } from '../_shared/http.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,7 +20,8 @@ function cityFromLatLng(lat?: number | null, lng?: number | null): string | null
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
+  const pf = preflight(req);
+  if (pf) return pf;
   if (req.method !== 'POST') return j({ error: 'POST only' }, 405);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || Deno.env.get('BLINDADO_SUPABASE_URL');

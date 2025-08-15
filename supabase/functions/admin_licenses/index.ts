@@ -5,6 +5,7 @@
 // (B) JSON: { guard_id, type, issuer?, number?, valid_from?, valid_to?, files?: [{path|url:string}], status? } -> inserts row pointing to existing Storage path(s).
 
 import { serve } from 'std/http/server.ts';
+import { preflight } from '../_shared/http.ts';
 import { createClient } from '@supabase/supabase-js';
 
 const CORS = {
@@ -23,9 +24,8 @@ function env(name: string): string {
 
 serve(async (req) => {
   try {
-    if (req.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: CORS });
-    }
+  const pf = preflight(req);
+  if (pf) return pf;
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'method_not_allowed' }), {
         status: 405,

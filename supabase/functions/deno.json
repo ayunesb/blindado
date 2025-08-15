@@ -1,0 +1,11 @@
+{
+  "importMap": "./import_map.json",
+  "lint": {
+    "rules": { "tags": ["recommended"] }
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "singleQuote": true
+  }
+}

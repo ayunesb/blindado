@@ -1,4 +1,5 @@
 import { serve } from 'std/http/server.ts';
+import { preflight, badRequest, ok } from '../_shared/http.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -105,15 +106,16 @@ function formEncode(obj: Record<string, string | number | boolean | undefined>) 
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return bad('Method not allowed', 405);
+  const pf = preflight(req);
+  if (pf) return pf;
+  if (req.method !== 'POST') return badRequest('Method not allowed');
 
   const STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET');
-  if (!STRIPE_WEBHOOK_SECRET) return bad('Webhook secret not configured', 501);
+  if (!STRIPE_WEBHOOK_SECRET) return badRequest('Webhook secret not configured');
 
   const sigHeader = req.headers.get('stripe-signature');
   const parsed = parseStripeSigHeader(sigHeader);
-  if (!parsed) return bad('Missing/invalid Stripe-Signature');
+  if (!parsed) return badRequest('Missing/invalid Stripe-Signature');
 
   const payload = await req.text();
   const signedPayload = `${parsed.t}.${payload}`;
@@ -124,12 +126,12 @@ serve(async (req) => {
   try {
     event = JSON.parse(payload);
   } catch {
-    return bad('Invalid JSON payload');
+  return badRequest('Invalid JSON payload');
   }
 
   if (event.type !== 'payment_intent.succeeded') {
     // Acknowledge unrelated events (e.g., setup_intent.*, payment_intent.payment_failed)
-    return json({ ok: true, ignored: event.type });
+  return ok({ ok: true, ignored: event.type });
   }
 
   // Handle Thin payloads by expanding the event to include data.object
@@ -157,21 +159,21 @@ serve(async (req) => {
       );
       if (!res.ok) {
         const txt = await res.text();
-        return bad(`Failed to expand Stripe event: ${res.status} ${txt}`);
+  return badRequest(`Failed to expand Stripe event: ${res.status} ${txt}`);
       }
       const expanded = await res.json();
       const obj = expanded?.data?.object;
       if (!obj || obj.object !== 'payment_intent')
-        return bad('Expanded event missing PaymentIntent', 400);
+  return badRequest('Expanded event missing PaymentIntent');
       event = expanded;
       pi = obj as PI;
     } catch (e) {
-      return bad(`Error expanding Stripe event: ${String(e)}`);
+  return badRequest(`Error expanding Stripe event: ${String(e)}`);
     }
   }
   // Ensure secret key exists for transfers even if expansion happened
   STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY');
-  if (!STRIPE_SECRET_KEY) return bad('Stripe secret not configured', 501);
+  if (!STRIPE_SECRET_KEY) return badRequest('Stripe secret not configured');
 
   const booking_id = pi?.metadata?.booking_id || pi.transfer_group || pi.id;
   const total = pi.amount_received ?? pi.amount ?? 0;
@@ -215,7 +217,7 @@ serve(async (req) => {
       body,
     });
     const j = await res.json();
-    if (!res.ok) throw new Error(`Transfer ${label} failed: ${JSON.stringify(j)}`);
+  if (!res.ok) throw new Error(`Transfer ${label} failed: ${JSON.stringify(j)}`);
     transfers.push({ label, id: j.id, amount: j.amount });
   };
 
@@ -227,8 +229,8 @@ serve(async (req) => {
     if (parts.companies > 0 && DEST.companies)
       await doTransfer(parts.companies, DEST.companies, 'companies');
   } catch (e) {
-    return json({ ok: false, booking_id, error: String(e), partial_transfers: transfers }, 200);
+    return ok({ ok: false, booking_id, error: String(e), partial_transfers: transfers });
   }
 
-  return json({ ok: true, booking_id, transfers });
+  return ok({ ok: true, booking_id, transfers });
 });

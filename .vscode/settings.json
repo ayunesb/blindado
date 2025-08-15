@@ -18,5 +18,16 @@
   // Inherit Codespaces env by default
   "terminal.integrated.inheritEnv": true,
   // No extra env overrides
-  "terminal.integrated.env.linux": {}
+  "terminal.integrated.env.linux": {},
+
+  // Deno-only validation for Edge Functions
+  "deno.enable": true,
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.lint": true,
+  "deno.unstable": true,
+  // Keep TS validation on elsewhere
+  "typescript.validate.enable": true,
+
+  // Misc
+  "files.exclude": { "**/.DS_Store": true }
 }

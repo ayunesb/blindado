@@ -1,4 +1,5 @@
 import { serve } from 'std/http/server.ts';
+import { preflight, badRequest, ok } from '../_shared/http.ts';
 
 type CreateReq = {
   booking_id?: string;
@@ -81,12 +82,11 @@ function ensureBookingId(id?: string) {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const pf = preflight(req);
+  if (pf) return pf;
 
   if (req.method !== 'POST') {
-    return bad('Method not allowed', 405);
+    return badRequest('Method not allowed');
   }
 
   let body: CreateReq;
@@ -98,7 +98,7 @@ serve(async (req) => {
 
   const amount = Number(body.amount);
   if (!Number.isInteger(amount) || amount <= 0) {
-    return bad('amount must be a positive integer (smallest unit)');
+    return badRequest('amount must be a positive integer (smallest unit)');
   }
   const currency = normalizeCurrency(body.currency);
   const booking_id = ensureBookingId(body.booking_id);
@@ -108,14 +108,7 @@ serve(async (req) => {
 
   // If secrets missing, return demo mode so frontend can fallback gracefully.
   if (!STRIPE_SECRET_KEY || !STRIPE_PUBLISHABLE_KEY) {
-    return json(
-      {
-        demo: true,
-        reason: 'Stripe keys not configured',
-        publishable_key: STRIPE_PUBLISHABLE_KEY || null,
-      },
-      501,
-    );
+    return ok({ demo: true, reason: 'Stripe keys not configured', publishable_key: STRIPE_PUBLISHABLE_KEY || null });
   }
 
   const splits = getSplits();
@@ -145,10 +138,10 @@ serve(async (req) => {
 
   const pi = await res.json();
   if (!res.ok) {
-    return json({ error: 'stripe_error', details: pi }, 500);
+    return badRequest('stripe_error');
   }
 
-  return json({
+  return ok({
     client_secret: pi.client_secret,
     publishable_key: STRIPE_PUBLISHABLE_KEY,
     transfer_group: booking_id,
