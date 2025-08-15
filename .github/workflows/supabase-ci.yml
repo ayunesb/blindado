@@ -121,6 +121,30 @@ jobs:
         run: |
           echo "${SUPABASE_ACCESS_TOKEN}" | supabase login --token -
           supabase link --project-ref "${SUPABASE_PROJECT_REF}"
+      - name: Define function flags map
+        env:
+          FUNCTION_FLAGS: ${{ vars.FUNCTION_FLAGS }}
+        run: |
+          set -euo pipefail
+          {
+            echo 'flags_for() {'
+            echo '  local fn="$1"'
+            echo '  declare -A FLAGS=()'
+            echo '  # Optional override: repo variable FUNCTION_FLAGS like: pricing="" jobs="--no-verify-jwt"'
+            echo '  for pair in '"$FUNCTION_FLAGS"'; do'
+            echo '    [[ -z "$pair" ]] && continue'
+            echo '    local name=${pair%%=*}'; echo '    local val=${pair#*=}'
+            echo '    FLAGS[$name]=$val'
+            echo '  done'
+            echo '  # Small default map (tweak as needed)'
+            echo '  case "$fn" in'
+            echo '    stripe_webhook|kyc_webhook|admin_*|payments_*|uploads|matching|quotes|bookings*|jobs|locations*|org_* ) default="--no-verify-jwt" ;;
+                  * ) default="--no-verify-jwt" ;;'
+            echo '  esac'
+            echo '  if [[ -n "${FLAGS[$fn]:-}" ]]; then echo "${FLAGS[$fn]}"; else echo "$default"; fi'
+            echo '}'
+          } > ./flags-map.sh
+          echo "Wrote flags-map.sh"
       - name: Detect changed functions
         id: cf
         uses: tj-actions/changed-files@v45
@@ -146,18 +170,21 @@ jobs:
       - name: Deploy functions (changed or all)
         run: |
           set -euo pipefail
+          source ./flags-map.sh
           if [ "${{ steps.fl.outputs.list }}" = "ALL" ]; then
             echo "No function diffs detected; deploying all"
             for d in supabase/functions/*; do
               [ -d "$d" ] || continue
               fn=$(basename "$d")
               echo "Deploying $fn"
-              supabase functions deploy "$fn" --no-verify-jwt
+              flags="$(flags_for "$fn")"
+              supabase functions deploy "$fn" ${flags}
             done
           else
             for fn in ${{ steps.fl.outputs.list }}; do
               echo "Deploying $fn"
-              supabase functions deploy "$fn" --no-verify-jwt
+              flags="$(flags_for "$fn")"
+              supabase functions deploy "$fn" ${flags}
             done
           fi
 
