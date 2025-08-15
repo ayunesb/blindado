@@ -121,13 +121,56 @@ jobs:
         run: |
           echo "${SUPABASE_ACCESS_TOKEN}" | supabase login --token -
           supabase link --project-ref "${SUPABASE_PROJECT_REF}"
-      - name: Deploy all functions
+      - name: Detect changed functions
+        id: cf
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            supabase/functions/**
+
+      - name: Build function list
+        id: fl
         run: |
           set -euo pipefail
-          # Deploy each edge function directory under supabase/functions
-          for d in supabase/functions/*; do
-            [ -d "$d" ] || continue
-            fn="$(basename "$d")"
-            echo "Deploying $fn"
-            supabase functions deploy "$fn" --no-verify-jwt
-          done
+          changed=()
+          while IFS= read -r f; do
+            dir=$(echo "$f" | awk -F/ '/^supabase\/functions\//{print $3}')
+            if [ -n "$dir" ]; then changed+=("$dir"); fi
+          done <<< "${{ steps.cf.outputs.all_changed_files }}"
+          if [ ${#changed[@]} -eq 0 ]; then
+            echo "list=ALL" >> $GITHUB_OUTPUT
+          else
+            printf "list=%s\n" "$(printf "%s\n" "${changed[@]}" | sort -u | tr '\n' ' ')" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy functions (changed or all)
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.fl.outputs.list }}" = "ALL" ]; then
+            echo "No function diffs detected; deploying all"
+            for d in supabase/functions/*; do
+              [ -d "$d" ] || continue
+              fn=$(basename "$d")
+              echo "Deploying $fn"
+              supabase functions deploy "$fn" --no-verify-jwt
+            done
+          else
+            for fn in ${{ steps.fl.outputs.list }}; do
+              echo "Deploying $fn"
+              supabase functions deploy "$fn" --no-verify-jwt
+            done
+          fi
+
+      - name: Post-deploy health check
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_API_SECRET: ${{ secrets.ADMIN_API_SECRET }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          chmod +x ./scripts/smoke.sh
+          ./scripts/smoke.sh 2>&1 | tee post_deploy_smoke.log

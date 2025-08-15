@@ -136,23 +136,22 @@ echo
 echo "✅ Smoke OK — booking_id=$BOOKING_ID assignment_id=$ASSIGN_ID"
 
 # Optional Stripe create-intent check if Stripe keys are present
-if [[ -n "$STRIPE_SECRET_KEY" && -n "$STRIPE_PUBLISHABLE_KEY" ]]; then
-  echo
-  echo "→ payments_create_intent (Stripe)"
-  CI_REQ=$(cat <<JSON
+stripe_test() {
+  echo "[stripe] payments_create_intent"
+  local req
+  req=$(cat <<JSON
 {"amount": ${AMOUNT:-1000}, "currency": "mxn", "booking_id": "$BOOKING_ID"}
 JSON
 )
-  # Pass publishable key if function echoes it; function uses secret from env
-  STRIPE_RES=$(curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/payments_create_intent" -H 'content-type: application/json' -d "$CI_REQ")
-  echo "$STRIPE_RES" | jq .
-  CLIENT_SECRET=$(echo "$STRIPE_RES" | jq -r '.client_secret // empty')
-  if [[ -z "$CLIENT_SECRET" ]]; then
-    echo "[WARN] Stripe client_secret missing; check function/env"
-  else
-    echo "[ok] Stripe PaymentIntent client_secret received"
-  fi
-fi
+  local resp
+  resp=$(curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/payments_create_intent" -H 'content-type: application/json' -d "$req")
+  echo "$resp" | jq .
+  local cs
+  cs=$(echo "$resp" | jq -r '.client_secret // empty')
+  test -n "$cs" || { echo "missing client_secret"; exit 1; }
+}
+
+if [[ -n "$STRIPE_SECRET_KEY" && -n "$STRIPE_PUBLISHABLE_KEY" ]]; then stripe_test; fi
 
 # Locations (optional simple check)
 echo
