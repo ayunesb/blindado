@@ -1,0 +1,22 @@
+{
+  // Force a stable bash profile in this workspace
+  "terminal.integrated.defaultProfile.linux": "Bash (clean)",
+  "terminal.integrated.profiles.linux": {
+    "Bash": {
+      "path": "/bin/bash",
+      "args": ["-l"],
+      "icon": "terminal-bash"
+    },
+    "Bash (clean)": {
+      "path": "/bin/bash",
+      "args": ["--noprofile", "--norc"],
+      "icon": "terminal-bash"
+    }
+  },
+  // Ensure terminals start in the workspace root
+  "terminal.integrated.cwd": "/workspaces/blindado",
+  // Inherit Codespaces env by default
+  "terminal.integrated.inheritEnv": true,
+  // No extra env overrides
+  "terminal.integrated.env.linux": {}
+}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redirecting…</title>
+    <noscript>
+      <meta http-equiv="refresh" content="0; url=../client.html" />
+    </noscript>
+    <script>
+      // Redirect /client/ → ../client.html, preserving query and hash.
+      (function () {
+        try {
+          var path = location.pathname;
+          // Trim trailing slash if present
+          if (path.endsWith('/')) path = path.slice(0, -1);
+          // Go to parent dir and append client.html
+          var parent = path.substring(0, path.lastIndexOf('/')) || '';
+          var target = parent + '/client.html' + (location.search || '') + (location.hash || '');
+          location.replace(target);
+        } catch (e) {
+          // Fallback if something unexpected happens
+          location.href = '../client.html';
+        }
+      })();
+    </script>
+    <style>
+      html, body { height: 100%; margin: 0; font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color: #222; }
+      .wrap { height: 100%; display: grid; place-items: center; text-align: center; padding: 24px; }
+      a { color: #0b5fff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div>
+        <p>Redirecting to the client app…</p>
+        <p>
+          If you are not redirected automatically,
+          <a href="../client.html">click here</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+  </html>
