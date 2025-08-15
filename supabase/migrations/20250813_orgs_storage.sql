@@ -40,37 +40,79 @@ alter table public.organizations enable row level security;
 alter table public.org_members   enable row level security;
 alter table public.documents     enable row level security;
 
-create policy if not exists org_read_admin on public.organizations
-for select using (exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin));
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='organizations' and policyname='org_read_admin'
+  ) then
+    create policy org_read_admin on public.organizations
+    for select using (exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin));
+  end if;
+end $$;
 
-create policy if not exists org_read_member on public.organizations
-for select using (exists (select 1 from public.org_members m where m.org_id = organizations.id and m.profile_id = auth.uid()));
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='organizations' and policyname='org_read_member'
+  ) then
+    create policy org_read_member on public.organizations
+    for select using (exists (select 1 from public.org_members m where m.org_id = organizations.id and m.profile_id = auth.uid()));
+  end if;
+end $$;
 
-create policy if not exists org_insert_admin on public.organizations
-for insert with check (exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin));
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='organizations' and policyname='org_insert_admin'
+  ) then
+    create policy org_insert_admin on public.organizations
+    for insert with check (exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin));
+  end if;
+end $$;
 
-create policy if not exists org_members_read on public.org_members
-for select using (
-  profile_id = auth.uid()
-  or exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin)
-);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='org_members' and policyname='org_members_read'
+  ) then
+    create policy org_members_read on public.org_members
+    for select using (
+      profile_id = auth.uid()
+      or exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin)
+    );
+  end if;
+end $$;
 
-create policy if not exists org_members_insert_admin on public.org_members
-for insert with check (exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin));
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='org_members' and policyname='org_members_insert_admin'
+  ) then
+    create policy org_members_insert_admin on public.org_members
+    for insert with check (exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin));
+  end if;
+end $$;
 
-create policy if not exists docs_read on public.documents
-for select using (
-  (owner_type='profile' and owner_id = auth.uid())
-  or exists (select 1 from public.org_members m where m.org_id = documents.org_id and m.profile_id = auth.uid() and m.role in ('owner','admin','manager'))
-  or exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin)
-);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='documents' and policyname='docs_read'
+  ) then
+    create policy docs_read on public.documents
+    for select using (
+      (owner_type='profile' and owner_id = auth.uid())
+      or exists (select 1 from public.org_members m where m.org_id = documents.org_id and m.profile_id = auth.uid() and m.role in ('owner','admin','manager'))
+      or exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin)
+    );
+  end if;
+end $$;
 
-create policy if not exists docs_insert_owner on public.documents
-for insert with check (
-  (owner_type='profile' and owner_id = auth.uid())
-  or exists (select 1 from public.org_members m where m.org_id = documents.org_id and m.profile_id = auth.uid() and m.role in ('owner','admin','manager'))
-  or exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin)
-);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='documents' and policyname='docs_insert_owner'
+  ) then
+    create policy docs_insert_owner on public.documents
+    for insert with check (
+      (owner_type='profile' and owner_id = auth.uid())
+      or exists (select 1 from public.org_members m where m.org_id = documents.org_id and m.profile_id = auth.uid() and m.role in ('owner','admin','manager'))
+      or exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin)
+    );
+  end if;
+end $$;
 
 insert into public.organizations (id, name)
 values ('11111111-1111-1111-1111-111111111111', 'Blindado Company')
@@ -95,25 +137,49 @@ insert into storage.buckets (id, name, public) values
   ('incidents','incidents', false)
 on conflict (id) do nothing;
 
-create policy if not exists "avatars public read" on storage.objects
-for select using (bucket_id = 'avatars');
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='avatars public read'
+  ) then
+    create policy "avatars public read" on storage.objects
+    for select using (bucket_id = 'avatars');
+  end if;
+end $$;
 
-create policy if not exists "avatars owner write" on storage.objects
-for insert with check (
-  bucket_id='avatars' and (auth.role() = 'authenticated')
-);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='avatars owner write'
+  ) then
+    create policy "avatars owner write" on storage.objects
+    for insert with check (
+      bucket_id='avatars' and (auth.role() = 'authenticated')
+    );
+  end if;
+end $$;
 
-create policy if not exists "private buckets read" on storage.objects
-for select using (
-  bucket_id in ('licenses','vehicles','incidents')
-  and (
-    exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin)
-    or (auth.uid() is not null)
-  )
-);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='private buckets read'
+  ) then
+    create policy "private buckets read" on storage.objects
+    for select using (
+      bucket_id in ('licenses','vehicles','incidents')
+      and (
+        exists (select 1 from public.v_is_admin a where a.profile_id = auth.uid() and a.is_admin)
+        or (auth.uid() is not null)
+      )
+    );
+  end if;
+end $$;
 
-create policy if not exists "private buckets write" on storage.objects
-for insert with check (
-  bucket_id in ('licenses','vehicles','incidents') and auth.role() = 'authenticated'
-);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='private buckets write'
+  ) then
+    create policy "private buckets write" on storage.objects
+    for insert with check (
+      bucket_id in ('licenses','vehicles','incidents') and auth.role() = 'authenticated'
+    );
+  end if;
+end $$;
 -- END storage policies
