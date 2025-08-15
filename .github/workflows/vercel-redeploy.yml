@@ -1,59 +1,8 @@
-name: Vercel Redeploy
+name: Deprecated Vercel Redeploy (disabled)
 on:
-  workflow_dispatch:
-
+  workflow_dispatch: {}
 jobs:
-  redeploy:
+  noop:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Trigger via Deploy Hook (if available)
-        if: ${{ secrets.VERCEL_DEPLOY_HOOK_URL != '' }}
-        run: |
-          curl -sS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
-
-      - name: Trigger via Vercel CLI (fallback)
-        if: ${{ secrets.VERCEL_DEPLOY_HOOK_URL == '' && secrets.VERCEL_TOKEN != '' }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          npm i -g vercel@latest
-          cd public
-          vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
-          vercel deploy --prod --prebuilt --token "$VERCEL_TOKEN"
-name: Vercel Redeploy
-
-on:
-  workflow_dispatch:
-    inputs:
-      note:
-        description: 'Optional note about this redeploy'
-        required: false
-
-jobs:
-  redeploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Redeploy via Deploy Hook (if provided)
-        if: ${{ secrets.VERCEL_DEPLOY_HOOK_URL != '' }}
-        run: |
-          set -euo pipefail
-          curl -fsS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}" -H 'content-type: application/json' -d '{"source":"github-actions"}'
-
-      - name: Redeploy via Vercel CLI (fallback)
-        if: ${{ secrets.VERCEL_DEPLOY_HOOK_URL == '' }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${VERCEL_TOKEN:-}" ]; then
-            echo "::error::Missing VERCEL_TOKEN secret. Provide VERCEL_DEPLOY_HOOK_URL or VERCEL_TOKEN."; exit 1
-          fi
-          npm i -g vercel@latest
-          cd public
-          # Linked project is stored at public/.vercel/project.json
-          vercel --token "$VERCEL_TOKEN" --prod --yes
+      - run: echo "Use vercel-deploy.yml via deploy hook."

@@ -14,6 +14,8 @@ import TimeField from './components/fields/TimeField';
 import DurationField from './components/fields/DurationField';
 import { PROTECTORS } from './data/profiles';
 import { computeQuote } from '../shared/quote';
+import { getSupabaseClient } from './lib/supabase';
+import { submitBookingLead } from './services/booking';
 
 type Props = { anon: string; sb: string };
 
@@ -79,6 +81,10 @@ function validateDraft(d: BookingDraft) {
 export default function App({ anon, sb }: Props) {
   const { route, navigate } = useHashRoute();
   const [toast, setToast] = useState<string>('');
+  const [submitting, setSubmitting] = useState(false);
+  const supabase = useMemo(() => {
+    try { return getSupabaseClient(); } catch { return null; }
+  }, []);
 
   // Booking state
   const [draft, setDraft] = useState<BookingDraft>({
@@ -126,7 +132,8 @@ export default function App({ anon, sb }: Props) {
     navigate('quote');
   }
 
-  function onConfirm() {
+  async function onConfirm() {
+    setSubmitting(true);
     const q = computeQuote({
       basePerHour,
       hours: draft.durationHours,
@@ -146,9 +153,24 @@ export default function App({ anon, sb }: Props) {
       },
       ...draft,
     };
-    setBookings((prev) => [booking, ...prev]);
-    setToast('Request submitted. We\u2019ll contact you shortly.');
-    navigate('bookings');
+    try {
+      if (supabase) {
+        const pickupIso = new Date(`${draft.pickupDate}T${draft.pickupTime}:00`).toISOString();
+        await submitBookingLead(supabase, {
+          pickupLocation: draft.pickupLocation,
+          pickupIso,
+          durationHours: draft.durationHours,
+        });
+      }
+      setBookings((prev) => [booking, ...prev]);
+      setToast('Request submitted. We\u2019ll contact you shortly.');
+      navigate('bookings');
+    } catch (err) {
+      console.error(err);
+      setToast('Something went wrong. Try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -369,7 +391,7 @@ export default function App({ anon, sb }: Props) {
           <Button variant="secondary" height="md" rounded="md" onClick={() => navigate('book')}>
             Back
           </Button>
-          <Button height="md" rounded="md" onClick={onConfirm}>
+          <Button height="md" rounded="md" onClick={onConfirm} disabled={submitting} className={submitting ? 'opacity-60' : ''}>
             Confirm
           </Button>
         </div>

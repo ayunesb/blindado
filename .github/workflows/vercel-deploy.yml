@@ -1,0 +1,18 @@
+name: Vercel Deploy
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Supabase CI"]
+    types: [completed]
+    branches: [main]
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel Deploy Hook
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          [ -z "$HOOK" ] && echo "Missing VERCEL_DEPLOY_HOOK_URL" && exit 1
+          curl -fsS -X POST "$HOOK" -H 'content-type: application/json' -d '{"source":"github-actions"}'
