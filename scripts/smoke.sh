@@ -2,6 +2,12 @@
 set -euo pipefail
 
 # Config (override via env)
+# Prefer CI-provided SUPABASE_URL or SUPABASE_PROJECT_REF; allow explicit FN override
+BASE="${SUPABASE_URL:-}"
+if [[ -z "$BASE" && -n "${SUPABASE_PROJECT_REF:-}" ]]; then
+  BASE="https://${SUPABASE_PROJECT_REF}.supabase.co"
+fi
+FN="${FN:-${BASE:+$BASE/functions/v1}}"
 FN="${FN:-https://isnezquuwepqcjkaupjh.supabase.co/functions/v1}"
 CLIENT_ID="${CLIENT_ID:-1b387371-6711-485c-81f7-79b2174b90fb}"
 GUARD_ID="${GUARD_ID:-c38efbac-fd1e-426b-a0ab-be59fd908c8c}"
@@ -10,8 +16,9 @@ TIER="${TIER:-direct}"
 DUR_HOURS="${DUR_HOURS:-4}"
 
 # Optional: supply your project's anon key to satisfy the API gateway
-# e.g., export ANON="$(op read supabase_anon_key)" or set in CI secrets
-ANON="${ANON:-}"
+# Prefer SUPABASE_ANON_KEY when present (CI)
+ANON="${ANON:-${SUPABASE_ANON_KEY:-}}"
+ADMIN="${ADMIN:-${ADMIN_API_SECRET:-}}"
 
 # In CI, require ANON to be set for Functions gateway
 if [[ "${GITHUB_ACTIONS:-}" == "true" && -z "${ANON}" ]]; then

@@ -1,103 +1,105 @@
-name: Supabase Migrations & Smoke
+name: Supabase Migrations + Smoke
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]   # runs read-only checks; no secrets to forks
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: supabase-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  # Project-wide envs; secrets defined in repo settings
-  SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-  ADMIN_API_SECRET: ${{ secrets.ADMIN_API_SECRET }}
-  STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-  STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
-  STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-  # Optional: provide full DB URL if you want to run seed.sql via psql
-  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-  # Toggle to run seed step (requires SUPABASE_DB_URL)
-  RUN_SEED: ${{ vars.RUN_SEED || 'false' }}
+  # Toggle seed step (optional)
+  RUN_SEED: ${{ vars.RUN_SEED }}
 
 jobs:
   migrations:
-    name: Apply Supabase migrations
+    name: Apply migrations to Supabase
     runs-on: ubuntu-latest
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Setup Node (for scripts/smoke.sh that might use node)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-      - name: Install tools (jq, psql)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq postgresql-client
-
-      - name: Link project (non-interactive)
+      - name: Login & link project
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ env.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ env.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          test -n "$SUPABASE_ACCESS_TOKEN" || { echo 'Missing SUPABASE_ACCESS_TOKEN'; exit 1; }
-          test -n "$SUPABASE_PROJECT_REF" || { echo 'Missing SUPABASE_PROJECT_REF'; exit 1; }
-          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase --version
+          echo "${SUPABASE_ACCESS_TOKEN}" | supabase login --token -
+          supabase link --project-ref "${SUPABASE_PROJECT_REF}"
 
-      - name: Migration list (pre)
+      - name: Push migrations (remote)
         env:
-          SUPABASE_DB_PASSWORD: ${{ env.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          test -n "$SUPABASE_DB_PASSWORD" || { echo 'Missing SUPABASE_DB_PASSWORD'; exit 1; }
-          # psql respects PGPASSWORD for auth prompts invoked by CLI
-          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
-          supabase migration list --linked -- --no-pager | cat
-
-      - name: Push migrations (non-interactive)
-        env:
-          SUPABASE_DB_PASSWORD: ${{ env.SUPABASE_DB_PASSWORD }}
-        run: |
-          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
-          yes | supabase db push --linked --include-all
-
-      - name: Migration list (post)
-        env:
-          SUPABASE_DB_PASSWORD: ${{ env.SUPABASE_DB_PASSWORD }}
-        run: |
-          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
-          supabase migration list --linked -- --no-pager | cat
+          # Non-interactive; uses linked project
+          supabase db push --password "$SUPABASE_DB_PASSWORD"
 
       - name: Optional seed.sql
-        if: env.RUN_SEED == 'true' && env.SUPABASE_DB_URL != ''
+        if: env.RUN_SEED == 'true'
         env:
-          SUPABASE_DB_URL: ${{ env.SUPABASE_DB_URL }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          echo 'Running seed.sql against remote database'
-          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/seed.sql
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "SUPABASE_DB_URL not set; skipping seed.sql"; exit 0
+          fi
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          psql "$SUPABASE_DB_URL" -v "ON_ERROR_STOP=1" -f supabase/seed.sql
+
+      - name: Upload migration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-artifacts
+          path: |
+            supabase/migrations
+            supabase/.temp/**
 
   smoke:
-    name: Smoke test Edge Functions
+    name: Smoke edge functions
     runs-on: ubuntu-latest
     needs: migrations
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install tools (jq, curl)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq curl
+      - name: Make smoke executable
+        run: chmod +x ./scripts/smoke.sh
 
       - name: Run smoke.sh
         env:
-          # Point FN at this project's Functions base URL
-          FN: https://${{ env.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1
-          ANON: ${{ env.SUPABASE_ANON_KEY }}
-          ADMIN: ${{ env.ADMIN_API_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}              # optional; used by smoke.sh if needed
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_API_SECRET: ${{ secrets.ADMIN_API_SECRET }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
         run: |
-          bash scripts/smoke.sh
+          set -euo pipefail
+          ./scripts/smoke.sh 2>&1 | tee smoke.log
+          echo "### Smoke output" >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
+          tail -n 200 smoke.log >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
