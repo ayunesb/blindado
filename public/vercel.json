@@ -7,7 +7,7 @@
     { "source": "/guard", "destination": "/guard.html" },
     { "source": "/company", "destination": "/company_onboard.html" },
     { "source": "/freelancer", "destination": "/freelancer_apply.html" },
-  { "source": "/admin-guard", "destination": "/admin_guard_form.html" },
+    { "source": "/admin-guard", "destination": "/admin_guard_form.html" },
     { "source": "/login", "destination": "/auth.html" },
     { "source": "/profile", "destination": "/profile.html" },
     { "source": "/book", "destination": "/book.html" },
