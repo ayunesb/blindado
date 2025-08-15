@@ -1,321 +1,73 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Blindado • Guard Console</title>
-    <link rel="stylesheet" href="styles/blindado.css" />
-    <style>
-      .input {
-        background: var(--chip);
-        border: 1px solid var(--ring);
-        border-radius: 12px;
-        color: var(--text);
-        padding: 10px 12px;
-      }
-      .row {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-      }
-      .col {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .pill {
-        font-size: 12px;
-        padding: 6px 10px;
-        border: 1px solid var(--ring);
-        border-radius: 999px;
-        background: var(--chip);
-        color: #cfd3da;
-      }
-      .btn-sm {
-        background: #fff;
-        color: #000;
-        border-radius: 9999px;
-        padding: 10px 14px;
-        font-weight: 600;
-      }
-      .btn-ol {
-        background: transparent;
-        border: 1px solid #fff;
-        color: #fff;
-        border-radius: 9999px;
-        padding: 8px 12px;
-      }
-      .list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .item {
-        border: 1px solid var(--ring);
-        border-radius: 16px;
-        padding: 12px;
-        background: var(--card);
-      }
-      .mono {
-        font-family:
-          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-          monospace;
-      }
-      .status {
-        font-size: 12px;
-        padding: 4px 8px;
-        border-radius: 999px;
-        background: var(--chip);
-        border: 1px solid var(--ring);
-        color: #cfd3da;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <header>
-        <img src="assets/brand/blindado-logo.svg" alt="Blindado" />
-        <div class="brand">Guard Console</div>
-        <a href="index.html" class="link" style="margin-left: auto">← Demos</a>
-      </header>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Escolta — Protector Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{ --card: rgba(255,255,255,.05); --border: rgba(255,255,255,.1); }
+    body{ background:#000; color:#fff; }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:20px; }
+    #logs,#log,.logs,.debug,.debug-panel{ display:none !important; }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+  <header class="max-w-screen-md mx-auto px-5 py-5 flex items-center gap-3">
+    <svg width="24" height="24" viewBox="0 0 48 48" class="shrink-0">
+      <path d="M24 8l12 4v10c0 9-6 16-12 18-6-2-12-9-12-18V12l12-4z" fill="#fff" opacity=".12"/>
+      <path d="M16 19h16M18 23h12M20 27h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <h1 class="text-xl font-semibold">Today’s Assignments</h1>
+    <span class="ml-auto text-sm text-white/60">Auto-signed via anon key</span>
+  </header>
 
-      <div class="card">
-        <div class="row" style="flex-wrap: wrap">
-          <label class="control"
-            ><span class="small" style="padding-right: 6px">Guard</span>
-            <input id="guard" class="input mono" placeholder="guard_id" />
-          </label>
-          <label class="control"
-            ><span class="small" style="padding-right: 6px">ANON</span>
-            <input id="anon" class="input mono" placeholder="anon (optional)" />
-          </label>
-          <button id="btn-refresh" class="btn-sm">Refresh</button>
-          <button id="btn-auto" class="btn-ol">Auto</button>
-        </div>
-        <div class="row" style="margin-top: 8px">
-          <label class="control"
-            ><span class="small" style="padding-right: 6px">Lat</span>
-            <input id="lat" class="input mono" style="width: 120px" placeholder="lat" />
-          </label>
-          <label class="control"
-            ><span class="small" style="padding-right: 6px">Lng</span>
-            <input id="lng" class="input mono" style="width: 120px" placeholder="lng" />
-          </label>
-          <button id="btn-hb" class="btn-ol">Heartbeat</button>
-        </div>
-      </div>
+  <main class="max-w-screen-md mx-auto px-5 pb-24">
+    <ul id="assignments" class="space-y-3"></ul>
+    <p id="empty" class="text-white/60">No assignments yet.</p>
+  </main>
 
-      <div class="card" style="margin-top: 14px">
-        <div class="row" style="justify-content: space-between">
-          <div class="section-title">My Jobs</div>
-        </div>
-        <div id="jobs" class="list"></div>
-        <div id="jobs-empty" class="small" style="display: none">No jobs</div>
-      </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const sbUrl  = params.get('sb');
+    const sbAnon = params.get('anon');
+    let supabase = null;
+    if (sbUrl && sbAnon) supabase = window.supabase.createClient(decodeURIComponent(sbUrl), sbAnon);
 
-      <footer class="muted" style="margin-top: 14px; font-size: 12px">
-        This console uses jobs/list, jobs/accept, jobs/status, and locations APIs. Optional ?anon
-        and ?gmaps.
-      </footer>
-    </div>
+    async function load(){
+      if(!supabase) return;
+      // Replace with your real view/table
+      const { data, error } = await supabase
+        .from('guard_assignments_view')
+        .select('*')
+        .order('pickup_time', { ascending:true })
+        .limit(25);
+      if(error) return;
 
-    <script>
-      /* eslint-disable */
-      // @ts-nocheck
-      function $(q) {
-        return document.querySelector(q);
-      }
-      const FN = 'https://isnezquuwepqcjkaupjh.supabase.co/functions/v1';
-      const params = new URLSearchParams(location.search);
-      const defaultGuard = 'c38efbac-fd1e-426b-a0ab-be59fd908c8c';
-      const savedGuard = localStorage.getItem('guard_id') || '';
-      const savedAnon = localStorage.getItem('anon') || '';
-      $('#guard').value = params.get('guard') || savedGuard || defaultGuard;
-      $('#anon').value = params.get('anon') || savedAnon || '';
+      const list = document.getElementById('assignments');
+      const empty= document.getElementById('empty');
+      if(!data || !data.length) return;
 
-      function headers() {
-        const a = $('#anon').value.trim();
-        const h = { 'content-type': 'application/json' };
-        if (a) {
-          h['apikey'] = a;
-          h['Authorization'] = `Bearer ${a}`;
-        }
-        return h;
-      }
-      function fmtTs(ts) {
-        try {
-          const d = new Date(ts);
-          return d.toLocaleString();
-        } catch {
-          return ts;
-        }
-      }
-      function nextStatus(s) {
-        const order = ['check_in', 'on_site', 'in_progress', 'check_out', 'completed'];
-        const i = order.indexOf(s);
-        return order[Math.min(i + 1, order.length - 1)];
-      }
-      function persist() {
-        localStorage.setItem('guard_id', $('#guard').value.trim());
-        localStorage.setItem('anon', $('#anon').value.trim());
-      }
-      $('#guard').addEventListener('change', persist);
-      $('#anon').addEventListener('change', persist);
-
-      async function listJobs() {
-        const g = $('#guard').value.trim();
-        if (!g) return;
-        const r = await fetch(`${FN}/jobs/list?guard_id=${encodeURIComponent(g)}`, {
-          headers: headers(),
-        });
-        const data = await r.json();
-        renderJobs(data.items || data || []);
-      }
-      function isSameDayAndWithinHour(startIso) {
-        const now = new Date();
-        const s = new Date(startIso);
-        const same = now.toDateString() === s.toDateString();
-        const diff = s - now;
-        return same && diff <= 60 * 60 * 1000 && diff >= 0;
-      }
-      function haversineKm(a, b) {
-        const R = 6371,
-          toRad = (d) => (d * Math.PI) / 180;
-        const dLat = toRad(b.lat - a.lat),
-          dLng = toRad(b.lng - a.lng);
-        const s1 = Math.sin(dLat / 2) ** 2;
-        const s2 = Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-        return 2 * R * Math.asin(Math.sqrt(s1 + s2));
-      }
-      function etaMinutes(from, to, avg = 30) {
-        const km = haversineKm(from, to);
-        return Math.max(1, Math.round((km / avg) * 60));
-      }
-
-      async function computeEtaIfAllowed(job) {
-        if (job.status !== 'accepted')
-          return { show: false, text: 'Waiting for protector to start' };
-        if (!isSameDayAndWithinHour(job.start_ts))
-          return { show: false, text: 'Waiting for protector to start' };
-        try {
-          const r = await fetch(`${FN}/locations?guard_id=${encodeURIComponent(job.guard_id)}`, {
-            headers: headers(),
-          });
-          if (!r.ok) return { show: false, text: 'Waiting for protector to start' };
-          const j = await r.json();
-          if (
-            j.home_lat == null ||
-            j.home_lng == null ||
-            job.origin_lat == null ||
-            job.origin_lng == null
-          )
-            return { show: false, text: 'Waiting for protector to start' };
-          const mins = etaMinutes(
-            { lat: j.home_lat, lng: j.home_lng },
-            { lat: job.origin_lat, lng: job.origin_lng },
-          );
-          return { show: true, text: `ETA ${mins} min` };
-        } catch {
-          return { show: false, text: 'Waiting for protector to start' };
-        }
-      }
-
-      async function renderJobs(items) {
-        const box = $('#jobs');
-        box.innerHTML = '';
-        $('#jobs-empty').style.display = items.length ? 'none' : 'block';
-        for (const j of items) {
-          const el = document.createElement('div');
-          el.className = 'item';
-          const eta = await computeEtaIfAllowed(j);
-          el.innerHTML = `
-          <div class="row">
-            <div class="pill">${j.city || '-'}</div>
-            <div class="pill">${j.tier || '-'}</div>
-            <span class="status">${j.status}</span>
-            <div style="margin-left:auto" class="small">${fmtTs(j.start_ts)}</div>
-          </div>
-          <div class="row" style="margin-top:6px;gap:8px">
-            <div class="small mono">booking: ${j.booking_id}</div>
-            <div class="small mono">assign: ${j.assignment_id}</div>
-            <div class="small" style="margin-left:auto">${eta.show ? eta.text : 'Waiting for protector to start'}</div>
-            <div style="display:flex;gap:6px">
-              ${j.status === 'offered' ? `<button class="btn-sm" data-accept="${j.assignment_id}">Accept</button>` : `<button class=\"btn-ol\" data-next=\"${j.assignment_id}\" data-cur=\"${j.status}\">Next</button>`}
+      empty.remove();
+      data.forEach(row=>{
+        const li = document.createElement('li');
+        li.className = 'card p-4';
+        li.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="font-medium">${row.client_name ?? 'Client'}</div>
+              <div class="text-white/60 text-sm">${row.pickup_location}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm">${row.pickup_date} ${row.pickup_time}</div>
+              <div class="text-white/60 text-sm">${row.hours}h</div>
             </div>
           </div>`;
-          el.querySelector('[data-accept]')?.addEventListener('click', async () => {
-            await accept(j.assignment_id);
-          });
-          el.querySelector('[data-next]')?.addEventListener('click', async (e) => {
-            const cur = e.currentTarget.getAttribute('data-cur');
-            await setStatus(j.assignment_id, nextStatus(cur));
-          });
-          box.appendChild(el);
-        }
-      }
-      async function accept(assignment_id) {
-        const r = await fetch(`${FN}/jobs/accept`, {
-          method: 'POST',
-          headers: headers(),
-          body: JSON.stringify({ assignment_id }),
-        });
-        await listJobs();
-      }
-      async function setStatus(assignment_id, status) {
-        const r = await fetch(`${FN}/jobs/status`, {
-          method: 'POST',
-          headers: headers(),
-          body: JSON.stringify({ assignment_id, status }),
-        });
-        await listJobs();
-      }
-      async function hb() {
-        const g = $('#guard').value.trim();
-        const lat = parseFloat($('#lat').value) || 19.44;
-        const lng = parseFloat($('#lng').value) || -99.14;
-        await fetch(`${FN}/locations`, {
-          method: 'POST',
-          headers: headers(),
-          body: JSON.stringify({ op: 'heartbeat', guard_id: g, lat, lng }),
-        });
-      }
-
-      $('#btn-refresh').addEventListener('click', listJobs);
-      $('#btn-hb').addEventListener('click', hb);
-      let auto = false,
-        t = null;
-      function setAuto(v) {
-        auto = v;
-        $('#btn-auto').className = v ? 'btn-sm' : 'btn-ol';
-        if (t) clearInterval(t);
-        t = v ? setInterval(listJobs, 15000) : null;
-      }
-      $('#btn-auto').addEventListener('click', () => setAuto(!auto));
-      listJobs();
-    </script>
-
-    <script>
-      /* eslint-disable */
-      // @ts-nocheck
-      // Optional tiny map when ?gmaps= is present
-      (function () {
-        const GMAPS_KEY = new URLSearchParams(location.search).get('gmaps');
-        if (!GMAPS_KEY) return;
-        const map = document.createElement('div');
-        map.className = 'map';
-        document.querySelector('.wrap').appendChild(map);
-        window.initMap = function () {
-          const center = { lat: 19.4326, lng: -99.1332 };
-          const m = new google.maps.Map(map, { center, zoom: 12, disableDefaultUI: true });
-          if (google?.maps?.marker?.AdvancedMarkerElement) {
-            new google.maps.marker.AdvancedMarkerElement({ position: center, map: m });
-          }
-        };
-        const s = document.createElement('script');
-        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_KEY)}&libraries=marker&v=weekly&loading=async&callback=initMap`;
-        s.async = s.defer = true;
-        document.head.appendChild(s);
-      })();
-    </script>
-  </body>
+        list.appendChild(li);
+      });
+    }
+    load();
+  </script>
+</body>
 </html>

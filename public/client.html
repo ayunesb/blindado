@@ -1,776 +1,273 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Blindado — Client</title>
-    <link rel="preload" as="image" href="assets/brand/blindado-logo.svg" />
-    <style>
-      :root {
-        --bg: #0b0f17;
-        --card: #111827;
-        --ring: #1f2937;
-        --muted: #94a3b8;
-        --text: #e5e7eb;
-        --accent: #10b981;
-        --danger: #ef4444;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        font-family:
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          Segoe UI,
-          Roboto,
-          Inter,
-          Arial;
-        background: var(--bg);
-        color: var(--text);
-      }
-      header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 14px;
-        border-bottom: 1px solid var(--ring);
-        position: sticky;
-        top: 0;
-        background: rgba(11, 15, 23, 0.85);
-        backdrop-filter: saturate(140%) blur(8px);
-      }
-      header img {
-        height: 28px;
-      }
-      main {
-        max-width: 820px;
-        margin: 16px auto;
-        padding: 0 14px;
-      }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--ring);
-        border-radius: 16px;
-        padding: 16px;
-      }
-      .row {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      .col {
-        flex: 1 1 240px;
-      }
-      label {
-        display: block;
-        font-size: 12px;
-        color: var(--muted);
-        margin: 6px 0;
-      }
-      input,
-      select,
-      button,
-      textarea {
-        width: 100%;
-        padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid var(--ring);
-        background: #0d1320;
-        color: var(--text);
-      }
-      button {
-        cursor: pointer;
-      }
-      .primary {
-        background: var(--accent);
-        color: #062817;
-        border: 1px solid #14b08a;
-        font-weight: 700;
-      }
-      .ghost {
-        background: #0d1320;
-      }
-      .muted {
-        color: var(--muted);
-      }
-      .stepper {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        margin: 10px 0 14px;
-      }
-      .dot {
-        width: 20px;
-        height: 20px;
-        border-radius: 999px;
-        display: grid;
-        place-items: center;
-        border: 2px solid #334155;
-        color: #64748b;
-        font-size: 11px;
-      }
-      .dot.active {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-      .dot.done {
-        background: var(--accent);
-        color: #062817;
-        border-color: var(--accent);
-      }
-      .grid2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-      .line {
-        height: 1px;
-        background: var(--ring);
-        margin: 12px 0;
-      }
-      .chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: #0f172a;
-        border: 1px solid var(--ring);
-        border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 12px;
-      }
-      .right {
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-      }
-      .ghostlink {
-        background: none;
-        border: none;
-        color: #93c5fd;
-        padding: 0;
-        text-decoration: underline;
-        cursor: pointer;
-      }
-      .hidden {
-        display: none;
-      }
-      .price {
-        font-weight: 800;
-        font-size: 20px;
-      }
-      .debug {
-        display: none;
-        max-height: 220px;
-        overflow: auto;
-        background: #0b1219;
-        border: 1px dashed #243344;
-        padding: 10px;
-        border-radius: 10px;
-        font-size: 12px;
-        color: #9fb4c8;
-      }
-      body.show-debug .debug {
-        display: block;
-      }
-      .success {
-        border: 1px solid rgba(16, 185, 129, 0.3);
-        background: rgba(16, 185, 129, 0.08);
-        border-radius: 12px;
-        padding: 10px;
-      }
-    </style>
-    <script src="https://js.stripe.com/v3/"></script>
-    <script type="importmap">
-      { "imports": { "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.55.0" } }
-    </script>
-  </head>
-  <body>
-    <header>
-      <img src="assets/brand/blindado-logo.svg" alt="Blindado" />
-      <div style="font-weight: 800; letter-spacing: 0.5px">BLINDADO</div>
-      <a href="index.html" class="ghostlink" style="margin-left: 6px">← Demos</a>
-      <div style="margin-left: auto" class="chip">
-        <img src="assets/brand/ic-shield.svg" width="14" height="14" alt="" /><span id="cityChip"
-          >Detecting…</span
-        >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Escolta — Book Armed Protectors</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{
+      --bg: #000;
+      --card: rgba(255,255,255,.04);
+      --border: rgba(255,255,255,.10);
+      --text: #fff;
+      --muted: rgba(255,255,255,.62);
+      --accent: #ef4444; /* subtle red accent (swap to brand hex if needed) */
+      --radius: 22px;
+    }
+    * { -webkit-tap-highlight-color: transparent; }
+    html,body{ background:var(--bg); color:var(--text); }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); }
+    .glass{ backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .button-primary{
+      border-radius: 9999px; background:#fff; color:#000;
+      padding:.95rem 1.25rem; font-weight:600;
+      transition: .2s ease;
+    }
+    .button-primary:hover{ filter: brightness(1.02); }
+    .pill{ border:1px solid var(--border); border-radius:9999px; padding:.4rem .8rem; color:var(--muted); }
+    /* Hide any dev panels/logs someone left around */
+    #logs,#log,.logs,.debug,.debug-panel,pre:has(#logs){ display:none !important; }
+    /* Safe-area for iOS */
+    .safe-bottom{ padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+    /* Dialog polish */
+    dialog{ border:none; padding:0; background:transparent; }
+    dialog::backdrop{ background:rgba(0,0,0,.6); }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+
+  <!-- Top bar with brand -->
+  <header class="max-w-screen-md mx-auto px-5 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <!-- Inline brand mark (replace with your SVG if you want) -->
+      <svg width="28" height="28" viewBox="0 0 48 48" class="shrink-0">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="#fff" stop-opacity=".95"/>
+            <stop offset="1" stop-color="#d4d4d4" stop-opacity=".95"/>
+          </linearGradient>
+        </defs>
+        <path d="M24 4l16 6v12c0 11-7 20-16 22C15 42 8 33 8 22V10l16-6z" fill="url(#g)" opacity=".12"/>
+        <path d="M24 8l12 4v10c0 9-6 16-12 18-6-2-12-9-12-18V12l12-4z" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.2"/>
+        <!-- chevron motif -->
+        <path d="M16 19h16M18 23h12M20 27h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span class="tracking-wide font-semibold">ESCOLTA</span>
+      <span class="pill ml-2 hidden sm:inline">New York City</span>
+    </div>
+    <a href="#" class="pill">Account</a>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative">
+    <img
+      src="https://images.unsplash.com/photo-1512511708750-2078b3a8a38a?q=80&w=2000&auto=format&fit=crop"
+      class="absolute inset-0 w-full h-[46vh] object-cover opacity-70 pointer-events-none"
+      alt="">
+    <div class="relative z-10 max-w-screen-md mx-auto px-5 pt-8 pb-6">
+      <h1 class="text-4xl leading-tight font-semibold">
+        Book Armed Protectors in<br/>New York City
+      </h1>
+      <button id="ctaBook" class="button-primary w-full mt-5">Book a Protector</button>
+    </div>
+  </section>
+
+  <!-- Value props -->
+  <section class="max-w-screen-md mx-auto px-5 -mt-4 space-y-4">
+    <div class="card glass p-5 flex gap-4">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10">
+        <!-- badge -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"/><circle cx="12" cy="10" r="3"/></svg>
       </div>
-    </header>
-    <main>
-      <div class="stepper">
-        <div id="d0" class="dot active">0</div>
-        <span class="muted">Welcome</span>
-        <div id="d1" class="dot">1</div>
-        <span class="muted">Details</span>
-        <div id="d2" class="dot">2</div>
-        <span class="muted">Quote</span>
-        <div id="d3" class="dot">3</div>
-        <span class="muted">Payment</span>
-        <div id="d4" class="dot">4</div>
-        <span class="muted">Confirm</span>
+      <p class="text-lg leading-snug">Armed Protectors will be right by your side, ensuring your safety.</p>
+    </div>
+    <div class="card glass p-5 flex gap-4">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 4h18v6l-9 5-9-5V4z"/><path d="M3 10v10l9 5 9-5V10"/></svg>
+      </div>
+      <p class="text-lg leading-snug">Our Protectors are only Active Duty or Retired Law Enforcement and Military.</p>
+    </div>
+    <div class="card glass p-5 flex gap-4">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 16l1-4h16l1 4"/><path d="M5 12l1-4h12l1 4"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="16.5" cy="18.5" r="1.5"/></svg>
+      </div>
+      <p class="text-lg leading-snug">Black car transportation is included for safe and effortless city travel.</p>
+    </div>
+  </section>
+
+  <!-- Meet the Protectors -->
+  <section class="max-w-screen-md mx-auto px-5 mt-10">
+    <h2 class="text-2xl font-semibold mb-4">Meet the Protectors</h2>
+    <div class="grid grid-cols-1 gap-5">
+      <article class="card overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1565374371357-7f27b30f2e1c?q=80&w=1600&auto=format&fit=crop"
+             alt="Protector" class="w-full aspect-[16/11] object-cover" />
+        <div class="p-5">
+          <h3 class="text-xl font-semibold">Chris</h3>
+          <p class="text-white/60 mt-1">Former New York Police and Former United States Military</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Sticky bottom nav (mobile look) -->
+  <nav class="fixed inset-x-0 bottom-2 px-4 safe-bottom">
+    <div class="mx-auto max-w-screen-md card glass px-6 py-3 flex items-center justify-between">
+      <button class="text-sm opacity-90">Protector</button>
+      <button class="text-sm opacity-60">Bookings</button>
+      <button class="text-sm opacity-60">Account</button>
+    </div>
+  </nav>
+
+  <!-- Booking bottom sheet -->
+  <dialog id="sheet" class="w-full max-w-screen-md mx-auto">
+    <form method="dialog" class="card glass rounded-t-3xl bg-[#0b0b0b] px-5 pt-4 pb-6">
+      <div class="flex items-center gap-2 mb-4">
+  <button id="closeSheet" class="rounded-lg px-2 py-1 hover:bg-white/5" value="close" aria-label="Close">←</button>
+        <h3 class="text-2xl font-semibold">Where should we have your motorcade meet you?</h3>
       </div>
 
-      <div class="card">
-        <!-- 0) Welcome gate -->
-        <section id="step0">
-          <h2 style="margin: 6px 0 2px">Welcome</h2>
-          <p class="muted" style="margin: 0 0 8px">Please sign in to continue.</p>
-          <div class="grid2">
-            <div class="col">
-              <label>Email (magic link)</label>
-              <input id="email" type="email" placeholder="you@example.com" />
-            </div>
-            <div class="col">
-              <label>&nbsp;</label>
-              <button id="btn-magic" class="primary">Send magic link</button>
-            </div>
-          </div>
-          <p id="magic-msg" class="muted" style="margin-top: 8px"></p>
-        </section>
+      <div class="space-y-4">
+        <label class="block card glass p-4">
+          <div class="text-white/60 text-sm mb-1">Pickup Location</div>
+          <input id="loc" type="text" placeholder="Street, hotel, or venue"
+                 class="w-full bg-transparent outline-none placeholder-white/30">
+        </label>
 
-        <!-- 1) Details -->
-        <section id="step1" class="hidden">
-          <div class="row" style="justify-content: space-between">
-            <div class="muted">Enter your trip details</div>
-            <div id="authUser" class="muted"></div>
-          </div>
-          <div class="grid2" style="margin-top: 6px">
-            <div class="col">
-              <label>City</label>
-              <select id="city"></select>
-            </div>
-            <div class="col">
-              <label>Pickup address</label>
-              <input id="pickup_address" placeholder="Street, number, area" />
-            </div>
-          </div>
-          <div class="grid2" style="margin-top: 6px">
-            <div class="col">
-              <label>Tier</label>
-              <select id="tier">
-                <option value="direct">Direct</option>
-                <option value="premium">Premium</option>
-              </select>
-            </div>
-            <div class="col">
-              <label>Dress code</label>
-              <select id="dress_code">
-                <option>Business Formal</option>
-                <option>Business Casual</option>
-                <option>Tactical Casual</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid2" style="margin-top: 6px">
-            <div class="col">
-              <label>Guard</label>
-              <select id="armed">
-                <option value="false">Unarmed</option>
-                <option value="true">Armed</option>
-              </select>
-            </div>
-            <div class="col">
-              <label>Vehicle</label>
-              <select id="vehicle">
-                <option value="none">None</option>
-                <option value="suv">SUV</option>
-                <option value="armored">Armored</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid2" style="margin-top: 6px">
-            <div class="col">
-              <label>Protectees</label><input id="protectees" type="number" min="1" value="1" />
-            </div>
-            <div class="col">
-              <label>Protectors</label><input id="protectors" type="number" min="1" value="1" />
-            </div>
-          </div>
-          <div class="grid2" style="margin-top: 6px">
-            <div class="col">
-              <label>Vehicles</label><input id="vehicles" type="number" min="0" value="0" />
-            </div>
-            <div class="col"><label>Start</label><input id="start" type="datetime-local" /></div>
-          </div>
-          <div class="grid2" style="margin-top: 6px">
-            <div class="col"><label>End</label><input id="end" type="datetime-local" /></div>
-            <div class="col" style="align-self: end; text-align: right">
-              <button id="btn-quote" class="primary">Get quote</button>
-            </div>
-          </div>
-          <div id="geoBanner" class="muted" style="margin-top: 6px"></div>
-        </section>
+        <label class="block card glass p-4">
+          <div class="text-white/60 text-sm mb-1">Pickup Date</div>
+          <input id="date" type="date" class="w-full bg-transparent outline-none">
+        </label>
 
-        <!-- 2) Quote -->
-        <section id="step2" class="hidden">
-          <div class="row" style="justify-content: space-between">
-            <div>
-              <div class="muted">Estimated total</div>
-              <div class="price" id="quotePrice">—</div>
-            </div>
-            <div class="right">
-              <button id="btn-back-edit" class="ghost">Back to edit</button>
-              <button id="btn-to-pay" class="primary">Proceed to Payment</button>
-            </div>
-          </div>
-          <div class="line"></div>
-          <div id="summary" class="muted"></div>
-        </section>
+        <label class="block card glass p-4">
+          <div class="text-white/60 text-sm mb-1">Pickup Time</div>
+          <input id="time" type="time" class="w-full bg-transparent outline-none">
+        </label>
 
-        <!-- 3) Payment -->
-        <section id="step3" class="hidden">
-          <div id="payment-element"></div>
-          <div class="right" style="margin-top: 8px">
-            <button id="btn-pay" class="primary">Pay</button>
-          </div>
-          <div id="payMsg" class="muted" style="margin-top: 6px"></div>
-        </section>
-
-        <!-- 4) Confirm -->
-        <section id="step4" class="hidden">
-          <div class="success">
-            <strong>Booking confirmed.</strong> <span id="confirmText" class="muted"></span>
-          </div>
-          <div class="row" style="margin-top: 10px; justify-content: space-between">
-            <div id="etaBox" class="muted">We’ll notify you closer to your pickup time.</div>
-            <button id="btnMaps" class="ghost hidden">Open in Maps</button>
-          </div>
-        </section>
-
-        <div class="line"></div>
-        <pre id="debug" class="debug" aria-hidden="true"></pre>
+        <label class="block card glass p-4">
+          <div class="text-white/60 text-sm mb-1">Duration of Protection (hours)</div>
+          <input id="hours" type="number" min="1" step="1" value="4"
+                 class="w-full bg-transparent outline-none">
+        </label>
       </div>
-    </main>
 
-    <script type="module">
-      /* eslint-disable */
-      // @ts-nocheck
-      import { createClient } from '@supabase/supabase-js';
-      const params = new URLSearchParams(location.search);
-      const SHOW_DEBUG = params.get('debug') === '1';
-      if (SHOW_DEBUG) document.body.classList.add('show-debug');
-      const debugEl = document.getElementById('debug');
-      const log = (...a) => {
-        if (SHOW_DEBUG) {
-          debugEl.textContent +=
-            a.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ') + '\n';
-        }
-      };
+      <button id="nextBtn" type="button" class="button-primary w-full mt-6">Next</button>
+    </form>
+  </dialog>
 
-      // EVM shim (silence MetaMask errors)
-      (function () {
-        const g = window;
-        const d = {
-          request: async (r) => {
-            if (r?.method === 'eth_requestAccounts' || r?.method === 'eth_accounts') return [];
-            if (r?.method === 'eth_chainId') return '0x1';
-            return null;
-          },
-          enable: async () => [],
-          isConnected: () => false,
-          on: () => {},
-          off: () => {},
-          isMetaMask: false,
-        };
-        if (!g.ethereum) g.ethereum = d;
-      })();
-      window.addEventListener('error', (e) => {
-        const m = (e?.message || '').toLowerCase();
-        if (m.includes('google maps javascript api error')) e.preventDefault();
-      });
+  <!-- Quote modal -->
+  <dialog id="quoteModal" class="w-full max-w-md mx-auto">
+    <form method="dialog" class="rounded-3xl overflow-hidden bg-zinc-100 text-zinc-900">
+      <div class="p-6">
+        <div class="flex items-center gap-2">
+          <!-- tiny brand -->
+          <svg width="20" height="20" viewBox="0 0 48 48">
+            <path d="M24 8l12 4v10c0 9-6 16-12 18-6-2-12-9-12-18V12l12-4z" fill="#111" opacity=".08"/>
+            <path d="M16 19h16M18 23h12M20 27h8" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <h3 class="text-xl font-semibold">Instant Quote</h3>
+        </div>
+        <p class="text-zinc-600 mt-1">Based on your pickup and duration.</p>
 
-      // Supabase
-      const SUPABASE_URL =
-        params.get('sb') || params.get('url') || 'https://isnezquuwepqcjkaupjh.supabase.co';
-      const ANON = params.get('anon') || window.BLINDADO_ANON || '';
-      const supa = createClient(SUPABASE_URL, ANON || '');
-      const FN = `${SUPABASE_URL}/functions/v1`;
-      const headers = () => {
-        const h = { 'content-type': 'application/json' };
-        if (ANON) {
-          h['apikey'] = ANON;
-          h['Authorization'] = `Bearer ${ANON}`;
-        }
-        return h;
-      };
-      const post = async (path, body) => {
-        try {
-          const r = await fetch(`${FN}/${path}`, {
-            method: 'POST',
-            headers: headers(),
-            body: JSON.stringify(body),
+        <dl class="mt-6 space-y-2 text-sm">
+          <div class="flex justify-between"><dt>Base (per hour)</dt><dd id="qBase"></dd></div>
+          <div class="flex justify-between"><dt>Hours</dt><dd id="qHours"></dd></div>
+          <div class="flex justify-between"><dt>Black Car</dt><dd id="qCar"></dd></div>
+          <div class="flex justify-between"><dt>Taxes & Fees</dt><dd id="qFees"></dd></div>
+          <div class="border-t border-zinc-300 my-3"></div>
+          <div class="flex justify-between font-semibold text-lg"><dt>Total</dt><dd id="qTotal"></dd></div>
+        </dl>
+      </div>
+      <div class="p-6 pt-0 flex gap-3 bg-zinc-100">
+        <button class="flex-1 rounded-xl py-3 bg-zinc-200 hover:bg-zinc-300" value="cancel">Back</button>
+        <button id="confirmBtn" class="flex-1 rounded-xl py-3 bg-black text-white hover:opacity-90">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-24 hidden">
+    <div class="bg-white/95 text-black px-5 py-3 rounded-xl shadow-lg">Request submitted. We’ll be in touch.</div>
+  </div>
+
+  <script>
+    // Helpers
+    const $ = (s)=>document.querySelector(s);
+    const params = new URLSearchParams(location.search);
+    const sbUrl  = params.get('sb');
+    const sbAnon = params.get('anon');
+    const debug  = params.get('debug') === '1';
+
+    const money = (n)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);
+
+    // Supabase (optional)
+    let supabase = null;
+    if (sbUrl && sbAnon) {
+      try { supabase = window.supabase.createClient(decodeURIComponent(sbUrl), sbAnon); }
+      catch(e){ console.warn('Supabase error', e); }
+    }
+
+    // UI wiring
+    const sheet = $('#sheet'), quoteModal = $('#quoteModal');
+    $('#ctaBook').addEventListener('click', ()=>sheet.showModal());
+    $('#closeSheet').addEventListener('click', ()=>sheet.close());
+    $('#nextBtn').addEventListener('click', handleQuote);
+    $('#confirmBtn').addEventListener('click', handleConfirm);
+
+    async function handleQuote(){
+      const loc = $('#loc').value.trim();
+      const date = $('#date').value;
+      const time = $('#time').value;
+      const hours = Math.max(1, parseInt($('#hours').value||'0',10));
+
+      if(!loc || !date || !time || !hours){ alert('Please complete all fields.'); return; }
+
+      // Pricing (swap to RPC if you have one)
+      const RATE=149, CAR=99, FEES=0.08875;
+      const base = RATE*hours;
+      const fees = (base+CAR)*FEES;
+      const total = base+CAR+fees;
+
+      $('#qBase').textContent  = money(RATE);
+      $('#qHours').textContent = hours+'h';
+      $('#qCar').textContent   = money(CAR);
+      $('#qFees').textContent  = money(fees);
+      $('#qTotal').textContent = money(total);
+
+      quoteModal.dataset.payload = JSON.stringify({loc,date,time,hours,total});
+      quoteModal.showModal();
+    }
+
+    async function handleConfirm(ev){
+      ev.preventDefault();
+      const payload = JSON.parse(quoteModal.dataset.payload||'{}');
+
+      try{
+        if (supabase){
+          await supabase.from('booking_leads').insert({
+            pickup_location: payload.loc,
+            pickup_date: payload.date,
+            pickup_time: payload.time,
+            hours: payload.hours,
+            quoted_total: payload.total,
+            source: 'client-web'
           });
-          const t = await r.text();
-          const j = t ? JSON.parse(t) : {};
-          if (!r.ok) throw new Error(`${r.status}`);
-          return j;
-        } catch (e) {
-          log('POST fail', path, e.message);
-          return { _demo: true, fallback: true };
         }
-      };
+      }catch(e){ if(debug) console.error(e); }
 
-      // State
-      const state = {
-        user: null,
-        city: '',
-        pickup_address: '',
-        center: { lat: null, lng: null },
-        tier: 'direct',
-        armed_required: false,
-        vehicle_required: false,
-        vehicle_type: 'none',
-        dress_code: 'Business Formal',
-        protectees: 1,
-        protectors: 1,
-        vehicles: 0,
-        start_ts: '',
-        end_ts: '',
-        quote: null,
-        bookingId: null,
-        paymentIntentId: null,
-      };
+      quoteModal.close(); sheet.close();
+      const t = $('#toast'); t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'), 2400);
+    }
 
-      // UI helpers
-      const steps = ['step0', 'step1', 'step2', 'step3', 'step4'];
-      function activate(i) {
-        steps.forEach((id, idx) => {
-          document.getElementById(id).classList.toggle('hidden', idx !== i);
-        });
-        ['d0', 'd1', 'd2', 'd3', 'd4'].forEach((id, idx) => {
-          const el = document.getElementById(id);
-          el.classList.toggle('active', idx === i);
-          el.classList.toggle('done', idx < i);
-        });
-      }
-      function setCityChip(c) {
-        document.getElementById('cityChip').textContent = c || 'Unknown';
-      }
-      function isoNowPlus(h) {
-        const d = new Date(Date.now() + h * 3600e3);
-        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-        return d.toISOString().slice(0, 16);
-      }
-
-      // Geolocation → naive city
-      async function geolocate() {
-        return new Promise((res) => {
-          if (!navigator.geolocation) return res(null);
-          navigator.geolocation.getCurrentPosition(
-            (p) => {
-              const { latitude, longitude } = p.coords;
-              state.center = { lat: latitude, lng: longitude };
-              const c =
-                Math.abs(latitude - 19.4326) < 2
-                  ? 'CDMX'
-                  : Math.abs(latitude - 40.7128) < 2
-                    ? 'NYC'
-                    : Math.abs(latitude - 34.0522) < 2
-                      ? 'LA'
-                      : 'CDMX';
-              state.city = c;
-              setCityChip(c);
-              res(true);
-            },
-            () => res(null),
-            { enableHighAccuracy: true, timeout: 6000 },
-          );
-        });
-      }
-
-      // Magic link gate
-      async function handleMagic() {
-        const emailEl = document.getElementById('email');
-        const email = emailEl && 'value' in emailEl ? String(emailEl.value).trim() : '';
-        const msg = document.getElementById('magic-msg');
-        if (!email) {
-          msg.textContent = 'Enter your email';
-          return;
-        }
-        try {
-          const { error } = await supa.auth.signInWithOtp({
-            email,
-            options: { emailRedirectTo: location.href.split('#')[0] },
-          });
-          if (error) throw error;
-          msg.textContent = 'Check your email for a magic link.';
-        } catch (e) {
-          msg.textContent = 'Failed to send magic link.';
-        }
-      }
-      async function readSessionFromHash() {
-        const h = new URL(location.href).hash.slice(1);
-        if (!h) return;
-        const sp = new URLSearchParams(h);
-        const at = sp.get('access_token');
-        const rt = sp.get('refresh_token');
-        if (at && rt) {
-          try {
-            await supa.auth.setSession({ access_token: at, refresh_token: rt });
-          } catch {}
-          history.replaceState({}, '', location.pathname + location.search);
-        }
-      }
-      async function ensureAuth() {
-        const { data } = await supa.auth.getSession();
-        if (data.session) {
-          state.user = data.session.user;
-          return true;
-        }
-        return false;
-      }
-
-      // Pricing
-      async function fetchQuote() {
-        const payload = {
-          city: state.city,
-          tier: state.tier,
-          armed_required: state.armed_required,
-          vehicle_required: state.vehicle_required,
-          vehicle_type: state.vehicle_type === 'none' ? null : state.vehicle_type,
-          start_ts: state.start_ts,
-          end_ts: state.end_ts,
-          origin: state.center,
-        };
-        const data = await post('pricing', payload);
-        const amount = data.quote_amount || data.amount || 0;
-        const currency = (data.currency || 'USD').toUpperCase();
-        state.quote = { total: amount, currency };
-        document.getElementById('quotePrice').textContent = amount
-          ? `${amount} ${currency}`
-          : 'N/A';
-        const s = document.getElementById('summary');
-        s.textContent = JSON.stringify(
-          {
-            city: state.city,
-            pickup_address: state.pickup_address,
-            tier: state.tier,
-            armed_required: state.armed_required,
-            vehicle_required: state.vehicle_required,
-            vehicle_type: state.vehicle_type,
-            dress_code: state.dress_code,
-            protectees: state.protectees,
-            protectors: state.protectors,
-            vehicles: state.vehicles,
-            start_ts: state.start_ts,
-            end_ts: state.end_ts,
-          },
-          null,
-          2,
-        );
-      }
-
-      // Payment (Stripe Elements)
-      let stripe = null,
-        elements = null,
-        clientSecret = null;
-      async function setupPayment() {
-        const amount = Math.round((state.quote?.total || 0) * 100);
-        const res = await post('payments_create_intent', {
-          amount,
-          currency: 'usd',
-          city: state.city,
-          tier: state.tier,
-          customer_email: state.user?.email || '',
-        });
-        if (res.demo) {
-          document.getElementById('payMsg').textContent =
-            'Demo mode (no real charge). Click Pay to simulate.';
-          return;
-        }
-        clientSecret = res.client_secret;
-        stripe = Stripe(res.publishable_key);
-        elements = stripe.elements({ clientSecret });
-        const pe = elements.create('payment');
-        pe.mount('#payment-element');
-      }
-      async function confirmPayment() {
-        const msg = document.getElementById('payMsg');
-        if (!state.quote) {
-          msg.textContent = 'No quote.';
-          return;
-        }
-        if (!stripe) {
-          // demo fallback
-          msg.textContent = 'Simulated payment approved (demo).';
-        } else {
-          const { error, paymentIntent } = await stripe.confirmPayment({
-            elements,
-            redirect: 'if_required',
-          });
-          if (error) {
-            msg.textContent = error.message || 'Payment failed';
-            return;
-          }
-          state.paymentIntentId = paymentIntent?.id || null;
-          msg.textContent = 'Payment succeeded.';
-        }
-        // Create booking after payment
-        const payload = {
-          city: state.city,
-          pickup_address: state.pickup_address,
-          tier: state.tier,
-          armed_required: state.armed_required,
-          vehicle_required: state.vehicle_required,
-          vehicle_type: state.vehicle_type === 'none' ? null : state.vehicle_type,
-          dress_code: state.dress_code,
-          protectees: state.protectees,
-          protectors: state.protectors,
-          vehicles: state.vehicles,
-          start_ts: state.start_ts,
-          end_ts: state.end_ts,
-          origin_lat: state.center?.lat,
-          origin_lng: state.center?.lng,
-        };
-        const b = await post('bookings', payload);
-        state.bookingId = b.booking_id || b.id || null;
-        activate(4);
-        document.getElementById('confirmText').textContent =
-          ` #${state.bookingId || 'pending'} • ${state.city} • ${new Date(state.start_ts).toLocaleString()} → ${new Date(state.end_ts).toLocaleString()} • ${state.pickup_address || ''}`;
-        startConfirmPolling();
-      }
-
-      // Confirm polling — placeholder: try GET /jobs?booking_id, else show default text
-      function isSameDayAndWithinHour(startIso) {
-        const now = new Date();
-        const start = new Date(startIso);
-        const same = now.toDateString() === start.toDateString();
-        const diff = start.getTime() - now.getTime();
-        return same && diff <= 60 * 60 * 1000 && diff >= 0;
-      }
-      function haversineKm(a, b) {
-        const R = 6371,
-          toRad = (d) => (d * Math.PI) / 180;
-        const dLat = toRad(b.lat - a.lat);
-        const dLng = toRad(b.lng - a.lng);
-        const s1 = Math.sin(dLat / 2) ** 2;
-        const s2 = Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-        return 2 * R * Math.asin(Math.sqrt(s1 + s2));
-      }
-      function etaMinutes(from, to, avg = 30) {
-        const km = haversineKm(from, to);
-        return Math.max(1, Math.round((km / avg) * 60));
-      }
-      function mapsLink(lat, lng) {
-        const apple = `http://maps.apple.com/?ll=${lat},${lng}`;
-        const google = `https://maps.google.com/?q=${lat},${lng}`;
-        return /iPhone|iPad|Macintosh/.test(navigator.userAgent) ? apple : google;
-      }
-      async function pollOnce() {
-        try {
-          const r = await fetch(
-            `${FN}/jobs?booking_id=${encodeURIComponent(state.bookingId || '')}`,
-            { headers: headers() },
-          );
-          if (!r.ok) return null;
-          const j = await r.json();
-          return j;
-        } catch {
-          return null;
-        }
-      }
-      function startConfirmPolling() {
-        const etaBox = document.getElementById('etaBox');
-        const btn = document.getElementById('btnMaps');
-        let t = null;
-        async function tick() {
-          const ok = isSameDayAndWithinHour(state.start_ts);
-          if (!ok) {
-            etaBox.textContent = 'We’ll notify you closer to your pickup time.';
-            btn.classList.add('hidden');
-            return;
-          }
-          const info = await pollOnce();
-          if (info && info.accepted && info.last_heartbeat) {
-            etaBox.textContent = `ETA ${etaMinutes(info.last_heartbeat, { lat: state.center.lat, lng: state.center.lng })} min`;
-            btn.classList.remove('hidden');
-            btn.onclick = () => {
-              const u = mapsLink(state.center.lat, state.center.lng);
-              window.open(u, '_blank');
-            };
-          } else {
-            etaBox.textContent = 'We’ll notify you closer to your pickup time.';
-            btn.classList.add('hidden');
-          }
-        }
-        tick();
-        setInterval(tick, 10000);
-      }
-
-      // Wire UI
-      document.getElementById('btn-magic').onclick = handleMagic;
-      document.getElementById('btn-back-edit').onclick = () => activate(1);
-      document.getElementById('btn-to-pay').onclick = () => activate(3);
-      document.getElementById('btn-pay').onclick = confirmPayment;
-
-      // Initialize
-      document.getElementById('start').value = isoNowPlus(1);
-      document.getElementById('end').value = isoNowPlus(5);
-      await readSessionFromHash();
-      const authed = await ensureAuth();
-      if (authed) {
-        activate(1);
-        document.getElementById('authUser').textContent =
-          (await supa.auth.getUser()).data.user?.email || 'Signed in';
-      } else {
-        activate(0);
-      }
-      await geolocate();
-      const citySel = document.getElementById('city');
-      ['CDMX', 'NYC', 'LA'].forEach((c) => {
-        const o = document.createElement('option');
-        o.value = c;
-        o.textContent = c;
-        citySel.appendChild(o);
-      });
-      citySel.value = state.city || 'CDMX';
-      citySel.addEventListener('change', () => {
-        state.city = citySel.value;
-        setCityChip(state.city);
-      });
-      setCityChip(state.city || 'CDMX');
-
-      // Details handlers
-      document.getElementById('btn-quote').onclick = async () => {
-        state.city = citySel.value;
-        const pickup = document.getElementById('pickup_address');
-        state.pickup_address = pickup && 'value' in pickup ? String(pickup.value).trim() : '';
-        const tierEl = document.getElementById('tier');
-        state.tier = tierEl && 'value' in tierEl ? String(tierEl.value) : 'direct';
-        const dcEl = document.getElementById('dress_code');
-        state.dress_code = dcEl && 'value' in dcEl ? String(dcEl.value) : 'Business Formal';
-        const armedEl = document.getElementById('armed');
-        state.armed_required =
-          armedEl && 'value' in armedEl ? String(armedEl.value) === 'true' : false;
-        const vehEl = document.getElementById('vehicle');
-        const v = vehEl && 'value' in vehEl ? String(vehEl.value) : 'none';
-        state.vehicle_type = v;
-        state.vehicle_required = v !== 'none';
-        const protEs = document.getElementById('protectees');
-        state.protectees = protEs && 'value' in protEs ? parseInt(String(protEs.value) || '1') : 1;
-        const protOrs = document.getElementById('protectors');
-        state.protectors =
-          protOrs && 'value' in protOrs ? parseInt(String(protOrs.value) || '1') : 1;
-        const vehs = document.getElementById('vehicles');
-        state.vehicles = vehs && 'value' in vehs ? parseInt(String(vehs.value) || '0') : 0;
-        const startEl = document.getElementById('start');
-        const endEl = document.getElementById('end');
-        const sVal = startEl && 'value' in startEl ? String(startEl.value) : '';
-        const eVal = endEl && 'value' in endEl ? String(endEl.value) : '';
-        state.start_ts = sVal ? new Date(sVal + ':00Z').toISOString() : '';
-        state.end_ts = eVal ? new Date(eVal + ':00Z').toISOString() : '';
-        await fetchQuote();
-        activate(2);
-      };
-
-      // When entering payment, setup Stripe Elements
-      const toPayBtn = document.getElementById('btn-to-pay');
-      toPayBtn.addEventListener('click', async () => {
-        await setupPayment();
-      });
-    </script>
-  </body>
+    // Silence console unless debug=1
+    if(!debug){ console.log=console.warn=()=>{}; }
+  </script>
+</body>
 </html>
