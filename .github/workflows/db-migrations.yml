@@ -43,7 +43,7 @@ jobs:
       - name: Apply migrations
         run: supabase db push --linked --include-all
       - name: Seed (optional)
-        if: ${{ secrets.SUPABASE_DB_URL != '' }}
+        if: ${{ secrets.SUPABASE_DB_URL && secrets.SUPABASE_DB_URL != '' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
