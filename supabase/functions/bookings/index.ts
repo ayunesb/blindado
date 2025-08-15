@@ -1,15 +1,6 @@
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
-import { preflight } from '../_shared/http.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Content-Type': 'application/json',
-};
-const j = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: corsHeaders });
+import { preflight, ok, badRequest, serverError } from '../_shared/http.ts';
 
 function cityFromLatLng(lat?: number | null, lng?: number | null): string | null {
   if (typeof lat !== 'number' || typeof lng !== 'number') return null;
@@ -19,16 +10,17 @@ function cityFromLatLng(lat?: number | null, lng?: number | null): string | null
   return null;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const pf = preflight(req);
   if (pf) return pf;
-  if (req.method !== 'POST') return j({ error: 'POST only' }, 405);
+  const origin = req.headers.get('origin') ?? '*';
+  if (req.method !== 'POST') return badRequest('POST only', origin);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || Deno.env.get('BLINDADO_SUPABASE_URL');
   const SERVICE_ROLE =
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('BLINDADO_SUPABASE_SERVICE_ROLE_KEY');
   if (!SUPABASE_URL || !SERVICE_ROLE) {
-    return j({ error: 'server misconfigured' }, 500);
+    return serverError('server misconfigured', origin);
   }
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -70,7 +62,7 @@ serve(async (req) => {
 
   // Keep validation on city/tier/start/end; client_id is optional in this flow
   if (!start_ts || !end_ts || !city) {
-    return j({ error: 'city, start_ts, end_ts are required' }, 400);
+    return badRequest('city, start_ts, end_ts are required', origin);
   }
 
   const { data, error } = await supabase
@@ -101,6 +93,6 @@ serve(async (req) => {
     .select('id')
     .single();
 
-  if (error) return j({ error: error.message }, 500);
-  return j({ ok: true, booking_id: data.id });
+  if (error) return serverError(error.message, origin);
+  return ok({ ok: true, booking_id: data.id }, origin);
 });
