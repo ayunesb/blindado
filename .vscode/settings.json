@@ -1,4 +1,18 @@
 {
+  "deno.enable": true,
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.lint": true,
+  "deno.unstable": true,
+  "typescript.validate.enable": true
+}
+{
+  "deno.enable": true,
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.lint": true,
+  "deno.unstable": true,
+  "typescript.validate.enable": true
+}
+{
   // Force a stable bash profile in this workspace
   "terminal.integrated.defaultProfile.linux": "Bash (clean)",
   "terminal.integrated.profiles.linux": {
