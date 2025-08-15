@@ -3,6 +3,7 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/", "destination": "/client.html" },
+  { "source": "/client", "destination": "/client.html" },
     { "source": "/login", "destination": "/auth.html" },
     { "source": "/profile", "destination": "/profile.html" },
     { "source": "/book", "destination": "/book.html" },

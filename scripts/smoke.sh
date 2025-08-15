@@ -1,61 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Config (override via env)
-# Prefer CI-provided SUPABASE_URL or SUPABASE_PROJECT_REF; allow explicit FN override
-BASE="${SUPABASE_URL:-}"
-if [[ -z "$BASE" && -n "${SUPABASE_PROJECT_REF:-}" ]]; then
-  BASE="https://${SUPABASE_PROJECT_REF}.supabase.co"
+# Resolve Functions base URL
+if [[ -z "${FN:-}" ]]; then
+  if [[ -n "${SUPABASE_URL:-}" ]]; then FN="$SUPABASE_URL/functions/v1"; fi
 fi
-FN="${FN:-${BASE:+$BASE/functions/v1}}"
+if [[ -z "${FN:-}" && -n "${SUPABASE_PROJECT_REF:-}" ]]; then
+  FN="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1"
+fi
 FN="${FN:-https://isnezquuwepqcjkaupjh.supabase.co/functions/v1}"
+
+# Config
 CLIENT_ID="${CLIENT_ID:-1b387371-6711-485c-81f7-79b2174b90fb}"
 GUARD_ID="${GUARD_ID:-c38efbac-fd1e-426b-a0ab-be59fd908c8c}"
 CITY="${CITY:-CDMX}"
 TIER="${TIER:-direct}"
 DUR_HOURS="${DUR_HOURS:-4}"
-
-# Optional: supply your project's anon key to satisfy the API gateway
-# Prefer SUPABASE_ANON_KEY when present (CI)
 ANON="${ANON:-${SUPABASE_ANON_KEY:-}}"
 ADMIN="${ADMIN:-${ADMIN_API_SECRET:-}}"
 STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-}"
 STRIPE_PUBLISHABLE_KEY="${STRIPE_PUBLISHABLE_KEY:-}"
 
-# In CI, require ANON to be set for Functions gateway
+# CI requires ANON for the Functions gateway
 if [[ "${GITHUB_ACTIONS:-}" == "true" && -z "${ANON}" ]]; then
-  echo "[ERROR] SUPABASE_ANON_KEY (ANON) is not set. Configure it in GitHub → Settings → Secrets and variables → Actions."
+  echo "[ERROR] SUPABASE_ANON_KEY (ANON) is not set. Configure it in GitHub Settings → Secrets and variables → Actions."
   exit 1
 fi
 
-# Build curl header array (includes apikey/Authorization when ANON is provided)
-HEADERS=(-H 'content-type: application/json')
-if [[ -n "$ANON" ]]; then
-  HEADERS+=( -H "apikey: $ANON" -H "Authorization: Bearer $ANON" )
-fi
-
-# Timestamps (UTC ISO)
-NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-END="$(date -u -d "+${DUR_HOURS} hour" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || gdate -u -d "+${DUR_HOURS} hour" +%Y-%m-%dT%H:%M:%SZ)"
-
-echo "FN          = $FN"
-echo "CLIENT_ID   = $CLIENT_ID"
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Config (override via env or .env)
-FN="${FN:-https://isnezquuwepqcjkaupjh.supabase.co/functions/v1}"
-CLIENT_ID="${CLIENT_ID:-1b387371-6711-485c-81f7-79b2174b90fb}"
-GUARD_ID="${GUARD_ID:-c38efbac-fd1e-426b-a0ab-be59fd908c8c}"
-CITY="${CITY:-CDMX}"
-TIER="${TIER:-direct}"
-DUR_HOURS="${DUR_HOURS:-4}"
-
-# Optional auth for functions that expect ANON key headers
+# Auth headers
 AUTH_ARGS=()
-if [[ -n "${ANON:-}" ]]; then
-  AUTH_ARGS=(-H "apikey: $ANON" -H "Authorization: Bearer $ANON")
-fi
+if [[ -n "${ANON:-}" ]]; then AUTH_ARGS=(-H "apikey: $ANON" -H "Authorization: Bearer $ANON"); fi
 
 # Timestamps (UTC ISO)
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
