@@ -1,9 +1,11 @@
 # Release: Edge Functions import-map hardening and redeploy (2025-08-14)
 
 ## Executive summary
+
 Standardized all Edge Functions to short import specifiers via a central import map, fixed per-function import-map EOF errors, and redeployed every function. Core booking pipeline is green end-to-end in smoke. Remaining gap: /locations_heartbeat can return “Invalid API key” when the gateway omits/uses a bad ANON. Per-function import maps stay for now to keep CLI bundling stable.
 
 ## What changed
+
 - Root config: deno.json now points to repo-level import_map.json.
 - Root import_map.json: aliases for std/http/server.ts and @supabase/supabase-js.
 - Migrated all functions to short specifiers.
@@ -13,15 +15,18 @@ Standardized all Edge Functions to short import specifiers via a central import 
 - Note: locations_heartbeat can 401/403 with “Invalid API key” if ANON header is absent/incorrect.
 
 ## Why it changed (problem → fix)
+
 - Problem: inconsistent/empty per-function import maps caused “failed to parse import map: EOF” and brittle absolute imports.
 - Fix: centralized aliases, switched to short imports, and standardized per-function maps for bundling.
 
 ## Risk / rollback
+
 - Risks: import alias mismatch; CLI still prefers per-function maps; gateway calls fail without proper ANON.
 - Rollback: revert this release and redeploy affected functions with:
   - supabase functions deploy <name> --no-verify-jwt
 
 ## Verification (exact commands)
+
 ```bash
 export FN='https://isnezquuwepqcjkaupjh.supabase.co/functions/v1'
 export SUPABASE_ANON_KEY='<your anon key>'
@@ -72,6 +77,7 @@ curl -i -X OPTIONS "$FN/pricing" \
 ```
 
 ## Checklist
+
 - [ ] SUPABASE_ANON_KEY configured in CI & local env
 - [ ] All functions redeployed without bundler errors
 - [ ] ./scripts/smoke.sh passes end-to-end

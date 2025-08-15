@@ -1,63 +1,89 @@
 <!doctype html>
 <html lang="es" class="dark">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Registro de cliente • Escolta</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0'
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Registro de cliente • Escolta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 
-    const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co'
-    const SUPABASE_ANON_KEY = new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY'
-    const FN = `${SUPABASE_URL}/functions/v1`
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co';
+      const SUPABASE_ANON_KEY =
+        new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY';
+      const FN = `${SUPABASE_URL}/functions/v1`;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const qs = (id)=>document.getElementById(id)
-    function toast(msg, bad=false){
-      const t=qs('toast'); t.textContent=msg
-      t.className='fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-sm '+(bad?'bg-red-600':'bg-emerald-600')
-      setTimeout(()=>t.className='hidden', 3200)
-    }
+      const qs = (id) => document.getElementById(id);
+      function toast(msg, bad = false) {
+        const t = qs('toast');
+        t.textContent = msg;
+        t.className =
+          'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-sm ' +
+          (bad ? 'bg-red-600' : 'bg-emerald-600');
+        setTimeout(() => (t.className = 'hidden'), 3200);
+      }
 
-    async function init(){
-      const { data: { session } } = await supabase.auth.getSession()
-      if(!session) { location.href = '/auth.html'; return }
-      qs('email').textContent = session.user.email || ''
-      qs('save').addEventListener('click', ()=> save(session))
-    }
+      async function init() {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          location.href = '/auth.html';
+          return;
+        }
+        qs('email').textContent = session.user.email || '';
+        qs('save').addEventListener('click', () => save(session));
+      }
 
-    async function save(session){
-      const full_name = qs('full_name').value.trim()
-      const phone = qs('phone').value.trim()
-      if(!full_name) return toast('Nombre es requerido', true)
-      const r = await fetch(FN + '/client_profile_upsert', {
-        method:'POST', headers:{
-          'authorization': `Bearer ${session.access_token}`,
-          'content-type':'application/json'
-        }, body: JSON.stringify({ full_name, phone })
-      })
-      const j = await r.json().catch(()=>({}))
-      if(!r.ok) return toast(j.error||'Error', true)
-      toast('Perfil creado')
-    }
+      async function save(session) {
+        const full_name = qs('full_name').value.trim();
+        const phone = qs('phone').value.trim();
+        if (!full_name) return toast('Nombre es requerido', true);
+        const r = await fetch(FN + '/client_profile_upsert', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${session.access_token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ full_name, phone }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return toast(j.error || 'Error', true);
+        toast('Perfil creado');
+      }
 
-    document.addEventListener('DOMContentLoaded', init)
-  </script>
-</head>
-<body class="bg-black text-zinc-200 min-h-screen">
-  <header class="p-4 border-b border-zinc-800 flex items-center justify-between">
-    <div class="font-semibold">Registro de cliente</div>
-    <a href="/profile.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Perfil</a>
-  </header>
-  <main class="max-w-xl mx-auto p-6">
-    <div class="border border-zinc-800 rounded-2xl p-5 space-y-4">
-      <div class="text-sm text-zinc-400">Sesión: <span id="email"></span></div>
-      <input id="full_name" placeholder="Nombre completo" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-      <input id="phone" placeholder="Teléfono (opcional)" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-      <button id="save" class="w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-xl py-2 font-medium">Guardar</button>
-    </div>
-  </main>
-  <div id="toast" class="hidden"></div>
+      document.addEventListener('DOMContentLoaded', init);
+    </script>
+  </head>
+  <body class="bg-black text-zinc-200 min-h-screen">
+    <header class="p-4 border-b border-zinc-800 flex items-center justify-between">
+      <div class="font-semibold">Registro de cliente</div>
+      <a href="/profile.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700"
+        >Perfil</a
+      >
+    </header>
+    <main class="max-w-xl mx-auto p-6">
+      <div class="border border-zinc-800 rounded-2xl p-5 space-y-4">
+        <div class="text-sm text-zinc-400">Sesión: <span id="email"></span></div>
+        <input
+          id="full_name"
+          placeholder="Nombre completo"
+          class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800"
+        />
+        <input
+          id="phone"
+          placeholder="Teléfono (opcional)"
+          class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800"
+        />
+        <button
+          id="save"
+          class="w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-xl py-2 font-medium"
+        >
+          Guardar
+        </button>
+      </div>
+    </main>
+    <div id="toast" class="hidden"></div>
   </body>
-  </html>
+</html>

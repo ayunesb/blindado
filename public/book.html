@@ -1,196 +1,270 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Blindado • Reserva</title>
-  <link rel="preload" href="brand/blindado-greca.svg" as="image" type="image/svg+xml">
-  <link rel="stylesheet" href="styles/blindado.css">
-</head>
-<body>
-  <div class="wrap">
-    <header>
-  <img alt="Blindado" src="brand/blindado-greca.svg" />
-      <div class="brand">Reserva</div>
-      <div class="chip" id="cityChip">Detectando ciudad…</div>
-    </header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Blindado • Reserva</title>
+    <link rel="preload" href="brand/blindado-greca.svg" as="image" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles/blindado.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img alt="Blindado" src="brand/blindado-greca.svg" />
+        <div class="brand">Reserva</div>
+        <div class="chip" id="cityChip">Detectando ciudad…</div>
+      </header>
 
-    <div class="grid">
-      <section class="pane" style="grid-column: span 2;">
-        <div style="max-width:560px">
-          <h1>Tu escolta, cuando lo necesites</h1>
-          <p class="muted">Selecciona nivel y horario. Usamos tu ubicación para asignarte al equipo más cercano.</p>
-          <div style="height:14px"></div>
-          <div class="row">
-            <button id="btnQuote" class="cta">Cotizar</button>
-            <div class="chip" id="statusChip">Esperando ubicación…</div>
+      <div class="grid">
+        <section class="pane" style="grid-column: span 2">
+          <div style="max-width: 560px">
+            <h1>Tu escolta, cuando lo necesites</h1>
+            <p class="muted">
+              Selecciona nivel y horario. Usamos tu ubicación para asignarte al equipo más cercano.
+            </p>
+            <div style="height: 14px"></div>
+            <div class="row">
+              <button id="btnQuote" class="cta">Cotizar</button>
+              <div class="chip" id="statusChip">Esperando ubicación…</div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="card" style="grid-column: span 1;">
-        <div class="row"><div class="muted">Parámetros</div><div class="chip">Demo</div></div>
-        <div style="height:10px"></div>
-        <div class="row"><div class="muted">Nivel</div>
-          <select id="tier" class="control" aria-label="Nivel">
-            <option value="direct">Direct</option>
-            <option value="elite">Elite</option>
-            <option value="corporate">Corporate</option>
-          </select>
-        </div>
-        <div style="height:8px"></div>
-        <div class="row">
-          <label class="control"><input id="armed" type="checkbox"> Armado</label>
-          <label class="control"><input id="vehicle" type="checkbox"> Vehículo</label>
-        </div>
-        <div style="height:8px"></div>
-        <div class="row">
-          <label class="control">Inicio <input id="start" type="datetime-local"></label>
-        </div>
-        <div style="height:8px"></div>
-        <div class="row">
-          <label class="control">Fin <input id="end" type="datetime-local"></label>
-        </div>
-        <div style="height:12px"></div>
-        <div class="row">
-          <button id="btnCreate" class="btn">Crear reserva</button>
-          <button id="btnPre" class="btn-outline">Preautorizar</button>
-        </div>
-        <div style="height:8px"></div>
-        <div class="row">
-          <button id="btnConfirm" class="btn-outline">Confirmar</button>
-          <a class="btn-outline" href="guard.html" style="text-decoration:none;text-align:center">Consola guardia</a>
-        </div>
-      </section>
+        <section class="card" style="grid-column: span 1">
+          <div class="row">
+            <div class="muted">Parámetros</div>
+            <div class="chip">Demo</div>
+          </div>
+          <div style="height: 10px"></div>
+          <div class="row">
+            <div class="muted">Nivel</div>
+            <select id="tier" class="control" aria-label="Nivel">
+              <option value="direct">Direct</option>
+              <option value="elite">Elite</option>
+              <option value="corporate">Corporate</option>
+            </select>
+          </div>
+          <div style="height: 8px"></div>
+          <div class="row">
+            <label class="control"><input id="armed" type="checkbox" /> Armado</label>
+            <label class="control"><input id="vehicle" type="checkbox" /> Vehículo</label>
+          </div>
+          <div style="height: 8px"></div>
+          <div class="row">
+            <label class="control">Inicio <input id="start" type="datetime-local" /></label>
+          </div>
+          <div style="height: 8px"></div>
+          <div class="row">
+            <label class="control">Fin <input id="end" type="datetime-local" /></label>
+          </div>
+          <div style="height: 12px"></div>
+          <div class="row">
+            <button id="btnCreate" class="btn">Crear reserva</button>
+            <button id="btnPre" class="btn-outline">Preautorizar</button>
+          </div>
+          <div style="height: 8px"></div>
+          <div class="row">
+            <button id="btnConfirm" class="btn-outline">Confirmar</button>
+            <a
+              class="btn-outline"
+              href="guard.html"
+              style="text-decoration: none; text-align: center"
+              >Consola guardia</a
+            >
+          </div>
+        </section>
 
-      <section class="card" style="grid-column: span 1;">
-        <div class="muted" style="margin-bottom:6px">Salida</div>
-        <pre id="out" style="background:#0b0c10;border:1px solid var(--ring);border-radius:16px;padding:12px;height:420px;overflow:auto">Listo…</pre>
-        <div style="height:8px"></div>
-        <div id="map" class="map" style="display:none"></div>
-      </section>
+        <section class="card" style="grid-column: span 1">
+          <div class="muted" style="margin-bottom: 6px">Salida</div>
+          <pre
+            id="out"
+            style="
+              background: #0b0c10;
+              border: 1px solid var(--ring);
+              border-radius: 16px;
+              padding: 12px;
+              height: 420px;
+              overflow: auto;
+            "
+          >
+Listo…</pre
+          >
+          <div style="height: 8px"></div>
+          <div id="map" class="map" style="display: none"></div>
+        </section>
+      </div>
+
+      <footer>© Blindado. Demo UI.</footer>
     </div>
 
-    <footer>© Blindado. Demo UI.</footer>
-  </div>
+    <script>
+      // Config
+      const FN = 'https://isnezquuwepqcjkaupjh.supabase.co/functions/v1';
+      const params = new URLSearchParams(location.search);
+      const ANON = params.get('anon') || '';
+      const GMAPS_KEY = params.get('gmaps');
+      const headers = ANON
+        ? { 'content-type': 'application/json', apikey: ANON, Authorization: `Bearer ${ANON}` }
+        : { 'content-type': 'application/json' };
 
-  <script>
-    // Config
-    const FN = 'https://isnezquuwepqcjkaupjh.supabase.co/functions/v1';
-    const params = new URLSearchParams(location.search);
-    const ANON = params.get('anon') || '';
-    const GMAPS_KEY = params.get('gmaps');
-    const headers = ANON ? { 'content-type':'application/json', 'apikey':ANON, 'Authorization':`Bearer ${ANON}` } : { 'content-type':'application/json' };
+      // Hidden state
+      let origin = { lat: 19.4326, lng: -99.1332 }; // default CDMX
+      let city = 'CDMX';
+      let bookingId = null;
+      let lastPreauth = 0;
 
-    // Hidden state
-    let origin = { lat: 19.4326, lng: -99.1332 }; // default CDMX
-    let city = 'CDMX';
-    let bookingId = null; let lastPreauth = 0;
-
-    const outEl = document.getElementById('out');
-    function out(o){ outEl.textContent = (typeof o==='string'?o:JSON.stringify(o,null,2)) + '\n' + outEl.textContent }
-    function cityFromLatLng(lat, lng){
-      const inBox=(lat,lng,b)=>lat>=b.s&&lat<=b.n&&lng>=b.w&&lng<=b.e;
-      const CDMX={n:19.7,s:19.2,e:-98.9,w:-99.4};
-      const GDL={n:20.8,s:20.4,e:-103.2,w:-103.6};
-      const MTY={n:25.9,s:25.4,e:-100.0,w:-100.5};
-      if(inBox(lat,lng,CDMX)) return 'CDMX';
-      if(inBox(lat,lng,GDL)) return 'GDL';
-      if(inBox(lat,lng,MTY)) return 'MTY';
-      return 'CDMX';
-    }
-    function setDateDefaults(){
-      const toLocal=(d)=> new Date(d - (new Date().getTimezoneOffset()*60000)).toISOString().slice(0,16);
-      document.getElementById('start').value = toLocal(Date.now()+60*60000);
-      document.getElementById('end').value = toLocal(Date.now()+5*3600*1000);
-    }
-    async function geolocate(){
-      const cityChip = document.getElementById('cityChip');
-      const statusChip = document.getElementById('statusChip');
-      try{
-        if(!('geolocation' in navigator)) throw new Error('no geoloc');
-        const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:8000,maximumAge:60000}));
-        origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        city = cityFromLatLng(origin.lat, origin.lng);
-        cityChip.textContent = city;
-        if(statusChip) statusChip.textContent = 'Listo';
-        maybeInitMap();
-      }catch(e){
-        city = 'CDMX';
-        cityChip.textContent = city + ' (aprox)';
-        if(statusChip) statusChip.textContent = 'Sin permisos de ubicación';
-        maybeInitMap();
+      const outEl = document.getElementById('out');
+      function out(o) {
+        outEl.textContent =
+          (typeof o === 'string' ? o : JSON.stringify(o, null, 2)) + '\n' + outEl.textContent;
       }
-    }
+      function cityFromLatLng(lat, lng) {
+        const inBox = (lat, lng, b) => lat >= b.s && lat <= b.n && lng >= b.w && lng <= b.e;
+        const CDMX = { n: 19.7, s: 19.2, e: -98.9, w: -99.4 };
+        const GDL = { n: 20.8, s: 20.4, e: -103.2, w: -103.6 };
+        const MTY = { n: 25.9, s: 25.4, e: -100.0, w: -100.5 };
+        if (inBox(lat, lng, CDMX)) return 'CDMX';
+        if (inBox(lat, lng, GDL)) return 'GDL';
+        if (inBox(lat, lng, MTY)) return 'MTY';
+        return 'CDMX';
+      }
+      function setDateDefaults() {
+        const toLocal = (d) =>
+          new Date(d - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('start').value = toLocal(Date.now() + 60 * 60000);
+        document.getElementById('end').value = toLocal(Date.now() + 5 * 3600 * 1000);
+      }
+      async function geolocate() {
+        const cityChip = document.getElementById('cityChip');
+        const statusChip = document.getElementById('statusChip');
+        try {
+          if (!('geolocation' in navigator)) throw new Error('no geoloc');
+          const pos = await new Promise((res, rej) =>
+            navigator.geolocation.getCurrentPosition(res, rej, {
+              enableHighAccuracy: true,
+              timeout: 8000,
+              maximumAge: 60000,
+            }),
+          );
+          origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          city = cityFromLatLng(origin.lat, origin.lng);
+          cityChip.textContent = city;
+          if (statusChip) statusChip.textContent = 'Listo';
+          maybeInitMap();
+        } catch (e) {
+          city = 'CDMX';
+          cityChip.textContent = city + ' (aprox)';
+          if (statusChip) statusChip.textContent = 'Sin permisos de ubicación';
+          maybeInitMap();
+        }
+      }
 
-    async function quote(){
-      const body = {
-        city,
-        tier: document.getElementById('tier').value,
-        armed_required: document.getElementById('armed').checked,
-        vehicle_required: document.getElementById('vehicle').checked,
-        start_ts: new Date(document.getElementById('start').value || Date.now()).toISOString(),
-        end_ts: new Date(document.getElementById('end').value || Date.now()+4*3600e3).toISOString()
-      };
-      const res = await fetch(`${FN}/pricing`, { method:'POST', headers, body: JSON.stringify(body) });
-      const json = await res.json(); out(json); lastPreauth = json.preauth_amount || json.quote_amount || 0;
-    }
-    async function create(){
-      const body = {
-        client_id: '1b387371-6711-485c-81f7-79b2174b90fb',
-        city,
-        tier: document.getElementById('tier').value,
-        armed_required: document.getElementById('armed').checked,
-        vehicle_required: document.getElementById('vehicle').checked,
-        start_ts: new Date(document.getElementById('start').value || Date.now()).toISOString(),
-        end_ts: new Date(document.getElementById('end').value || Date.now()+4*3600e3).toISOString(),
-        origin_lat: origin.lat,
-        origin_lng: origin.lng
-      };
-      const res = await fetch(`${FN}/bookings`, { method:'POST', headers, body: JSON.stringify(body) });
-      const json = await res.json(); out(json);
-      bookingId = json.booking_id || json.id || json?.data?.id || null;
-      lastPreauth = json.preauth_amount || json.quote_amount || lastPreauth;
-    }
-    async function pre(){
-      if(!bookingId) return out({error:'no booking'});
-      const res = await fetch(`${FN}/payments_preauth`, { method:'POST', headers, body: JSON.stringify({ booking_id: bookingId, amount: lastPreauth }) });
-      out(await res.json());
-    }
-    async function confirm(){
-      if(!bookingId) return out({error:'no booking'});
-      const res = await fetch(`${FN}/bookings_confirm`, { method:'POST', headers, body: JSON.stringify({ booking_id: bookingId }) });
-      out(await res.json());
-    }
+      async function quote() {
+        const body = {
+          city,
+          tier: document.getElementById('tier').value,
+          armed_required: document.getElementById('armed').checked,
+          vehicle_required: document.getElementById('vehicle').checked,
+          start_ts: new Date(document.getElementById('start').value || Date.now()).toISOString(),
+          end_ts: new Date(
+            document.getElementById('end').value || Date.now() + 4 * 3600e3,
+          ).toISOString(),
+        };
+        const res = await fetch(`${FN}/pricing`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        out(json);
+        lastPreauth = json.preauth_amount || json.quote_amount || 0;
+      }
+      async function create() {
+        const body = {
+          client_id: '1b387371-6711-485c-81f7-79b2174b90fb',
+          city,
+          tier: document.getElementById('tier').value,
+          armed_required: document.getElementById('armed').checked,
+          vehicle_required: document.getElementById('vehicle').checked,
+          start_ts: new Date(document.getElementById('start').value || Date.now()).toISOString(),
+          end_ts: new Date(
+            document.getElementById('end').value || Date.now() + 4 * 3600e3,
+          ).toISOString(),
+          origin_lat: origin.lat,
+          origin_lng: origin.lng,
+        };
+        const res = await fetch(`${FN}/bookings`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        out(json);
+        bookingId = json.booking_id || json.id || json?.data?.id || null;
+        lastPreauth = json.preauth_amount || json.quote_amount || lastPreauth;
+      }
+      async function pre() {
+        if (!bookingId) return out({ error: 'no booking' });
+        const res = await fetch(`${FN}/payments_preauth`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ booking_id: bookingId, amount: lastPreauth }),
+        });
+        out(await res.json());
+      }
+      async function confirm() {
+        if (!bookingId) return out({ error: 'no booking' });
+        const res = await fetch(`${FN}/bookings_confirm`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ booking_id: bookingId }),
+        });
+        out(await res.json());
+      }
 
-    function maybeInitMap(){
-      if(!GMAPS_KEY) return;
-      const mapEl = document.getElementById('map');
-      mapEl.style.display = 'block';
-      window.initMap = function(){
-        const map = new google.maps.Map(mapEl,{ center: origin, zoom: 13, disableDefaultUI:true, styles:[
-          {elementType:'geometry',stylers:[{color:'#0b0b0c'}]},
-          {elementType:'labels.text.stroke',stylers:[{color:'#0b0b0c'}]},
-          {elementType:'labels.text.fill',stylers:[{color:'#9aa0a6'}]},
-          {featureType:'poi',elementType:'labels.text.fill',stylers:[{color:'#9aa0a6'}]},
-          {featureType:'road',elementType:'geometry',stylers:[{color:'#1f1f1f'}]},
-          {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#9aa0a6'}]},
-          {featureType:'water',elementType:'geometry',stylers:[{color:'#111315'}]}
-        ]});
-        const mk = google?.maps?.marker?.AdvancedMarkerElement;
-        if(mk) new mk({ position: origin, map }); else new google.maps.Marker({ position: origin, map });
-      };
-      const s=document.createElement('script');
-      s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_KEY)}&libraries=marker&v=weekly&callback=initMap`;
-      s.async = s.defer = true; document.head.appendChild(s);
-    }
+      function maybeInitMap() {
+        if (!GMAPS_KEY) return;
+        const mapEl = document.getElementById('map');
+        mapEl.style.display = 'block';
+        window.initMap = function () {
+          const map = new google.maps.Map(mapEl, {
+            center: origin,
+            zoom: 13,
+            disableDefaultUI: true,
+            styles: [
+              { elementType: 'geometry', stylers: [{ color: '#0b0b0c' }] },
+              { elementType: 'labels.text.stroke', stylers: [{ color: '#0b0b0c' }] },
+              { elementType: 'labels.text.fill', stylers: [{ color: '#9aa0a6' }] },
+              {
+                featureType: 'poi',
+                elementType: 'labels.text.fill',
+                stylers: [{ color: '#9aa0a6' }],
+              },
+              { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1f1f1f' }] },
+              {
+                featureType: 'road',
+                elementType: 'labels.text.fill',
+                stylers: [{ color: '#9aa0a6' }],
+              },
+              { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#111315' }] },
+            ],
+          });
+          const mk = google?.maps?.marker?.AdvancedMarkerElement;
+          if (mk) new mk({ position: origin, map });
+          else new google.maps.Marker({ position: origin, map });
+        };
+        const s = document.createElement('script');
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GMAPS_KEY)}&libraries=marker&v=weekly&callback=initMap`;
+        s.async = s.defer = true;
+        document.head.appendChild(s);
+      }
 
-    document.getElementById('btnQuote').onclick = quote;
-    document.getElementById('btnCreate').onclick = create;
-    document.getElementById('btnPre').onclick = pre;
-    document.getElementById('btnConfirm').onclick = confirm;
-    setDateDefaults();
-    geolocate();
-  </script>
-</body>
+      document.getElementById('btnQuote').onclick = quote;
+      document.getElementById('btnCreate').onclick = create;
+      document.getElementById('btnPre').onclick = pre;
+      document.getElementById('btnConfirm').onclick = confirm;
+      setDateDefaults();
+      geolocate();
+    </script>
+  </body>
 </html>

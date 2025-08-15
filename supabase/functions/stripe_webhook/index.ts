@@ -1,20 +1,20 @@
-import { serve } from "std/http/server.ts";
+import { serve } from 'std/http/server.ts';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST,OPTIONS",
-  "Access-Control-Allow-Headers": "content-type, authorization, apikey, stripe-signature",
-  "Content-Type": "application/json"
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST,OPTIONS',
+  'Access-Control-Allow-Headers': 'content-type, authorization, apikey, stripe-signature',
+  'Content-Type': 'application/json',
 };
 
 function json(res: unknown, init: number | ResponseInit = 200) {
-  const base = typeof init === "number" ? { status: init } : init;
+  const base = typeof init === 'number' ? { status: init } : init;
   return new Response(JSON.stringify(res), {
     ...base,
     headers: {
-      "content-type": "application/json; charset=utf-8",
+      'content-type': 'application/json; charset=utf-8',
       ...corsHeaders,
-      ...(base?.headers as Record<string, string> ?? {}),
+      ...((base?.headers as Record<string, string>) ?? {}),
     },
   });
 }
@@ -24,15 +24,15 @@ function bad(msg: string, status = 400) {
 }
 
 function env(name: string) {
-  return Deno.env.get(name) ?? "";
+  return Deno.env.get(name) ?? '';
 }
 
 function parseStripeSigHeader(h: string | null) {
   if (!h) return null;
-  const parts = h.split(",").map(s => s.trim());
+  const parts = h.split(',').map((s) => s.trim());
   const out: Record<string, string> = {};
   for (const p of parts) {
-    const [k, v] = p.split("=");
+    const [k, v] = p.split('=');
     if (k && v) out[k] = v;
   }
   if (!out.t || !out.v1) return null;
@@ -42,15 +42,17 @@ function parseStripeSigHeader(h: string | null) {
 async function hmacSHA256Hex(secret: string, payload: string) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
-    "raw",
+    'raw',
     enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
+    { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ["sign"],
+    ['sign'],
   );
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
   const bytes = new Uint8Array(sig);
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 function constantTimeEqual(a: string, b: string) {
@@ -103,50 +105,64 @@ function formEncode(obj: Record<string, string | number | boolean | undefined>) 
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return bad("Method not allowed", 405);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return bad('Method not allowed', 405);
 
-  const STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET");
-  if (!STRIPE_WEBHOOK_SECRET) return bad("Webhook secret not configured", 501);
+  const STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET');
+  if (!STRIPE_WEBHOOK_SECRET) return bad('Webhook secret not configured', 501);
 
-  const sigHeader = req.headers.get("stripe-signature");
+  const sigHeader = req.headers.get('stripe-signature');
   const parsed = parseStripeSigHeader(sigHeader);
-  if (!parsed) return bad("Missing/invalid Stripe-Signature");
+  if (!parsed) return bad('Missing/invalid Stripe-Signature');
 
   const payload = await req.text();
   const signedPayload = `${parsed.t}.${payload}`;
   const expected = await hmacSHA256Hex(STRIPE_WEBHOOK_SECRET, signedPayload);
-  if (!constantTimeEqual(expected, parsed.v1)) return bad("Invalid signature");
+  if (!constantTimeEqual(expected, parsed.v1)) return bad('Invalid signature');
 
   let event: any;
-  try { event = JSON.parse(payload); } catch { return bad("Invalid JSON payload"); }
+  try {
+    event = JSON.parse(payload);
+  } catch {
+    return bad('Invalid JSON payload');
+  }
 
-  if (event.type !== "payment_intent.succeeded") {
+  if (event.type !== 'payment_intent.succeeded') {
     // Acknowledge unrelated events (e.g., setup_intent.*, payment_intent.payment_failed)
     return json({ ok: true, ignored: event.type });
   }
 
   // Handle Thin payloads by expanding the event to include data.object
-  let STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY");
-  let pi: PI | null = (event?.data?.object && typeof event.data.object === "object" && event.data.object.object === "payment_intent")
-    ? (event.data.object as PI)
-    : null;
+  let STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY');
+  let pi: PI | null =
+    event?.data?.object &&
+    typeof event.data.object === 'object' &&
+    event.data.object.object === 'payment_intent'
+      ? (event.data.object as PI)
+      : null;
 
   if (!pi) {
     if (!STRIPE_SECRET_KEY) {
-      return bad("Thin payload received but STRIPE_SECRET_KEY not configured to expand event. Use Snapshot payload or set secret.", 501);
+      return bad(
+        'Thin payload received but STRIPE_SECRET_KEY not configured to expand event. Use Snapshot payload or set secret.',
+        501,
+      );
     }
     try {
-      const res = await fetch(`https://api.stripe.com/v1/events/${encodeURIComponent(event.id)}?expand[]=data.object`, {
-        headers: { "Authorization": `Bearer ${STRIPE_SECRET_KEY}` }
-      });
+      const res = await fetch(
+        `https://api.stripe.com/v1/events/${encodeURIComponent(event.id)}?expand[]=data.object`,
+        {
+          headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
+        },
+      );
       if (!res.ok) {
         const txt = await res.text();
         return bad(`Failed to expand Stripe event: ${res.status} ${txt}`);
       }
       const expanded = await res.json();
       const obj = expanded?.data?.object;
-      if (!obj || obj.object !== "payment_intent") return bad("Expanded event missing PaymentIntent", 400);
+      if (!obj || obj.object !== 'payment_intent')
+        return bad('Expanded event missing PaymentIntent', 400);
       event = expanded;
       pi = obj as PI;
     } catch (e) {
@@ -154,34 +170,47 @@ serve(async (req) => {
     }
   }
   // Ensure secret key exists for transfers even if expansion happened
-  STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY");
-  if (!STRIPE_SECRET_KEY) return bad("Stripe secret not configured", 501);
+  STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY');
+  if (!STRIPE_SECRET_KEY) return bad('Stripe secret not configured', 501);
 
   const booking_id = pi?.metadata?.booking_id || pi.transfer_group || pi.id;
   const total = pi.amount_received ?? pi.amount ?? 0;
-  const currency = (pi.currency || "mxn").toLowerCase();
-  let splitsBps: SplitsBps = { tax_bps: 1600, fee_bps: 1000, freelancer_bps: 6000, company_bps: 1400 };
-  try { if (pi?.metadata?.splits_bps_json) splitsBps = JSON.parse(pi.metadata.splits_bps_json); } catch {}
+  const currency = (pi.currency || 'mxn').toLowerCase();
+  let splitsBps: SplitsBps = {
+    tax_bps: 1600,
+    fee_bps: 1000,
+    freelancer_bps: 6000,
+    company_bps: 1400,
+  };
+  try {
+    if (pi?.metadata?.splits_bps_json) splitsBps = JSON.parse(pi.metadata.splits_bps_json);
+  } catch {}
 
   const parts = computeSplit(total, splitsBps);
 
   const DEST = {
-    tax: env("CONNECT_ACCOUNT_TAX"),
-    fees: env("CONNECT_ACCOUNT_FEES"),
-    freelancers: env("CONNECT_ACCOUNT_FREELANCERS"),
-    companies: env("CONNECT_ACCOUNT_COMPANIES"),
+    tax: env('CONNECT_ACCOUNT_TAX'),
+    fees: env('CONNECT_ACCOUNT_FEES'),
+    freelancers: env('CONNECT_ACCOUNT_FREELANCERS'),
+    companies: env('CONNECT_ACCOUNT_COMPANIES'),
   };
 
   const transfers: any[] = [];
   const doTransfer = async (amount: number, destination: string, label: string) => {
-    const body = formEncode({ amount, currency, destination, description: `${booking_id} • ${label}`, transfer_group: booking_id });
-    const res = await fetch("https://api.stripe.com/v1/transfers", {
-      method: "POST",
+    const body = formEncode({
+      amount,
+      currency,
+      destination,
+      description: `${booking_id} • ${label}`,
+      transfer_group: booking_id,
+    });
+    const res = await fetch('https://api.stripe.com/v1/transfers', {
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${STRIPE_SECRET_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
         // Idempotency per booking_id+bucket
-        "Idempotency-Key": `${booking_id}:${label}`
+        'Idempotency-Key': `${booking_id}:${label}`,
       },
       body,
     });
@@ -191,10 +220,12 @@ serve(async (req) => {
   };
 
   try {
-    if (parts.taxes > 0 && DEST.tax) await doTransfer(parts.taxes, DEST.tax, "taxes");
-    if (parts.fees > 0 && DEST.fees) await doTransfer(parts.fees, DEST.fees, "fees");
-    if (parts.freelancers > 0 && DEST.freelancers) await doTransfer(parts.freelancers, DEST.freelancers, "freelancers");
-    if (parts.companies > 0 && DEST.companies) await doTransfer(parts.companies, DEST.companies, "companies");
+    if (parts.taxes > 0 && DEST.tax) await doTransfer(parts.taxes, DEST.tax, 'taxes');
+    if (parts.fees > 0 && DEST.fees) await doTransfer(parts.fees, DEST.fees, 'fees');
+    if (parts.freelancers > 0 && DEST.freelancers)
+      await doTransfer(parts.freelancers, DEST.freelancers, 'freelancers');
+    if (parts.companies > 0 && DEST.companies)
+      await doTransfer(parts.companies, DEST.companies, 'companies');
   } catch (e) {
     return json({ ok: false, booking_id, error: String(e), partial_transfers: transfers }, 200);
   }

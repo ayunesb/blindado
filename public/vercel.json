@@ -3,15 +3,19 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/", "destination": "/client.html" },
-  { "source": "/client", "destination": "/client.html" },
+    { "source": "/client", "destination": "/client.html" },
+    { "source": "/guard", "destination": "/guard.html" },
+    { "source": "/company", "destination": "/company_onboard.html" },
+    { "source": "/freelancer", "destination": "/freelancer_apply.html" },
     { "source": "/login", "destination": "/auth.html" },
     { "source": "/profile", "destination": "/profile.html" },
     { "source": "/book", "destination": "/book.html" },
-  { "source": "/history", "destination": "/history.html" },
-  { "source": "/wallet", "destination": "/wallet.html" },
-  { "source": "/guards", "destination": "/guards.html" }
+    { "source": "/history", "destination": "/history.html" },
+    { "source": "/wallet", "destination": "/wallet.html" },
+    { "source": "/guards", "destination": "/guards.html" }
   ],
   "headers": [
+    { "source": "/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] },
     {
       "source": "/(.*)\\.(js|css|png|jpg|jpeg|webp|svg|ico|woff2?)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]

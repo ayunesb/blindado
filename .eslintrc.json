@@ -1,0 +1,17 @@
+{
+  "root": true,
+  "env": { "browser": true, "es2022": true },
+  "overrides": [
+    {
+      "files": ["public/**/*.html"],
+      "parser": "@html-eslint/parser",
+      "plugins": ["@html-eslint"],
+      "rules": {
+        "no-undef": "off",
+        "no-unused-vars": "off",
+        "no-console": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["public/assets/**", "**/*.svg", "**/*.png", "**/*.jpg", "supabase/.temp/**"]
+}

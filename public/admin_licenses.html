@@ -1,56 +1,72 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Admin Licenses</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <script>const FN_ADMIN = "https://isnezquuwepqcjkaupjh.supabase.co/functions/v1/admin_licenses";</script>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-50 text-slate-900">
-  <div class="max-w-5xl mx-auto p-6">
-    <header class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold">Admin Licenses</h1>
-      <button id="btnRefresh" class="px-4 py-2 rounded bg-indigo-600 text-white text-sm">Refresh</button>
-    </header>
-    <div id="list" class="grid gap-4"></div>
-  </div>
-  <template id="rowTpl">
-    <div class="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="font-semibold text-sm id"></p>
-          <p class="text-xs text-slate-500 meta"></p>
-        </div>
-        <div class="flex gap-2">
-          <button data-status="valid" class="px-3 py-1 rounded bg-emerald-600 text-white text-xs">Validate</button>
-          <button data-status="rejected" class="px-3 py-1 rounded bg-rose-600 text-white text-xs">Reject</button>
-        </div>
-      </div>
-      <pre class="files text-[11px] bg-slate-100 rounded p-2 overflow-auto"></pre>
+  <head>
+    <meta charset="utf-8" />
+    <title>Admin Licenses</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script>
+      const FN_ADMIN = 'https://isnezquuwepqcjkaupjh.supabase.co/functions/v1/admin_licenses';
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 text-slate-900">
+    <div class="max-w-5xl mx-auto p-6">
+      <header class="mb-6 flex items-center justify-between">
+        <h1 class="text-2xl font-bold">Admin Licenses</h1>
+        <button id="btnRefresh" class="px-4 py-2 rounded bg-indigo-600 text-white text-sm">
+          Refresh
+        </button>
+      </header>
+      <div id="list" class="grid gap-4"></div>
     </div>
-  </template>
-  <script>
-    const $=id=>document.getElementById(id);
-    async function load(){
-      const r = await fetch(FN_ADMIN + '/list');
-      const j = await r.json();
-      const list = j.licenses||[]; const wrap = $('list'); wrap.innerHTML='';
-      for(const lic of list){
-        const node = document.getElementById('rowTpl').content.cloneNode(true);
-        node.querySelector('.id').textContent = lic.id+' • '+lic.status;
-        node.querySelector('.meta').textContent = `${lic.guard_id} • ${lic.type} • ${lic.number||''}`;
-        node.querySelector('.files').textContent = JSON.stringify(lic.files,null,2);
-        node.querySelectorAll('button[data-status]').forEach(btn=>{
-          btn.onclick = async ()=>{
-            await fetch(FN_ADMIN + '/set_status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ license_id: lic.id, status: btn.dataset.status }) });
-            load();
-          };
-        });
-        wrap.appendChild(node);
+    <template id="rowTpl">
+      <div class="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-semibold text-sm id"></p>
+            <p class="text-xs text-slate-500 meta"></p>
+          </div>
+          <div class="flex gap-2">
+            <button data-status="valid" class="px-3 py-1 rounded bg-emerald-600 text-white text-xs">
+              Validate
+            </button>
+            <button data-status="rejected" class="px-3 py-1 rounded bg-rose-600 text-white text-xs">
+              Reject
+            </button>
+          </div>
+        </div>
+        <pre class="files text-[11px] bg-slate-100 rounded p-2 overflow-auto"></pre>
+      </div>
+    </template>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      async function load() {
+        const r = await fetch(FN_ADMIN + '/list');
+        const j = await r.json();
+        const list = j.licenses || [];
+        const wrap = $('list');
+        wrap.innerHTML = '';
+        for (const lic of list) {
+          const node = document.getElementById('rowTpl').content.cloneNode(true);
+          node.querySelector('.id').textContent = lic.id + ' • ' + lic.status;
+          node.querySelector('.meta').textContent =
+            `${lic.guard_id} • ${lic.type} • ${lic.number || ''}`;
+          node.querySelector('.files').textContent = JSON.stringify(lic.files, null, 2);
+          node.querySelectorAll('button[data-status]').forEach((btn) => {
+            btn.onclick = async () => {
+              await fetch(FN_ADMIN + '/set_status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ license_id: lic.id, status: btn.dataset.status }),
+              });
+              load();
+            };
+          });
+          wrap.appendChild(node);
+        }
       }
-    }
-    document.getElementById('btnRefresh').onclick=load; load();
-  </script>
-</body>
+      document.getElementById('btnRefresh').onclick = load;
+      load();
+    </script>
+  </body>
 </html>

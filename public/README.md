@@ -4,11 +4,13 @@
 ](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
 
 [Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
+
 # Blindado Public Pages
 
 Quick links and usage tips for the static demo and consoles.
 
 Pages
+
 - Client demo: `public/client.html`
   - Single-page booking flow (Details → Quote → Payment → Confirm → Acceptance sim).
   - Optional params: `?anon=SUPABASE_ANON_KEY` and `?gmaps=GOOGLE_MAPS_KEY`.
@@ -23,10 +25,12 @@ Pages
   - Params: `?ref=PROJECT_REF&admin=ADMIN_API_SECRET`.
 
 Function base
+
 - All pages default to project: `isnezquuwepqcjkaupjh`.
 - Functions base: `https://isnezquuwepqcjkaupjh.supabase.co/functions/v1`.
 
 Notes
+
 - ANON headers: when provided, pages include `apikey` and `Authorization: Bearer` in requests.
 - Google Maps is optional; the UI works with No-Map mode by default.
 - Heartbeat can be invoked via the Dispatcher/Guard pages to update locations.

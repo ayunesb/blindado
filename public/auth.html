@@ -1,91 +1,122 @@
 <!doctype html>
 <html lang="en" class="dark">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Sign in • Escolta</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0'
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sign in • Escolta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 
-    // Config (reads from querystring for pilots)
-    const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co'
-    const SUPABASE_ANON_KEY = new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY'
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      // Config (reads from querystring for pilots)
+      const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co';
+      const SUPABASE_ANON_KEY =
+        new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY';
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function sendMagicLink(e){
-      e.preventDefault()
-      const email = document.getElementById('email').value.trim()
-      const role = document.querySelector('input[name=role]:checked')?.value || 'client'
-      if(!email) return toast('Enter email')
-      const { error } = await supabase.auth.signInWithOtp({ email, options: { data: { role }}})
-      if(error) return toast(error.message, true)
-      toast('Magic link sent. Check your email.')
-    }
-
-    async function signInWithGitHub(){
-      // Make sure GitHub provider is enabled in Supabase Auth settings and redirect URL is allowed
-      const q = new URLSearchParams(location.search)
-      const redirectTo = new URL('/profile.html' + (q.size? ('?'+q.toString()) : ''), location.href).toString()
-      const { error } = await supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo } })
-      if(error) toast(error.message, true)
-    }
-
-    function toast(msg, bad=false){
-      const t = document.getElementById('toast')
-      t.textContent = msg
-      t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-sm ' + (bad?'bg-red-600':'bg-emerald-600')
-      setTimeout(()=> t.className='hidden', 4000)
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-  document.getElementById('form').addEventListener('submit', sendMagicLink)
-  document.getElementById('github').addEventListener('click', signInWithGitHub)
-      const { data: { session } } = await supabase.auth.getSession()
-      if(session) {
-        const q = new URLSearchParams(location.search)
-        location.href = '/profile.html' + (q.size? ('?'+q.toString()) : '')
+      async function sendMagicLink(e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const role = document.querySelector('input[name=role]:checked')?.value || 'client';
+        if (!email) return toast('Enter email');
+        const { error } = await supabase.auth.signInWithOtp({ email, options: { data: { role } } });
+        if (error) return toast(error.message, true);
+        toast('Magic link sent. Check your email.');
       }
-    })
-  </script>
-  <style> body { -webkit-font-smoothing: antialiased; } </style>
-  <meta name="color-scheme" content="dark light">
-  <link rel="icon" href="favicon.ico" />
-  <meta name="robots" content="noindex" />
-  </head>
-<body class="bg-black text-zinc-200 min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-md p-6 rounded-2xl border border-zinc-800 bg-zinc-950">
-    <h1 class="text-2xl font-semibold mb-2">Entrar / Sign in</h1>
-    <p class="text-sm text-zinc-400 mb-6">Te enviaremos un enlace mágico por correo.</p>
 
-    <form id="form" class="space-y-4">
-      <input id="email" type="email" required placeholder="you@email.com"
-             class="w-full px-4 py-3 rounded-xl bg-black border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-      <div class="grid grid-cols-3 gap-2 text-sm">
-        <label class="flex items-center gap-2 border border-zinc-700 rounded-xl px-3 py-2">
-          <input type="radio" name="role" value="client" checked class="accent-emerald-500"> Cliente
-        </label>
-        <label class="flex items-center gap-2 border border-zinc-700 rounded-xl px-3 py-2">
-          <input type="radio" name="role" value="company_admin" class="accent-emerald-500"> Empresa
-        </label>
-        <label class="flex items-center gap-2 border border-zinc-700 rounded-xl px-3 py-2">
-          <input type="radio" name="role" value="freelancer" class="accent-emerald-500"> Freelancer
-        </label>
-      </div>
-      <button class="w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-xl py-3 font-medium">
-        Enviar enlace / Send link
-      </button>
-      <div class="flex items-center gap-3 py-1">
-        <div class="h-px bg-zinc-800 flex-1"></div>
-        <div class="text-xs text-zinc-500">o</div>
-        <div class="h-px bg-zinc-800 flex-1"></div>
-      </div>
-      <button id="github" type="button" class="w-full bg-zinc-900 hover:bg-zinc-800 transition rounded-xl py-3 font-medium border border-zinc-800">
-        Continuar con GitHub
-      </button>
-      <p class="text-xs text-zinc-500">Al continuar aceptas nuestras políticas y tratamiento de datos.</p>
-    </form>
-  </div>
-  <div id="toast" class="hidden"></div>
-</body>
+      async function signInWithGitHub() {
+        // Make sure GitHub provider is enabled in Supabase Auth settings and redirect URL is allowed
+        const q = new URLSearchParams(location.search);
+        const redirectTo = new URL(
+          '/profile.html' + (q.size ? '?' + q.toString() : ''),
+          location.href,
+        ).toString();
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'github',
+          options: { redirectTo },
+        });
+        if (error) toast(error.message, true);
+      }
+
+      function toast(msg, bad = false) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className =
+          'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-sm ' +
+          (bad ? 'bg-red-600' : 'bg-emerald-600');
+        setTimeout(() => (t.className = 'hidden'), 4000);
+      }
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        document.getElementById('form').addEventListener('submit', sendMagicLink);
+        document.getElementById('github').addEventListener('click', signInWithGitHub);
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          const q = new URLSearchParams(location.search);
+          location.href = '/profile.html' + (q.size ? '?' + q.toString() : '');
+        }
+      });
+    </script>
+    <style>
+      body {
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" href="favicon.ico" />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body class="bg-black text-zinc-200 min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-md p-6 rounded-2xl border border-zinc-800 bg-zinc-950">
+      <h1 class="text-2xl font-semibold mb-2">Entrar / Sign in</h1>
+      <p class="text-sm text-zinc-400 mb-6">Te enviaremos un enlace mágico por correo.</p>
+
+      <form id="form" class="space-y-4">
+        <input
+          id="email"
+          type="email"
+          required
+          placeholder="you@email.com"
+          class="w-full px-4 py-3 rounded-xl bg-black border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+        <div class="grid grid-cols-3 gap-2 text-sm">
+          <label class="flex items-center gap-2 border border-zinc-700 rounded-xl px-3 py-2">
+            <input type="radio" name="role" value="client" checked class="accent-emerald-500" />
+            Cliente
+          </label>
+          <label class="flex items-center gap-2 border border-zinc-700 rounded-xl px-3 py-2">
+            <input type="radio" name="role" value="company_admin" class="accent-emerald-500" />
+            Empresa
+          </label>
+          <label class="flex items-center gap-2 border border-zinc-700 rounded-xl px-3 py-2">
+            <input type="radio" name="role" value="freelancer" class="accent-emerald-500" />
+            Freelancer
+          </label>
+        </div>
+        <button
+          class="w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-xl py-3 font-medium"
+        >
+          Enviar enlace / Send link
+        </button>
+        <div class="flex items-center gap-3 py-1">
+          <div class="h-px bg-zinc-800 flex-1"></div>
+          <div class="text-xs text-zinc-500">o</div>
+          <div class="h-px bg-zinc-800 flex-1"></div>
+        </div>
+        <button
+          id="github"
+          type="button"
+          class="w-full bg-zinc-900 hover:bg-zinc-800 transition rounded-xl py-3 font-medium border border-zinc-800"
+        >
+          Continuar con GitHub
+        </button>
+        <p class="text-xs text-zinc-500">
+          Al continuar aceptas nuestras políticas y tratamiento de datos.
+        </p>
+      </form>
+    </div>
+    <div id="toast" class="hidden"></div>
+  </body>
 </html>

@@ -1,9 +1,9 @@
-import { serve } from "std/http/server.ts";
+import { serve } from 'std/http/server.ts';
 
 type CreateReq = {
   booking_id?: string;
   currency?: string; // default "mxn"
-  amount: number;    // smallest unit
+  amount: number; // smallest unit
   city?: string;
   tier?: string;
   customer_email?: string;
@@ -17,20 +17,20 @@ type SplitsBps = {
 };
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST,OPTIONS",
-  "Access-Control-Allow-Headers": "content-type, authorization, apikey, stripe-signature",
-  "Content-Type": "application/json"
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST,OPTIONS',
+  'Access-Control-Allow-Headers': 'content-type, authorization, apikey, stripe-signature',
+  'Content-Type': 'application/json',
 };
 
 function json(res: unknown, init: number | ResponseInit = 200) {
-  const base = typeof init === "number" ? { status: init } : init;
+  const base = typeof init === 'number' ? { status: init } : init;
   return new Response(JSON.stringify(res), {
     ...base,
     headers: {
-      "content-type": "application/json; charset=utf-8",
+      'content-type': 'application/json; charset=utf-8',
       ...corsHeaders,
-      ...(base?.headers as Record<string, string> ?? {}),
+      ...((base?.headers as Record<string, string>) ?? {}),
     },
   });
 }
@@ -40,7 +40,7 @@ function bad(msg: string, status = 400) {
 }
 
 function env(name: string) {
-  return Deno.env.get(name) ?? "";
+  return Deno.env.get(name) ?? '';
 }
 
 // Flattens keys like "automatic_payment_methods[enabled]".
@@ -59,57 +59,59 @@ function getSplits(): SplitsBps {
     return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : d;
   };
   return {
-    tax_bps:        parse(Deno.env.get("SPLIT_TAX_BPS"),        1600), // 16.00%
-    fee_bps:        parse(Deno.env.get("SPLIT_FEE_BPS"),        1000), // 10.00%
-    freelancer_bps: parse(Deno.env.get("SPLIT_FREELANCER_BPS"), 6000), // 60.00%
-    company_bps:    parse(Deno.env.get("SPLIT_COMPANY_BPS"),    1400), // 14.00%
+    tax_bps: parse(Deno.env.get('SPLIT_TAX_BPS'), 1600), // 16.00%
+    fee_bps: parse(Deno.env.get('SPLIT_FEE_BPS'), 1000), // 10.00%
+    freelancer_bps: parse(Deno.env.get('SPLIT_FREELANCER_BPS'), 6000), // 60.00%
+    company_bps: parse(Deno.env.get('SPLIT_COMPANY_BPS'), 1400), // 14.00%
   };
 }
 
 function normalizeCurrency(c?: string) {
-  return (c || "mxn").toLowerCase();
+  return (c || 'mxn').toLowerCase();
 }
 
 function ensureBookingId(id?: string) {
   if (id && id.trim()) return id.trim();
   // Simple unique-ish id for grouping transfers.
   const rnd = crypto.getRandomValues(new Uint8Array(6));
-  const hex = Array.from(rnd).map(b => b.toString(16).padStart(2, "0")).join("");
+  const hex = Array.from(rnd)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
   return `bk_${hex}`;
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  if (req.method !== "POST") {
-    return bad("Method not allowed", 405);
+  if (req.method !== 'POST') {
+    return bad('Method not allowed', 405);
   }
 
   let body: CreateReq;
   try {
     body = await req.json();
   } catch {
-    return bad("Invalid JSON");
+    return bad('Invalid JSON');
   }
 
   const amount = Number(body.amount);
   if (!Number.isInteger(amount) || amount <= 0) {
-    return bad("amount must be a positive integer (smallest unit)");
+    return bad('amount must be a positive integer (smallest unit)');
   }
   const currency = normalizeCurrency(body.currency);
   const booking_id = ensureBookingId(body.booking_id);
 
-  const STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY");
-  const STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY");
+  const STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY');
+  const STRIPE_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY');
 
   // If secrets missing, return demo mode so frontend can fallback gracefully.
   if (!STRIPE_SECRET_KEY || !STRIPE_PUBLISHABLE_KEY) {
     return json(
       {
         demo: true,
-        reason: "Stripe keys not configured",
+        reason: 'Stripe keys not configured',
         publishable_key: STRIPE_PUBLISHABLE_KEY || null,
       },
       501,
@@ -123,27 +125,27 @@ serve(async (req) => {
   const params = formEncode({
     amount,
     currency,
-    "automatic_payment_methods[enabled]": true,
-    receipt_email: body.customer_email || "",
+    'automatic_payment_methods[enabled]': true,
+    receipt_email: body.customer_email || '',
     transfer_group: booking_id,
-    "metadata[booking_id]": booking_id,
-    "metadata[city]": body.city || "",
-    "metadata[tier]": body.tier || "",
-    "metadata[splits_bps_json]": splits_bps_json,
+    'metadata[booking_id]': booking_id,
+    'metadata[city]': body.city || '',
+    'metadata[tier]': body.tier || '',
+    'metadata[splits_bps_json]': splits_bps_json,
   });
 
-  const res = await fetch("https://api.stripe.com/v1/payment_intents", {
-    method: "POST",
+  const res = await fetch('https://api.stripe.com/v1/payment_intents', {
+    method: 'POST',
     headers: {
-      "Authorization": `Bearer ${STRIPE_SECRET_KEY}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: params,
   });
 
   const pi = await res.json();
   if (!res.ok) {
-    return json({ error: "stripe_error", details: pi }, 500);
+    return json({ error: 'stripe_error', details: pi }, 500);
   }
 
   return json({

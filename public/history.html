@@ -1,57 +1,73 @@
 <!doctype html>
 <html lang="es" class="dark">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Historial • Escolta</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0'
-    const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co'
-    const SUPABASE_ANON_KEY = new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY'
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Historial • Escolta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+      const SUPABASE_URL = 'https://isnezquuwepqcjkaupjh.supabase.co';
+      const SUPABASE_ANON_KEY =
+        new URL(location).searchParams.get('anon') || 'YOUR_SUPABASE_ANON_KEY';
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function row(b){
-      const dt = b.start_ts ? new Date(b.start_ts).toLocaleString() : '-'
-      return `<tr class="border-b border-zinc-800">
-        <td class="px-3 py-2">${b.city||'-'}</td>
-        <td class="px-3 py-2">${b.tier||'-'}${b.armed_required? ' 🔒':''}${b.vehicle_required? ' 🚗':''}</td>
+      function row(b) {
+        const dt = b.start_ts ? new Date(b.start_ts).toLocaleString() : '-';
+        return (
+          `<tr class="border-b border-zinc-800">
+        <td class="px-3 py-2">${b.city || '-'}</td>
+        <td class="px-3 py-2">${b.tier || '-'}${b.armed_required ? ' 🔒' : ''}${b.vehicle_required ? ' 🚗' : ''}</td>
         <td class="px-3 py-2">${dt}</td>
-        <td class="px-3 py-2">${b.status||'-'}</td>
-        <td class="px-3 py-2 text-right">${b.quote_amount? '$'+b.quote_amount : '-'}</td>`
-        + `</tr>`
-    }
+        <td class="px-3 py-2">${b.status || '-'}</td>
+        <td class="px-3 py-2 text-right">${b.quote_amount ? '$' + b.quote_amount : '-'}</td>` +
+          `</tr>`
+        );
+      }
 
-    async function load(){
-      const { data:{ session } } = await supabase.auth.getSession()
-      if(!session) return location.href='/auth.html'
-      const { data } = await supabase.from('bookings').select('*').eq('client_id', session.user.id).order('created_at', { ascending:false }).limit(50)
-      document.getElementById('tbody').innerHTML = (data||[]).map(row).join('') || '<tr><td class="p-6 text-zinc-500">Sin registros</td></tr>'
-    }
-    document.addEventListener('DOMContentLoaded', load)
-  </script>
-</head>
-<body class="bg-black text-zinc-200 min-h-screen">
-  <header class="p-4 border-b border-zinc-800 flex items-center justify-between">
-    <div class="font-semibold">Historial</div>
-    <div class="space-x-2">
-  <a href="book.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Nueva reserva</a>
-  <a href="profile.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">Perfil</a>
-    </div>
-  </header>
-  <main class="max-w-5xl mx-auto p-6">
-    <table class="w-full text-sm">
-      <thead class="text-zinc-400">
-        <tr class="border-b border-zinc-800">
-          <th class="px-3 py-2 text-left">Ciudad</th>
-          <th class="px-3 py-2 text-left">Servicio</th>
-          <th class="px-3 py-2 text-left">Inicio</th>
-          <th class="px-3 py-2 text-left">Estatus</th>
-          <th class="px-3 py-2 text-right">Monto</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </main>
-</body>
+      async function load() {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) return (location.href = '/auth.html');
+        const { data } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('client_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        document.getElementById('tbody').innerHTML =
+          (data || []).map(row).join('') ||
+          '<tr><td class="p-6 text-zinc-500">Sin registros</td></tr>';
+      }
+      document.addEventListener('DOMContentLoaded', load);
+    </script>
+  </head>
+  <body class="bg-black text-zinc-200 min-h-screen">
+    <header class="p-4 border-b border-zinc-800 flex items-center justify-between">
+      <div class="font-semibold">Historial</div>
+      <div class="space-x-2">
+        <a href="book.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700"
+          >Nueva reserva</a
+        >
+        <a href="profile.html" class="text-sm px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700"
+          >Perfil</a
+        >
+      </div>
+    </header>
+    <main class="max-w-5xl mx-auto p-6">
+      <table class="w-full text-sm">
+        <thead class="text-zinc-400">
+          <tr class="border-b border-zinc-800">
+            <th class="px-3 py-2 text-left">Ciudad</th>
+            <th class="px-3 py-2 text-left">Servicio</th>
+            <th class="px-3 py-2 text-left">Inicio</th>
+            <th class="px-3 py-2 text-left">Estatus</th>
+            <th class="px-3 py-2 text-right">Monto</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </main>
+  </body>
 </html>

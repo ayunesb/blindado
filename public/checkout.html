@@ -1,222 +1,459 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8"/>
-  <title>Blindado • Checkout</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <link rel="icon" href="assets/brand/blindado-logo.svg">
-  <style>
-    :root { --bg:#0b0f14; --card:#10161d; --text:#eaf2ff; --muted:#94a3b8; --accent:#00c2ff; --ok:#22c55e; --err:#ef4444; --border:#1f2937; }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;background:linear-gradient(180deg,#0b0f14,#0b0f14 60%,#0d1420);color:var(--text)}
-    header{position:sticky;top:0;z-index:5;backdrop-filter:blur(6px);background:rgba(11,15,20,.7);border-bottom:1px solid var(--border)}
-    .wrap{max-width:980px;margin:0 auto;padding:16px}
-    .row{display:flex;align-items:center;gap:12px}
-    .grow{flex:1}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
-    .brand img{width:28px;height:28px}
-    .chip{display:inline-flex;align-items:center;gap:6px;background:#0b2130;border:1px solid #143044;color:#cfe8ff;padding:4px 10px;border-radius:999px;font-size:12px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
-    h1{font-size:20px;margin:0 0 6px}
-    h2{font-size:16px;margin:16px 0 8px;color:#cbd5e1}
-    label{font-size:13px;color:var(--muted);display:block;margin:10px 0 6px}
-    input[type="email"],select{width:100%;background:#0c1219;color:var(--text);border:1px solid #1c2835;border-radius:10px;padding:10px 12px;outline:none}
-    .muted{color:var(--muted);font-size:12px}
-    .total{font-size:22px;font-weight:700}
-    button.primary{background:var(--accent);color:#00121a;border:0;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}
-    button.secondary{background:transparent;color:var(--text);border:1px solid #1f3145;padding:10px 14px;border-radius:10px;cursor:pointer}
-    .stack{display:grid;gap:14px}
-    .cols{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
-    @media (max-width:860px){.cols{grid-template-columns:1fr}}
-    .status{margin-top:12px;padding:10px;border-radius:10px}
-    .ok{background:#0b2a16;border:1px solid #1f6e3d;color:#d1fadf}
-    .err{background:#301213;border:1px solid #6e1f23;color:#ffd2d4}
-    .rowr{display:flex;gap:10px;justify-content:flex-end}
-    .pill{padding:5px 10px;border-radius:999px;border:1px solid #173048;background:#0c1a26;font-size:12px;color:#cfe8ff}
-    .hidden{display:none!important}
-    .ghostlink{background:none;border:none;color:#93c5fd;padding:0;cursor:pointer;text-decoration:underline}
-  </style>
-  <script src="https://js.stripe.com/v3"></script>
-  <script>
-  // Google Maps referer noise silencer
-  window.addEventListener('error',(e)=>{ const m=(e?.message||'').toLowerCase(); if(m.includes('google maps javascript api error')) e.preventDefault(); });
-  </script>
-  <link rel="preload" as="image" href="assets/brand/blindado-logo.svg"/>
-  <link rel="preload" as="image" href="assets/brand/ic-shield.svg"/>
-  <link rel="preload" as="image" href="assets/brand/ic-car-suv.svg"/>
-  <link rel="preload" as="image" href="assets/brand/ic-car-armored.svg"/>
-  <link rel="preload" as="image" href="assets/brand/ic-car-armored.svg"/>
-</head>
-<body>
-  <header>
-    <div class="wrap row">
-      <div class="brand">
-        <img src="assets/brand/blindado-logo.svg" alt="Blindado"/>
-        <span>Blindado</span>
+  <head>
+    <meta charset="utf-8" />
+    <title>Blindado • Checkout</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" href="assets/brand/blindado-logo.svg" />
+    <style>
+      :root {
+        --bg: #0b0f14;
+        --card: #10161d;
+        --text: #eaf2ff;
+        --muted: #94a3b8;
+        --accent: #00c2ff;
+        --ok: #22c55e;
+        --err: #ef4444;
+        --border: #1f2937;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Inter,
+          Arial;
+        background: linear-gradient(180deg, #0b0f14, #0b0f14 60%, #0d1420);
+        color: var(--text);
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        backdrop-filter: blur(6px);
+        background: rgba(11, 15, 20, 0.7);
+        border-bottom: 1px solid var(--border);
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .grow {
+        flex: 1;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+      .brand img {
+        width: 28px;
+        height: 28px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #0b2130;
+        border: 1px solid #143044;
+        color: #cfe8ff;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 6px;
+      }
+      h2 {
+        font-size: 16px;
+        margin: 16px 0 8px;
+        color: #cbd5e1;
+      }
+      label {
+        font-size: 13px;
+        color: var(--muted);
+        display: block;
+        margin: 10px 0 6px;
+      }
+      input[type='email'],
+      select {
+        width: 100%;
+        background: #0c1219;
+        color: var(--text);
+        border: 1px solid #1c2835;
+        border-radius: 10px;
+        padding: 10px 12px;
+        outline: none;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .total {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #00121a;
+        border: 0;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid #1f3145;
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+      .cols {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 14px;
+      }
+      @media (max-width: 860px) {
+        .cols {
+          grid-template-columns: 1fr;
+        }
+      }
+      .status {
+        margin-top: 12px;
+        padding: 10px;
+        border-radius: 10px;
+      }
+      .ok {
+        background: #0b2a16;
+        border: 1px solid #1f6e3d;
+        color: #d1fadf;
+      }
+      .err {
+        background: #301213;
+        border: 1px solid #6e1f23;
+        color: #ffd2d4;
+      }
+      .rowr {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+      .pill {
+        padding: 5px 10px;
+        border-radius: 999px;
+        border: 1px solid #173048;
+        background: #0c1a26;
+        font-size: 12px;
+        color: #cfe8ff;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .ghostlink {
+        background: none;
+        border: none;
+        color: #93c5fd;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+    </style>
+    <script src="https://js.stripe.com/v3"></script>
+    <script>
+      // Google Maps referer noise silencer
+      window.addEventListener('error', (e) => {
+        const m = (e?.message || '').toLowerCase();
+        if (m.includes('google maps javascript api error')) e.preventDefault();
+      });
+    </script>
+    <link rel="preload" as="image" href="assets/brand/blindado-logo.svg" />
+    <link rel="preload" as="image" href="assets/brand/ic-shield.svg" />
+    <link rel="preload" as="image" href="assets/brand/ic-car-suv.svg" />
+    <link rel="preload" as="image" href="assets/brand/ic-car-armored.svg" />
+    <link rel="preload" as="image" href="assets/brand/ic-car-armored.svg" />
+  </head>
+  <body>
+    <header>
+      <div class="wrap row">
+        <div class="brand">
+          <img src="assets/brand/blindado-logo.svg" alt="Blindado" />
+          <span>Blindado</span>
+        </div>
+        <a href="index.html" class="ghostlink" style="margin-left: 8px">← Demos</a>
+        <div class="grow"></div>
+        <div id="cityChip" class="chip">Ciudad: <strong id="cityName">Detectando…</strong></div>
       </div>
-      <a href="index.html" class="ghostlink" style="margin-left:8px">← Demos</a>
-      <div class="grow"></div>
-      <div id="cityChip" class="chip">Ciudad: <strong id="cityName">Detectando…</strong></div>
-    </div>
-  </header>
+    </header>
 
-  <main class="wrap" style="padding-top:18px;">
-    <div class="cols">
-      <section class="card stack">
-        <h1>Checkout</h1>
-        <div class="muted">Paga tu servicio de protección con Stripe. Tus datos se procesan de forma segura.</div>
+    <main class="wrap" style="padding-top: 18px">
+      <div class="cols">
+        <section class="card stack">
+          <h1>Checkout</h1>
+          <div class="muted">
+            Paga tu servicio de protección con Stripe. Tus datos se procesan de forma segura.
+          </div>
 
-        <div class="card" style="background:#0b1219;border:1px dashed #15324a;">
-          <div class="row" style="align-items:flex-end;gap:16px;">
-            <div class="grow">
-              <div class="muted">Total</div>
-              <div id="quoteTotal" class="total">$—</div>
+          <div class="card" style="background: #0b1219; border: 1px dashed #15324a">
+            <div class="row" style="align-items: flex-end; gap: 16px">
+              <div class="grow">
+                <div class="muted">Total</div>
+                <div id="quoteTotal" class="total">$—</div>
+              </div>
+              <div>
+                <div class="muted">Reserva</div>
+                <div id="bookingId" class="pill">—</div>
+              </div>
             </div>
+          </div>
+
+          <form id="payForm" class="stack">
             <div>
-              <div class="muted">Reserva</div>
-              <div id="bookingId" class="pill">—</div>
+              <label for="email">Email para recibo</label>
+              <input
+                id="email"
+                type="email"
+                inputmode="email"
+                autocomplete="email"
+                placeholder="tú@correo.com"
+              />
             </div>
+
+            <div>
+              <label>Método de pago</label>
+              <div id="payment-element" class="card" style="padding: 12px"></div>
+            </div>
+
+            <div class="rowr">
+              <button type="button" id="cancelBtn" class="secondary">Volver a detalles</button>
+              <button type="submit" id="payBtn" class="primary">Pagar ahora</button>
+            </div>
+
+            <div id="status" class="status hidden"></div>
+          </form>
+        </section>
+
+        <aside class="card stack">
+          <h2>Resumen</h2>
+          <div id="summary" class="muted">Cargando…</div>
+          <h2>Después del pago</h2>
+          <div class="muted">
+            Confirmamos tu reserva y te damos un enlace para abrir la ruta en tu app de mapas.
           </div>
-        </div>
-
-        <form id="payForm" class="stack">
-          <div>
-            <label for="email">Email para recibo</label>
-            <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="tú@correo.com">
+          <div id="mapLinkWrap" class="hidden">
+            <a
+              id="openInMaps"
+              target="_blank"
+              class="primary"
+              style="
+                display: inline-block;
+                text-decoration: none;
+                padding: 10px 12px;
+                border-radius: 10px;
+              "
+              >Abrir en Mapas</a
+            >
           </div>
+        </aside>
+      </div>
+    </main>
 
-          <div>
-            <label>Método de pago</label>
-            <div id="payment-element" class="card" style="padding:12px;"></div>
-          </div>
+    <script>
+      (function () {
+        const $ = (s) => document.querySelector(s);
+        const statusEl = document.querySelector('#status');
+        const payBtn = document.querySelector('#payBtn');
+        const cancelBtn = document.querySelector('#cancelBtn');
+        const quoteTotalEl = document.querySelector('#quoteTotal');
+        const bookingIdEl = document.querySelector('#bookingId');
+        const cityNameEl = document.querySelector('#cityName');
+        const mapLinkWrap = document.querySelector('#mapLinkWrap');
+        const openInMaps = document.querySelector('#openInMaps');
 
-          <div class="rowr">
-            <button type="button" id="cancelBtn" class="secondary">Volver a detalles</button>
-            <button type="submit" id="payBtn" class="primary">Pagar ahora</button>
-          </div>
+        const params = new URL(location.href).searchParams;
+        const ANON = params.get('anon') || '';
+        const SUPABASE_URL = params.get('sb') || 'https://isnezquuwepqcjkaupjh.supabase.co';
+        const FN = `${SUPABASE_URL}/functions/v1`;
 
-          <div id="status" class="status hidden"></div>
-        </form>
-      </section>
+        const pesos = (cents, currency = 'MXN') =>
+          new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(
+            (cents || 0) / 100,
+          );
+        const corsHeaders = {
+          'content-type': 'application/json',
+          ...(ANON ? { apikey: ANON, Authorization: `Bearer ${ANON}` } : {}),
+        };
 
-      <aside class="card stack">
-        <h2>Resumen</h2>
-        <div id="summary" class="muted">Cargando…</div>
-        <h2>Después del pago</h2>
-        <div class="muted">Confirmamos tu reserva y te damos un enlace para abrir la ruta en tu app de mapas.</div>
-        <div id="mapLinkWrap" class="hidden">
-          <a id="openInMaps" target="_blank" class="primary" style="display:inline-block;text-decoration:none;padding:10px 12px;border-radius:10px;">Abrir en Mapas</a>
-        </div>
-      </aside>
-    </div>
-  </main>
+        const cityFallback = (coords) => {
+          if (!coords) return 'CDMX';
+          const { lat, lng } = coords;
+          if (lat > 19 && lat < 20 && lng < -98 && lng > -100) return 'CDMX';
+          return 'Tu ciudad';
+        };
+        function buildMapsLink(center) {
+          if (!center) return null;
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          const q = `${center.lat},${center.lng}`;
+          return isIOS
+            ? `http://maps.apple.com/?daddr=${encodeURIComponent(q)}`
+            : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
+        }
 
-  <script>
-  (function(){
-    const $ = (s) => document.querySelector(s);
-    const statusEl = document.querySelector('#status');
-    const payBtn = document.querySelector('#payBtn');
-    const cancelBtn = document.querySelector('#cancelBtn');
-    const quoteTotalEl = document.querySelector('#quoteTotal');
-    const bookingIdEl = document.querySelector('#bookingId');
-    const cityNameEl = document.querySelector('#cityName');
-    const mapLinkWrap = document.querySelector('#mapLinkWrap');
-    const openInMaps = document.querySelector('#openInMaps');
-
-    const params = new URL(location.href).searchParams;
-    const ANON = params.get('anon') || '';
-    const SUPABASE_URL = params.get('sb') || 'https://isnezquuwepqcjkaupjh.supabase.co';
-    const FN = `${SUPABASE_URL}/functions/v1`;
-
-    const pesos = (cents, currency='MXN') => new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format((cents||0)/100);
-    const corsHeaders = { 'content-type':'application/json', ...(ANON? { apikey: ANON, Authorization: `Bearer ${ANON}` }: {}) };
-
-    const cityFallback = (coords) => {
-      if (!coords) return 'CDMX';
-      const { lat, lng } = coords;
-      if (lat > 19 && lat < 20 && lng < -98 && lng > -100) return 'CDMX';
-      return 'Tu ciudad';
-    };
-    function buildMapsLink(center) {
-      if (!center) return null;
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const q = `${center.lat},${center.lng}`;
-      return isIOS ? `http://maps.apple.com/?daddr=${encodeURIComponent(q)}` : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
-    }
-
-    let quote = null;
-    try { quote = JSON.parse(sessionStorage.getItem('blindado_quote') || 'null'); } catch {}
-    if (!quote) {
-      statusEl.className = 'status err';
-      statusEl.textContent = 'No se encontró la cotización. Regresa y cotiza de nuevo.';
-      statusEl.classList.remove('hidden');
-      payBtn.disabled = true;
-      return;
-    }
-
-    const amount = Number(quote.amount_cents || (quote.amount? Math.round(Number(quote.amount)*100): 0));
-    const currency = (quote.currency || 'mxn').toUpperCase();
-    const booking_id = (quote.booking_id && String(quote.booking_id)) || `bk_${Date.now()}`;
-    const center = quote.center || quote.origin || null;
-
-    quoteTotalEl.textContent = pesos(amount, currency);
-    bookingIdEl.textContent = booking_id;
-    cityNameEl.textContent = quote.city || cityFallback(center);
-    document.querySelector('#summary').textContent = JSON.stringify({
-      city: quote.city || cityFallback(center),
-      tier: quote.tier,
-      guards: quote.armed_required ? 'Armados' : 'No armados',
-      vehicle: quote.vehicle_required ? (quote.vehicle_type || 'vehículo') : 'Sin vehículo',
-      hours: quote.hours || undefined
-    }, null, 2);
-
-    const mapsUrl = buildMapsLink(center);
-    if (mapsUrl) { mapLinkWrap.classList.remove('hidden'); openInMaps.href = mapsUrl; }
-
-    let stripe=null, elements=null, clientSecret=null, publishableKey=null;
-    async function createIntent(customer_email){
-      const payload = { booking_id, amount, currency: 'mxn', city: quote.city || cityFallback(center), tier: quote.tier, customer_email };
-      const r = await fetch(`${FN}/payments_create_intent`, { method:'POST', headers: corsHeaders, body: JSON.stringify(payload) });
-      const j = await r.json().catch(()=>({}));
-      return { status: r.status, body: j };
-    }
-    function showStatus(kind, msg){ statusEl.className = `status ${kind}`; statusEl.textContent = msg; statusEl.classList.remove('hidden'); }
-    cancelBtn.addEventListener('click', ()=> history.back());
-
-    const form = document.querySelector('#payForm');
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      payBtn.disabled = true;
-      showStatus('ok', 'Creando intento de pago…');
-      const email = String(document.querySelector('#email').value||'').trim();
-      try {
-        const { status, body } = await createIntent(email);
-        if (status === 501 && body?.demo){
-          console.log('[checkout] DEMO fallback');
-          showStatus('ok', 'Modo DEMO activo (sin Stripe). Confirmando reserva…');
-          await afterPaymentSuccess();
+        let quote = null;
+        try {
+          quote = JSON.parse(sessionStorage.getItem('blindado_quote') || 'null');
+        } catch {}
+        if (!quote) {
+          statusEl.className = 'status err';
+          statusEl.textContent = 'No se encontró la cotización. Regresa y cotiza de nuevo.';
+          statusEl.classList.remove('hidden');
+          payBtn.disabled = true;
           return;
         }
-        if (!body?.client_secret || !body?.publishable_key) throw new Error('Respuesta inválida de Stripe/servidor');
-        console.log('[checkout] LIVE Stripe');
-        publishableKey = body.publishable_key; clientSecret = body.client_secret;
-        if (!stripe){ stripe = Stripe(publishableKey); elements = stripe.elements({ clientSecret }); const pe = elements.create('payment'); pe.mount('#payment-element'); }
-        showStatus('ok', 'Confirmando pago…');
-        const { error, paymentIntent } = await stripe.confirmPayment({ elements, confirmParams: { return_url: location.href }, redirect: 'if_required' });
-        if (error) throw new Error(error.message||'Error en confirmación de pago');
-        if (paymentIntent && paymentIntent.status === 'succeeded') await afterPaymentSuccess();
-        else showStatus('ok', `Estado: ${paymentIntent?.status||'desconocido'}. Revisa tu método de pago.`);
-      } catch(err){ console.error(err); showStatus('err', 'No se pudo completar el pago. Intenta otra vez o usa otra tarjeta.'); }
-      finally { payBtn.disabled = false; }
-    });
 
-    async function afterPaymentSuccess(){
-      showStatus('ok', 'Pago exitoso. Confirmando reserva…');
-      try { await fetch(`${FN}/bookings_confirm`, { method:'POST', headers: corsHeaders, body: JSON.stringify({ booking_id }) }); } catch {}
-      showStatus('ok', '¡Reserva confirmada! Revisa el resumen o abre la ruta en tu app de mapas.');
-    }
+        const amount = Number(
+          quote.amount_cents || (quote.amount ? Math.round(Number(quote.amount) * 100) : 0),
+        );
+        const currency = (quote.currency || 'mxn').toUpperCase();
+        const booking_id = (quote.booking_id && String(quote.booking_id)) || `bk_${Date.now()}`;
+        const center = quote.center || quote.origin || null;
 
-  })();
-  </script>
-</body>
+        quoteTotalEl.textContent = pesos(amount, currency);
+        bookingIdEl.textContent = booking_id;
+        cityNameEl.textContent = quote.city || cityFallback(center);
+        document.querySelector('#summary').textContent = JSON.stringify(
+          {
+            city: quote.city || cityFallback(center),
+            tier: quote.tier,
+            guards: quote.armed_required ? 'Armados' : 'No armados',
+            vehicle: quote.vehicle_required ? quote.vehicle_type || 'vehículo' : 'Sin vehículo',
+            hours: quote.hours || undefined,
+          },
+          null,
+          2,
+        );
+
+        const mapsUrl = buildMapsLink(center);
+        if (mapsUrl) {
+          mapLinkWrap.classList.remove('hidden');
+          openInMaps.href = mapsUrl;
+        }
+
+        let stripe = null,
+          elements = null,
+          clientSecret = null,
+          publishableKey = null;
+        async function createIntent(customer_email) {
+          const payload = {
+            booking_id,
+            amount,
+            currency: 'mxn',
+            city: quote.city || cityFallback(center),
+            tier: quote.tier,
+            customer_email,
+          };
+          const r = await fetch(`${FN}/payments_create_intent`, {
+            method: 'POST',
+            headers: corsHeaders,
+            body: JSON.stringify(payload),
+          });
+          const j = await r.json().catch(() => ({}));
+          return { status: r.status, body: j };
+        }
+        function showStatus(kind, msg) {
+          statusEl.className = `status ${kind}`;
+          statusEl.textContent = msg;
+          statusEl.classList.remove('hidden');
+        }
+        cancelBtn.addEventListener('click', () => history.back());
+
+        const form = document.querySelector('#payForm');
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          payBtn.disabled = true;
+          showStatus('ok', 'Creando intento de pago…');
+          const email = String(document.querySelector('#email').value || '').trim();
+          try {
+            const { status, body } = await createIntent(email);
+            if (status === 501 && body?.demo) {
+              console.log('[checkout] DEMO fallback');
+              showStatus('ok', 'Modo DEMO activo (sin Stripe). Confirmando reserva…');
+              await afterPaymentSuccess();
+              return;
+            }
+            if (!body?.client_secret || !body?.publishable_key)
+              throw new Error('Respuesta inválida de Stripe/servidor');
+            console.log('[checkout] LIVE Stripe');
+            publishableKey = body.publishable_key;
+            clientSecret = body.client_secret;
+            if (!stripe) {
+              stripe = Stripe(publishableKey);
+              elements = stripe.elements({ clientSecret });
+              const pe = elements.create('payment');
+              pe.mount('#payment-element');
+            }
+            showStatus('ok', 'Confirmando pago…');
+            const { error, paymentIntent } = await stripe.confirmPayment({
+              elements,
+              confirmParams: { return_url: location.href },
+              redirect: 'if_required',
+            });
+            if (error) throw new Error(error.message || 'Error en confirmación de pago');
+            if (paymentIntent && paymentIntent.status === 'succeeded') await afterPaymentSuccess();
+            else
+              showStatus(
+                'ok',
+                `Estado: ${paymentIntent?.status || 'desconocido'}. Revisa tu método de pago.`,
+              );
+          } catch (err) {
+            console.error(err);
+            showStatus('err', 'No se pudo completar el pago. Intenta otra vez o usa otra tarjeta.');
+          } finally {
+            payBtn.disabled = false;
+          }
+        });
+
+        async function afterPaymentSuccess() {
+          showStatus('ok', 'Pago exitoso. Confirmando reserva…');
+          try {
+            await fetch(`${FN}/bookings_confirm`, {
+              method: 'POST',
+              headers: corsHeaders,
+              body: JSON.stringify({ booking_id }),
+            });
+          } catch {}
+          showStatus(
+            'ok',
+            '¡Reserva confirmada! Revisa el resumen o abre la ruta en tu app de mapas.',
+          );
+        }
+      })();
+    </script>
+  </body>
 </html>

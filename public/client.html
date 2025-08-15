@@ -1,279 +1,776 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Blindado — Client</title>
-  <link rel="preload" as="image" href="assets/brand/blindado-logo.svg" />
-  <style>
-    :root{--bg:#0b0f17;--card:#111827;--ring:#1f2937;--muted:#94a3b8;--text:#e5e7eb;--accent:#10b981;--danger:#ef4444}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;background:var(--bg);color:var(--text)}
-    header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--ring);position:sticky;top:0;background:rgba(11,15,23,.85);backdrop-filter:saturate(140%) blur(8px)}
-    header img{height:28px}
-    main{max-width:820px;margin:16px auto;padding:0 14px}
-    .card{background:var(--card);border:1px solid var(--ring);border-radius:16px;padding:16px}
-    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-    .col{flex:1 1 240px}
-    label{display:block;font-size:12px;color:var(--muted);margin:6px 0}
-    input,select,button,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--ring);background:#0d1320;color:var(--text)}
-    button{cursor:pointer}
-    .primary{background:var(--accent);color:#062817;border:1px solid #14b08a;font-weight:700}
-    .ghost{background:#0d1320}
-    .muted{color:var(--muted)}
-    .stepper{display:flex;gap:8px;align-items:center;margin:10px 0 14px}
-    .dot{width:20px;height:20px;border-radius:999px;display:grid;place-items:center;border:2px solid #334155;color:#64748b;font-size:11px}
-    .dot.active{border-color:var(--accent);color:var(--accent)}
-    .dot.done{background:var(--accent);color:#062817;border-color:var(--accent)}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .line{height:1px;background:var(--ring);margin:12px 0}
-    .chip{display:inline-flex;align-items:center;gap:6px;background:#0f172a;border:1px solid var(--ring);border-radius:999px;padding:6px 10px;font-size:12px}
-    .right{display:flex;gap:10px;justify-content:flex-end}
-    .ghostlink{background:none;border:none;color:#93c5fd;padding:0;text-decoration:underline;cursor:pointer}
-    .hidden{display:none}
-    .price{font-weight:800;font-size:20px}
-    .debug{display:none;max-height:220px;overflow:auto;background:#0b1219;border:1px dashed #243344;padding:10px;border-radius:10px;font-size:12px;color:#9fb4c8}
-    body.show-debug .debug{display:block}
-    .success{border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08);border-radius:12px;padding:10px}
-  </style>
-  <script src="https://js.stripe.com/v3/"></script>
-  <script type="importmap">{"imports":{"@supabase/supabase-js":"https://esm.sh/@supabase/supabase-js@2.55.0"}}</script>
-</head>
-<body>
-  <header>
-    <img src="assets/brand/blindado-logo.svg" alt="Blindado" />
-    <div style="font-weight:800;letter-spacing:.5px">BLINDADO</div>
-    <a href="index.html" class="ghostlink" style="margin-left:6px">← Demos</a>
-    <div style="margin-left:auto" class="chip"><img src="assets/brand/ic-shield.svg" width="14" height="14" alt=""/><span id="cityChip">Detecting…</span></div>
-  </header>
-  <main>
-    <div class="stepper">
-      <div id="d0" class="dot active">0</div><span class="muted">Welcome</span>
-      <div id="d1" class="dot">1</div><span class="muted">Details</span>
-      <div id="d2" class="dot">2</div><span class="muted">Quote</span>
-      <div id="d3" class="dot">3</div><span class="muted">Payment</span>
-      <div id="d4" class="dot">4</div><span class="muted">Confirm</span>
-    </div>
-
-    <div class="card">
-      <!-- 0) Welcome gate -->
-      <section id="step0">
-        <h2 style="margin:6px 0 2px">Welcome</h2>
-        <p class="muted" style="margin:0 0 8px">Please sign in to continue.</p>
-        <div class="grid2">
-          <div class="col">
-            <label>Email (magic link)</label>
-            <input id="email" type="email" placeholder="you@example.com" />
-          </div>
-          <div class="col">
-            <label>&nbsp;</label>
-            <button id="btn-magic" class="primary">Send magic link</button>
-          </div>
-        </div>
-        <p id="magic-msg" class="muted" style="margin-top:8px"></p>
-      </section>
-
-      <!-- 1) Details -->
-      <section id="step1" class="hidden">
-        <div class="row" style="justify-content:space-between">
-          <div class="muted">Enter your trip details</div>
-          <div id="authUser" class="muted"></div>
-        </div>
-        <div class="grid2" style="margin-top:6px">
-          <div class="col">
-            <label>City</label>
-            <select id="city"></select>
-          </div>
-          <div class="col">
-            <label>Pickup address</label>
-            <input id="pickup_address" placeholder="Street, number, area" />
-          </div>
-        </div>
-        <div class="grid2" style="margin-top:6px">
-          <div class="col">
-            <label>Tier</label>
-            <select id="tier"><option value="direct">Direct</option><option value="premium">Premium</option></select>
-          </div>
-          <div class="col">
-            <label>Dress code</label>
-            <select id="dress_code"><option>Business Formal</option><option>Business Casual</option><option>Tactical Casual</option></select>
-          </div>
-        </div>
-        <div class="grid2" style="margin-top:6px">
-          <div class="col">
-            <label>Guard</label>
-            <select id="armed"><option value="false">Unarmed</option><option value="true">Armed</option></select>
-          </div>
-          <div class="col">
-            <label>Vehicle</label>
-            <select id="vehicle"><option value="none">None</option><option value="suv">SUV</option><option value="armored">Armored</option></select>
-          </div>
-        </div>
-        <div class="grid2" style="margin-top:6px">
-          <div class="col"><label>Protectees</label><input id="protectees" type="number" min="1" value="1" /></div>
-          <div class="col"><label>Protectors</label><input id="protectors" type="number" min="1" value="1" /></div>
-        </div>
-        <div class="grid2" style="margin-top:6px">
-          <div class="col"><label>Vehicles</label><input id="vehicles" type="number" min="0" value="0" /></div>
-          <div class="col"><label>Start</label><input id="start" type="datetime-local" /></div>
-        </div>
-        <div class="grid2" style="margin-top:6px">
-          <div class="col"><label>End</label><input id="end" type="datetime-local" /></div>
-          <div class="col" style="align-self:end;text-align:right"><button id="btn-quote" class="primary">Get quote</button></div>
-        </div>
-        <div id="geoBanner" class="muted" style="margin-top:6px"></div>
-      </section>
-
-      <!-- 2) Quote -->
-      <section id="step2" class="hidden">
-        <div class="row" style="justify-content:space-between">
-          <div>
-            <div class="muted">Estimated total</div>
-            <div class="price" id="quotePrice">—</div>
-          </div>
-          <div class="right">
-            <button id="btn-back-edit" class="ghost">Back to edit</button>
-            <button id="btn-to-pay" class="primary">Proceed to Payment</button>
-          </div>
-        </div>
-        <div class="line"></div>
-        <div id="summary" class="muted"></div>
-      </section>
-
-      <!-- 3) Payment -->
-      <section id="step3" class="hidden">
-        <div id="payment-element"></div>
-        <div class="right" style="margin-top:8px"><button id="btn-pay" class="primary">Pay</button></div>
-        <div id="payMsg" class="muted" style="margin-top:6px"></div>
-      </section>
-
-      <!-- 4) Confirm -->
-      <section id="step4" class="hidden">
-        <div class="success"><strong>Booking confirmed.</strong> <span id="confirmText" class="muted"></span></div>
-        <div class="row" style="margin-top:10px;justify-content:space-between">
-          <div id="etaBox" class="muted">We’ll notify you closer to your pickup time.</div>
-          <button id="btnMaps" class="ghost hidden">Open in Maps</button>
-        </div>
-      </section>
-
-      <div class="line"></div>
-      <pre id="debug" class="debug" aria-hidden="true"></pre>
-    </div>
-  </main>
-
-  <script type="module">
-    import { createClient } from "@supabase/supabase-js";
-    const params = new URLSearchParams(location.search);
-    const SHOW_DEBUG = params.get("debug") === "1"; if (SHOW_DEBUG) document.body.classList.add("show-debug");
-    const debugEl = document.getElementById('debug');
-    const log = (...a)=>{ if(SHOW_DEBUG){ debugEl.textContent += a.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(' ')+'\n'; } };
-
-    // EVM shim (silence MetaMask errors)
-    (function(){ const g=window; const d={request:async(r)=>{if(r?.method==='eth_requestAccounts'||r?.method==='eth_accounts')return[]; if(r?.method==='eth_chainId')return '0x1'; return null;},enable:async()=>[],isConnected:()=>false,on:()=>{},off:()=>{},isMetaMask:false}; if(!g.ethereum) g.ethereum=d; })();
-    window.addEventListener('error',e=>{ const m=(e?.message||'').toLowerCase(); if(m.includes('google maps javascript api error')) e.preventDefault(); });
-
-    // Supabase
-    const SUPABASE_URL = params.get('sb') || params.get('url') || 'https://isnezquuwepqcjkaupjh.supabase.co';
-    const ANON = params.get('anon') || window.BLINDADO_ANON || '';
-    const supa = createClient(SUPABASE_URL, ANON || '');
-    const FN = `${SUPABASE_URL}/functions/v1`;
-    const headers = ()=>{ const h={ 'content-type':'application/json' }; if(ANON){ h['apikey']=ANON; h['Authorization']=`Bearer ${ANON}`; } return h; };
-    const post = async(path, body)=>{ try{ const r=await fetch(`${FN}/${path}`,{method:'POST',headers:headers(),body:JSON.stringify(body)}); const t=await r.text(); const j=t?JSON.parse(t):{}; if(!r.ok) throw new Error(`${r.status}`); return j; }catch(e){ log('POST fail',path,e.message); return {_demo:true, fallback:true}; } };
-
-    // State
-    const state = { user:null, city:'', pickup_address:'', center:{lat:null,lng:null}, tier:'direct', armed_required:false, vehicle_required:false, vehicle_type:'none', dress_code:'Business Formal', protectees:1, protectors:1, vehicles:0, start_ts:'', end_ts:'', quote:null, bookingId:null, paymentIntentId:null };
-
-    // UI helpers
-    const steps=['step0','step1','step2','step3','step4'];
-    function activate(i){ steps.forEach((id,idx)=>{ document.getElementById(id).classList.toggle('hidden', idx!==i); }); ['d0','d1','d2','d3','d4'].forEach((id,idx)=>{ const el=document.getElementById(id); el.classList.toggle('active', idx===i); el.classList.toggle('done', idx<i); }); }
-    function setCityChip(c){ document.getElementById('cityChip').textContent = c || 'Unknown'; }
-    function isoNowPlus(h){ const d=new Date(Date.now()+h*3600e3); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
-
-    // Geolocation → naive city
-    async function geolocate(){ return new Promise(res=>{ if(!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p=>{ const {latitude,longitude}=p.coords; state.center={lat:latitude,lng:longitude}; const c=Math.abs(latitude-19.4326)<2?'CDMX':Math.abs(latitude-40.7128)<2?'NYC':Math.abs(latitude-34.0522)<2?'LA':'CDMX'; state.city=c; setCityChip(c); res(true); },()=>res(null),{enableHighAccuracy:true,timeout:6000}); }); }
-
-    // Magic link gate
-  async function handleMagic(){ const emailEl = document.getElementById('email'); const email = emailEl && 'value' in emailEl ? String(emailEl.value).trim() : ''; const msg=document.getElementById('magic-msg'); if(!email){ msg.textContent='Enter your email'; return; }
-      try{ const { error } = await supa.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href.split('#')[0] } }); if(error) throw error; msg.textContent='Check your email for a magic link.'; }catch(e){ msg.textContent='Failed to send magic link.'; }
-    }
-    async function readSessionFromHash(){ const h=new URL(location.href).hash.slice(1); if(!h) return; const sp=new URLSearchParams(h); const at=sp.get('access_token'); const rt=sp.get('refresh_token'); if(at&&rt){ try{ await supa.auth.setSession({ access_token:at, refresh_token:rt }); }catch{} history.replaceState({},'',location.pathname+location.search); } }
-    async function ensureAuth(){ const { data } = await supa.auth.getSession(); if(data.session){ state.user=data.session.user; return true; } return false; }
-
-    // Pricing
-    async function fetchQuote(){ const payload={ city:state.city, tier:state.tier, armed_required:state.armed_required, vehicle_required:state.vehicle_required, vehicle_type: state.vehicle_type==='none'?null:state.vehicle_type, start_ts:state.start_ts, end_ts:state.end_ts, origin: state.center };
-      const data=await post('pricing', payload); const amount=data.quote_amount||data.amount||0; const currency=(data.currency||'USD').toUpperCase(); state.quote={ total:amount, currency };
-      document.getElementById('quotePrice').textContent = amount ? `${amount} ${currency}` : 'N/A';
-      const s = document.getElementById('summary'); s.textContent = JSON.stringify({ city:state.city, pickup_address:state.pickup_address, tier:state.tier, armed_required:state.armed_required, vehicle_required:state.vehicle_required, vehicle_type:state.vehicle_type, dress_code:state.dress_code, protectees:state.protectees, protectors:state.protectors, vehicles:state.vehicles, start_ts:state.start_ts, end_ts:state.end_ts }, null, 2);
-    }
-
-    // Payment (Stripe Elements)
-    let stripe=null, elements=null, clientSecret=null;
-    async function setupPayment(){ const amount=Math.round((state.quote?.total||0)*100); const res=await post('payments_create_intent', { amount, currency:'usd', city:state.city, tier:state.tier, customer_email: state.user?.email||'' }); if(res.demo){ document.getElementById('payMsg').textContent='Demo mode (no real charge). Click Pay to simulate.'; return; }
-      clientSecret=res.client_secret; stripe = Stripe(res.publishable_key); elements = stripe.elements({ clientSecret });
-      const pe = elements.create('payment'); pe.mount('#payment-element');
-    }
-    async function confirmPayment(){ const msg=document.getElementById('payMsg'); if(!state.quote){ msg.textContent='No quote.'; return; }
-      if(!stripe){ // demo fallback
-        msg.textContent='Simulated payment approved (demo).';
-      } else {
-        const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect:'if_required' }); if(error){ msg.textContent=error.message||'Payment failed'; return; }
-        state.paymentIntentId = paymentIntent?.id || null; msg.textContent='Payment succeeded.';
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blindado — Client</title>
+    <link rel="preload" as="image" href="assets/brand/blindado-logo.svg" />
+    <style>
+      :root {
+        --bg: #0b0f17;
+        --card: #111827;
+        --ring: #1f2937;
+        --muted: #94a3b8;
+        --text: #e5e7eb;
+        --accent: #10b981;
+        --danger: #ef4444;
       }
-      // Create booking after payment
-      const payload={ city:state.city, pickup_address:state.pickup_address, tier:state.tier, armed_required:state.armed_required, vehicle_required:state.vehicle_required, vehicle_type: state.vehicle_type==='none'?null:state.vehicle_type, dress_code:state.dress_code, protectees:state.protectees, protectors:state.protectors, vehicles:state.vehicles, start_ts:state.start_ts, end_ts:state.end_ts, origin_lat: state.center?.lat, origin_lng: state.center?.lng };
-      const b=await post('bookings', payload); state.bookingId = b.booking_id || b.id || null; activate(4);
-      document.getElementById('confirmText').textContent = ` #${state.bookingId || 'pending'} • ${state.city} • ${new Date(state.start_ts).toLocaleString()} → ${new Date(state.end_ts).toLocaleString()} • ${state.pickup_address||''}`;
-      startConfirmPolling();
-    }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Inter,
+          Arial;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--ring);
+        position: sticky;
+        top: 0;
+        background: rgba(11, 15, 23, 0.85);
+        backdrop-filter: saturate(140%) blur(8px);
+      }
+      header img {
+        height: 28px;
+      }
+      main {
+        max-width: 820px;
+        margin: 16px auto;
+        padding: 0 14px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--ring);
+        border-radius: 16px;
+        padding: 16px;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .col {
+        flex: 1 1 240px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin: 6px 0;
+      }
+      input,
+      select,
+      button,
+      textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--ring);
+        background: #0d1320;
+        color: var(--text);
+      }
+      button {
+        cursor: pointer;
+      }
+      .primary {
+        background: var(--accent);
+        color: #062817;
+        border: 1px solid #14b08a;
+        font-weight: 700;
+      }
+      .ghost {
+        background: #0d1320;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .stepper {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin: 10px 0 14px;
+      }
+      .dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        border: 2px solid #334155;
+        color: #64748b;
+        font-size: 11px;
+      }
+      .dot.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .dot.done {
+        background: var(--accent);
+        color: #062817;
+        border-color: var(--accent);
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .line {
+        height: 1px;
+        background: var(--ring);
+        margin: 12px 0;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #0f172a;
+        border: 1px solid var(--ring);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+      .right {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+      .ghostlink {
+        background: none;
+        border: none;
+        color: #93c5fd;
+        padding: 0;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .hidden {
+        display: none;
+      }
+      .price {
+        font-weight: 800;
+        font-size: 20px;
+      }
+      .debug {
+        display: none;
+        max-height: 220px;
+        overflow: auto;
+        background: #0b1219;
+        border: 1px dashed #243344;
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        color: #9fb4c8;
+      }
+      body.show-debug .debug {
+        display: block;
+      }
+      .success {
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        background: rgba(16, 185, 129, 0.08);
+        border-radius: 12px;
+        padding: 10px;
+      }
+    </style>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script type="importmap">
+      { "imports": { "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.55.0" } }
+    </script>
+  </head>
+  <body>
+    <header>
+      <img src="assets/brand/blindado-logo.svg" alt="Blindado" />
+      <div style="font-weight: 800; letter-spacing: 0.5px">BLINDADO</div>
+      <a href="index.html" class="ghostlink" style="margin-left: 6px">← Demos</a>
+      <div style="margin-left: auto" class="chip">
+        <img src="assets/brand/ic-shield.svg" width="14" height="14" alt="" /><span id="cityChip"
+          >Detecting…</span
+        >
+      </div>
+    </header>
+    <main>
+      <div class="stepper">
+        <div id="d0" class="dot active">0</div>
+        <span class="muted">Welcome</span>
+        <div id="d1" class="dot">1</div>
+        <span class="muted">Details</span>
+        <div id="d2" class="dot">2</div>
+        <span class="muted">Quote</span>
+        <div id="d3" class="dot">3</div>
+        <span class="muted">Payment</span>
+        <div id="d4" class="dot">4</div>
+        <span class="muted">Confirm</span>
+      </div>
 
-    // Confirm polling — placeholder: try GET /jobs?booking_id, else show default text
-    function isSameDayAndWithinHour(startIso){ const now=new Date(); const start=new Date(startIso); const same = now.toDateString()===start.toDateString(); const diff=start.getTime()-now.getTime(); return same && diff<=60*60*1000 && diff>=0; }
-    function haversineKm(a,b){ const R=6371, toRad=d=>d*Math.PI/180; const dLat=toRad(b.lat-a.lat); const dLng=toRad(b.lng-a.lng); const s1=Math.sin(dLat/2)**2; const s2=Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(s1+s2)); }
-    function etaMinutes(from,to,avg=30){ const km=haversineKm(from,to); return Math.max(1, Math.round((km/avg)*60)); }
-    function mapsLink(lat,lng){ const apple=`http://maps.apple.com/?ll=${lat},${lng}`; const google=`https://maps.google.com/?q=${lat},${lng}`; return /iPhone|iPad|Macintosh/.test(navigator.userAgent)?apple:google; }
-    async function pollOnce(){ try{ const r=await fetch(`${FN}/jobs?booking_id=${encodeURIComponent(state.bookingId||'')}`,{headers:headers()}); if(!r.ok) return null; const j=await r.json(); return j; }catch{return null;} }
-    function startConfirmPolling(){ const etaBox=document.getElementById('etaBox'); const btn=document.getElementById('btnMaps'); let t=null; async function tick(){ const ok=isSameDayAndWithinHour(state.start_ts); if(!ok){ etaBox.textContent='We’ll notify you closer to your pickup time.'; btn.classList.add('hidden'); return; } const info = await pollOnce(); if(info && info.accepted && info.last_heartbeat){ etaBox.textContent = `ETA ${etaMinutes(info.last_heartbeat, {lat:state.center.lat,lng:state.center.lng})} min`; btn.classList.remove('hidden'); btn.onclick=()=>{ const u=mapsLink(state.center.lat, state.center.lng); window.open(u,'_blank'); }; } else { etaBox.textContent='We’ll notify you closer to your pickup time.'; btn.classList.add('hidden'); } }
-      tick(); setInterval(tick, 10000);
-    }
+      <div class="card">
+        <!-- 0) Welcome gate -->
+        <section id="step0">
+          <h2 style="margin: 6px 0 2px">Welcome</h2>
+          <p class="muted" style="margin: 0 0 8px">Please sign in to continue.</p>
+          <div class="grid2">
+            <div class="col">
+              <label>Email (magic link)</label>
+              <input id="email" type="email" placeholder="you@example.com" />
+            </div>
+            <div class="col">
+              <label>&nbsp;</label>
+              <button id="btn-magic" class="primary">Send magic link</button>
+            </div>
+          </div>
+          <p id="magic-msg" class="muted" style="margin-top: 8px"></p>
+        </section>
 
-    // Wire UI
-    document.getElementById('btn-magic').onclick = handleMagic;
-    document.getElementById('btn-back-edit').onclick = ()=> activate(1);
-    document.getElementById('btn-to-pay').onclick = ()=> activate(3);
-    document.getElementById('btn-pay').onclick = confirmPayment;
+        <!-- 1) Details -->
+        <section id="step1" class="hidden">
+          <div class="row" style="justify-content: space-between">
+            <div class="muted">Enter your trip details</div>
+            <div id="authUser" class="muted"></div>
+          </div>
+          <div class="grid2" style="margin-top: 6px">
+            <div class="col">
+              <label>City</label>
+              <select id="city"></select>
+            </div>
+            <div class="col">
+              <label>Pickup address</label>
+              <input id="pickup_address" placeholder="Street, number, area" />
+            </div>
+          </div>
+          <div class="grid2" style="margin-top: 6px">
+            <div class="col">
+              <label>Tier</label>
+              <select id="tier">
+                <option value="direct">Direct</option>
+                <option value="premium">Premium</option>
+              </select>
+            </div>
+            <div class="col">
+              <label>Dress code</label>
+              <select id="dress_code">
+                <option>Business Formal</option>
+                <option>Business Casual</option>
+                <option>Tactical Casual</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid2" style="margin-top: 6px">
+            <div class="col">
+              <label>Guard</label>
+              <select id="armed">
+                <option value="false">Unarmed</option>
+                <option value="true">Armed</option>
+              </select>
+            </div>
+            <div class="col">
+              <label>Vehicle</label>
+              <select id="vehicle">
+                <option value="none">None</option>
+                <option value="suv">SUV</option>
+                <option value="armored">Armored</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid2" style="margin-top: 6px">
+            <div class="col">
+              <label>Protectees</label><input id="protectees" type="number" min="1" value="1" />
+            </div>
+            <div class="col">
+              <label>Protectors</label><input id="protectors" type="number" min="1" value="1" />
+            </div>
+          </div>
+          <div class="grid2" style="margin-top: 6px">
+            <div class="col">
+              <label>Vehicles</label><input id="vehicles" type="number" min="0" value="0" />
+            </div>
+            <div class="col"><label>Start</label><input id="start" type="datetime-local" /></div>
+          </div>
+          <div class="grid2" style="margin-top: 6px">
+            <div class="col"><label>End</label><input id="end" type="datetime-local" /></div>
+            <div class="col" style="align-self: end; text-align: right">
+              <button id="btn-quote" class="primary">Get quote</button>
+            </div>
+          </div>
+          <div id="geoBanner" class="muted" style="margin-top: 6px"></div>
+        </section>
 
-    // Initialize
-    document.getElementById('start').value = isoNowPlus(1);
-    document.getElementById('end').value = isoNowPlus(5);
-    await readSessionFromHash();
-    const authed = await ensureAuth();
-    if(authed){ activate(1); document.getElementById('authUser').textContent = (await supa.auth.getUser()).data.user?.email || 'Signed in'; }
-    else { activate(0); }
-    await geolocate();
-    const citySel=document.getElementById('city'); ['CDMX','NYC','LA'].forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; citySel.appendChild(o); }); citySel.value = state.city || 'CDMX';
-    citySel.addEventListener('change', ()=>{ state.city = citySel.value; setCityChip(state.city); }); setCityChip(state.city || 'CDMX');
+        <!-- 2) Quote -->
+        <section id="step2" class="hidden">
+          <div class="row" style="justify-content: space-between">
+            <div>
+              <div class="muted">Estimated total</div>
+              <div class="price" id="quotePrice">—</div>
+            </div>
+            <div class="right">
+              <button id="btn-back-edit" class="ghost">Back to edit</button>
+              <button id="btn-to-pay" class="primary">Proceed to Payment</button>
+            </div>
+          </div>
+          <div class="line"></div>
+          <div id="summary" class="muted"></div>
+        </section>
 
-    // Details handlers
-    document.getElementById('btn-quote').onclick = async()=>{
-      state.city = citySel.value;
-      const pickup = document.getElementById('pickup_address'); state.pickup_address = pickup && 'value' in pickup ? String(pickup.value).trim() : '';
-      const tierEl = document.getElementById('tier'); state.tier = tierEl && 'value' in tierEl ? String(tierEl.value) : 'direct';
-      const dcEl = document.getElementById('dress_code'); state.dress_code = dcEl && 'value' in dcEl ? String(dcEl.value) : 'Business Formal';
-      const armedEl = document.getElementById('armed'); state.armed_required = armedEl && 'value' in armedEl ? String(armedEl.value)==='true' : false;
-      const vehEl = document.getElementById('vehicle'); const v = vehEl && 'value' in vehEl ? String(vehEl.value) : 'none'; state.vehicle_type=v; state.vehicle_required = v!=='none';
-      const protEs = document.getElementById('protectees'); state.protectees = protEs && 'value' in protEs ? parseInt(String(protEs.value)||'1') : 1;
-      const protOrs = document.getElementById('protectors'); state.protectors = protOrs && 'value' in protOrs ? parseInt(String(protOrs.value)||'1') : 1;
-      const vehs = document.getElementById('vehicles'); state.vehicles = vehs && 'value' in vehs ? parseInt(String(vehs.value)||'0') : 0;
-      const startEl = document.getElementById('start'); const endEl = document.getElementById('end');
-      const sVal = startEl && 'value' in startEl ? String(startEl.value) : '';
-      const eVal = endEl && 'value' in endEl ? String(endEl.value) : '';
-      state.start_ts = sVal ? new Date(sVal+':00Z').toISOString() : '';
-      state.end_ts = eVal ? new Date(eVal+':00Z').toISOString() : '';
-      await fetchQuote(); activate(2);
-    };
+        <!-- 3) Payment -->
+        <section id="step3" class="hidden">
+          <div id="payment-element"></div>
+          <div class="right" style="margin-top: 8px">
+            <button id="btn-pay" class="primary">Pay</button>
+          </div>
+          <div id="payMsg" class="muted" style="margin-top: 6px"></div>
+        </section>
 
-    // When entering payment, setup Stripe Elements
-    const toPayBtn=document.getElementById('btn-to-pay'); toPayBtn.addEventListener('click', async()=>{ await setupPayment(); });
-  </script>
-</body>
+        <!-- 4) Confirm -->
+        <section id="step4" class="hidden">
+          <div class="success">
+            <strong>Booking confirmed.</strong> <span id="confirmText" class="muted"></span>
+          </div>
+          <div class="row" style="margin-top: 10px; justify-content: space-between">
+            <div id="etaBox" class="muted">We’ll notify you closer to your pickup time.</div>
+            <button id="btnMaps" class="ghost hidden">Open in Maps</button>
+          </div>
+        </section>
+
+        <div class="line"></div>
+        <pre id="debug" class="debug" aria-hidden="true"></pre>
+      </div>
+    </main>
+
+    <script type="module">
+      /* eslint-disable */
+      // @ts-nocheck
+      import { createClient } from '@supabase/supabase-js';
+      const params = new URLSearchParams(location.search);
+      const SHOW_DEBUG = params.get('debug') === '1';
+      if (SHOW_DEBUG) document.body.classList.add('show-debug');
+      const debugEl = document.getElementById('debug');
+      const log = (...a) => {
+        if (SHOW_DEBUG) {
+          debugEl.textContent +=
+            a.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ') + '\n';
+        }
+      };
+
+      // EVM shim (silence MetaMask errors)
+      (function () {
+        const g = window;
+        const d = {
+          request: async (r) => {
+            if (r?.method === 'eth_requestAccounts' || r?.method === 'eth_accounts') return [];
+            if (r?.method === 'eth_chainId') return '0x1';
+            return null;
+          },
+          enable: async () => [],
+          isConnected: () => false,
+          on: () => {},
+          off: () => {},
+          isMetaMask: false,
+        };
+        if (!g.ethereum) g.ethereum = d;
+      })();
+      window.addEventListener('error', (e) => {
+        const m = (e?.message || '').toLowerCase();
+        if (m.includes('google maps javascript api error')) e.preventDefault();
+      });
+
+      // Supabase
+      const SUPABASE_URL =
+        params.get('sb') || params.get('url') || 'https://isnezquuwepqcjkaupjh.supabase.co';
+      const ANON = params.get('anon') || window.BLINDADO_ANON || '';
+      const supa = createClient(SUPABASE_URL, ANON || '');
+      const FN = `${SUPABASE_URL}/functions/v1`;
+      const headers = () => {
+        const h = { 'content-type': 'application/json' };
+        if (ANON) {
+          h['apikey'] = ANON;
+          h['Authorization'] = `Bearer ${ANON}`;
+        }
+        return h;
+      };
+      const post = async (path, body) => {
+        try {
+          const r = await fetch(`${FN}/${path}`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify(body),
+          });
+          const t = await r.text();
+          const j = t ? JSON.parse(t) : {};
+          if (!r.ok) throw new Error(`${r.status}`);
+          return j;
+        } catch (e) {
+          log('POST fail', path, e.message);
+          return { _demo: true, fallback: true };
+        }
+      };
+
+      // State
+      const state = {
+        user: null,
+        city: '',
+        pickup_address: '',
+        center: { lat: null, lng: null },
+        tier: 'direct',
+        armed_required: false,
+        vehicle_required: false,
+        vehicle_type: 'none',
+        dress_code: 'Business Formal',
+        protectees: 1,
+        protectors: 1,
+        vehicles: 0,
+        start_ts: '',
+        end_ts: '',
+        quote: null,
+        bookingId: null,
+        paymentIntentId: null,
+      };
+
+      // UI helpers
+      const steps = ['step0', 'step1', 'step2', 'step3', 'step4'];
+      function activate(i) {
+        steps.forEach((id, idx) => {
+          document.getElementById(id).classList.toggle('hidden', idx !== i);
+        });
+        ['d0', 'd1', 'd2', 'd3', 'd4'].forEach((id, idx) => {
+          const el = document.getElementById(id);
+          el.classList.toggle('active', idx === i);
+          el.classList.toggle('done', idx < i);
+        });
+      }
+      function setCityChip(c) {
+        document.getElementById('cityChip').textContent = c || 'Unknown';
+      }
+      function isoNowPlus(h) {
+        const d = new Date(Date.now() + h * 3600e3);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().slice(0, 16);
+      }
+
+      // Geolocation → naive city
+      async function geolocate() {
+        return new Promise((res) => {
+          if (!navigator.geolocation) return res(null);
+          navigator.geolocation.getCurrentPosition(
+            (p) => {
+              const { latitude, longitude } = p.coords;
+              state.center = { lat: latitude, lng: longitude };
+              const c =
+                Math.abs(latitude - 19.4326) < 2
+                  ? 'CDMX'
+                  : Math.abs(latitude - 40.7128) < 2
+                    ? 'NYC'
+                    : Math.abs(latitude - 34.0522) < 2
+                      ? 'LA'
+                      : 'CDMX';
+              state.city = c;
+              setCityChip(c);
+              res(true);
+            },
+            () => res(null),
+            { enableHighAccuracy: true, timeout: 6000 },
+          );
+        });
+      }
+
+      // Magic link gate
+      async function handleMagic() {
+        const emailEl = document.getElementById('email');
+        const email = emailEl && 'value' in emailEl ? String(emailEl.value).trim() : '';
+        const msg = document.getElementById('magic-msg');
+        if (!email) {
+          msg.textContent = 'Enter your email';
+          return;
+        }
+        try {
+          const { error } = await supa.auth.signInWithOtp({
+            email,
+            options: { emailRedirectTo: location.href.split('#')[0] },
+          });
+          if (error) throw error;
+          msg.textContent = 'Check your email for a magic link.';
+        } catch (e) {
+          msg.textContent = 'Failed to send magic link.';
+        }
+      }
+      async function readSessionFromHash() {
+        const h = new URL(location.href).hash.slice(1);
+        if (!h) return;
+        const sp = new URLSearchParams(h);
+        const at = sp.get('access_token');
+        const rt = sp.get('refresh_token');
+        if (at && rt) {
+          try {
+            await supa.auth.setSession({ access_token: at, refresh_token: rt });
+          } catch {}
+          history.replaceState({}, '', location.pathname + location.search);
+        }
+      }
+      async function ensureAuth() {
+        const { data } = await supa.auth.getSession();
+        if (data.session) {
+          state.user = data.session.user;
+          return true;
+        }
+        return false;
+      }
+
+      // Pricing
+      async function fetchQuote() {
+        const payload = {
+          city: state.city,
+          tier: state.tier,
+          armed_required: state.armed_required,
+          vehicle_required: state.vehicle_required,
+          vehicle_type: state.vehicle_type === 'none' ? null : state.vehicle_type,
+          start_ts: state.start_ts,
+          end_ts: state.end_ts,
+          origin: state.center,
+        };
+        const data = await post('pricing', payload);
+        const amount = data.quote_amount || data.amount || 0;
+        const currency = (data.currency || 'USD').toUpperCase();
+        state.quote = { total: amount, currency };
+        document.getElementById('quotePrice').textContent = amount
+          ? `${amount} ${currency}`
+          : 'N/A';
+        const s = document.getElementById('summary');
+        s.textContent = JSON.stringify(
+          {
+            city: state.city,
+            pickup_address: state.pickup_address,
+            tier: state.tier,
+            armed_required: state.armed_required,
+            vehicle_required: state.vehicle_required,
+            vehicle_type: state.vehicle_type,
+            dress_code: state.dress_code,
+            protectees: state.protectees,
+            protectors: state.protectors,
+            vehicles: state.vehicles,
+            start_ts: state.start_ts,
+            end_ts: state.end_ts,
+          },
+          null,
+          2,
+        );
+      }
+
+      // Payment (Stripe Elements)
+      let stripe = null,
+        elements = null,
+        clientSecret = null;
+      async function setupPayment() {
+        const amount = Math.round((state.quote?.total || 0) * 100);
+        const res = await post('payments_create_intent', {
+          amount,
+          currency: 'usd',
+          city: state.city,
+          tier: state.tier,
+          customer_email: state.user?.email || '',
+        });
+        if (res.demo) {
+          document.getElementById('payMsg').textContent =
+            'Demo mode (no real charge). Click Pay to simulate.';
+          return;
+        }
+        clientSecret = res.client_secret;
+        stripe = Stripe(res.publishable_key);
+        elements = stripe.elements({ clientSecret });
+        const pe = elements.create('payment');
+        pe.mount('#payment-element');
+      }
+      async function confirmPayment() {
+        const msg = document.getElementById('payMsg');
+        if (!state.quote) {
+          msg.textContent = 'No quote.';
+          return;
+        }
+        if (!stripe) {
+          // demo fallback
+          msg.textContent = 'Simulated payment approved (demo).';
+        } else {
+          const { error, paymentIntent } = await stripe.confirmPayment({
+            elements,
+            redirect: 'if_required',
+          });
+          if (error) {
+            msg.textContent = error.message || 'Payment failed';
+            return;
+          }
+          state.paymentIntentId = paymentIntent?.id || null;
+          msg.textContent = 'Payment succeeded.';
+        }
+        // Create booking after payment
+        const payload = {
+          city: state.city,
+          pickup_address: state.pickup_address,
+          tier: state.tier,
+          armed_required: state.armed_required,
+          vehicle_required: state.vehicle_required,
+          vehicle_type: state.vehicle_type === 'none' ? null : state.vehicle_type,
+          dress_code: state.dress_code,
+          protectees: state.protectees,
+          protectors: state.protectors,
+          vehicles: state.vehicles,
+          start_ts: state.start_ts,
+          end_ts: state.end_ts,
+          origin_lat: state.center?.lat,
+          origin_lng: state.center?.lng,
+        };
+        const b = await post('bookings', payload);
+        state.bookingId = b.booking_id || b.id || null;
+        activate(4);
+        document.getElementById('confirmText').textContent =
+          ` #${state.bookingId || 'pending'} • ${state.city} • ${new Date(state.start_ts).toLocaleString()} → ${new Date(state.end_ts).toLocaleString()} • ${state.pickup_address || ''}`;
+        startConfirmPolling();
+      }
+
+      // Confirm polling — placeholder: try GET /jobs?booking_id, else show default text
+      function isSameDayAndWithinHour(startIso) {
+        const now = new Date();
+        const start = new Date(startIso);
+        const same = now.toDateString() === start.toDateString();
+        const diff = start.getTime() - now.getTime();
+        return same && diff <= 60 * 60 * 1000 && diff >= 0;
+      }
+      function haversineKm(a, b) {
+        const R = 6371,
+          toRad = (d) => (d * Math.PI) / 180;
+        const dLat = toRad(b.lat - a.lat);
+        const dLng = toRad(b.lng - a.lng);
+        const s1 = Math.sin(dLat / 2) ** 2;
+        const s2 = Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+        return 2 * R * Math.asin(Math.sqrt(s1 + s2));
+      }
+      function etaMinutes(from, to, avg = 30) {
+        const km = haversineKm(from, to);
+        return Math.max(1, Math.round((km / avg) * 60));
+      }
+      function mapsLink(lat, lng) {
+        const apple = `http://maps.apple.com/?ll=${lat},${lng}`;
+        const google = `https://maps.google.com/?q=${lat},${lng}`;
+        return /iPhone|iPad|Macintosh/.test(navigator.userAgent) ? apple : google;
+      }
+      async function pollOnce() {
+        try {
+          const r = await fetch(
+            `${FN}/jobs?booking_id=${encodeURIComponent(state.bookingId || '')}`,
+            { headers: headers() },
+          );
+          if (!r.ok) return null;
+          const j = await r.json();
+          return j;
+        } catch {
+          return null;
+        }
+      }
+      function startConfirmPolling() {
+        const etaBox = document.getElementById('etaBox');
+        const btn = document.getElementById('btnMaps');
+        let t = null;
+        async function tick() {
+          const ok = isSameDayAndWithinHour(state.start_ts);
+          if (!ok) {
+            etaBox.textContent = 'We’ll notify you closer to your pickup time.';
+            btn.classList.add('hidden');
+            return;
+          }
+          const info = await pollOnce();
+          if (info && info.accepted && info.last_heartbeat) {
+            etaBox.textContent = `ETA ${etaMinutes(info.last_heartbeat, { lat: state.center.lat, lng: state.center.lng })} min`;
+            btn.classList.remove('hidden');
+            btn.onclick = () => {
+              const u = mapsLink(state.center.lat, state.center.lng);
+              window.open(u, '_blank');
+            };
+          } else {
+            etaBox.textContent = 'We’ll notify you closer to your pickup time.';
+            btn.classList.add('hidden');
+          }
+        }
+        tick();
+        setInterval(tick, 10000);
+      }
+
+      // Wire UI
+      document.getElementById('btn-magic').onclick = handleMagic;
+      document.getElementById('btn-back-edit').onclick = () => activate(1);
+      document.getElementById('btn-to-pay').onclick = () => activate(3);
+      document.getElementById('btn-pay').onclick = confirmPayment;
+
+      // Initialize
+      document.getElementById('start').value = isoNowPlus(1);
+      document.getElementById('end').value = isoNowPlus(5);
+      await readSessionFromHash();
+      const authed = await ensureAuth();
+      if (authed) {
+        activate(1);
+        document.getElementById('authUser').textContent =
+          (await supa.auth.getUser()).data.user?.email || 'Signed in';
+      } else {
+        activate(0);
+      }
+      await geolocate();
+      const citySel = document.getElementById('city');
+      ['CDMX', 'NYC', 'LA'].forEach((c) => {
+        const o = document.createElement('option');
+        o.value = c;
+        o.textContent = c;
+        citySel.appendChild(o);
+      });
+      citySel.value = state.city || 'CDMX';
+      citySel.addEventListener('change', () => {
+        state.city = citySel.value;
+        setCityChip(state.city);
+      });
+      setCityChip(state.city || 'CDMX');
+
+      // Details handlers
+      document.getElementById('btn-quote').onclick = async () => {
+        state.city = citySel.value;
+        const pickup = document.getElementById('pickup_address');
+        state.pickup_address = pickup && 'value' in pickup ? String(pickup.value).trim() : '';
+        const tierEl = document.getElementById('tier');
+        state.tier = tierEl && 'value' in tierEl ? String(tierEl.value) : 'direct';
+        const dcEl = document.getElementById('dress_code');
+        state.dress_code = dcEl && 'value' in dcEl ? String(dcEl.value) : 'Business Formal';
+        const armedEl = document.getElementById('armed');
+        state.armed_required =
+          armedEl && 'value' in armedEl ? String(armedEl.value) === 'true' : false;
+        const vehEl = document.getElementById('vehicle');
+        const v = vehEl && 'value' in vehEl ? String(vehEl.value) : 'none';
+        state.vehicle_type = v;
+        state.vehicle_required = v !== 'none';
+        const protEs = document.getElementById('protectees');
+        state.protectees = protEs && 'value' in protEs ? parseInt(String(protEs.value) || '1') : 1;
+        const protOrs = document.getElementById('protectors');
+        state.protectors =
+          protOrs && 'value' in protOrs ? parseInt(String(protOrs.value) || '1') : 1;
+        const vehs = document.getElementById('vehicles');
+        state.vehicles = vehs && 'value' in vehs ? parseInt(String(vehs.value) || '0') : 0;
+        const startEl = document.getElementById('start');
+        const endEl = document.getElementById('end');
+        const sVal = startEl && 'value' in startEl ? String(startEl.value) : '';
+        const eVal = endEl && 'value' in endEl ? String(endEl.value) : '';
+        state.start_ts = sVal ? new Date(sVal + ':00Z').toISOString() : '';
+        state.end_ts = eVal ? new Date(eVal + ':00Z').toISOString() : '';
+        await fetchQuote();
+        activate(2);
+      };
+
+      // When entering payment, setup Stripe Elements
+      const toPayBtn = document.getElementById('btn-to-pay');
+      toPayBtn.addEventListener('click', async () => {
+        await setupPayment();
+      });
+    </script>
+  </body>
 </html>

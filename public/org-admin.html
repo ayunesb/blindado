@@ -1,130 +1,306 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Blindado • Org Admin</title>
-  <link rel="stylesheet" href="styles/blindado.css" />
-  <style>
-    .input{background:var(--chip);border:1px solid var(--ring);border-radius:12px;color:var(--text);padding:10px 12px}
-    .row{display:flex;gap:10px;align-items:center}
-    .col{display:flex;flex-direction:column;gap:10px}
-    .btn-sm{background:#fff;color:#000;border-radius:9999px;padding:10px 14px;font-weight:600}
-    .btn-ol{background:transparent;border:1px solid #fff;color:#fff;border-radius:9999px;padding:8px 12px}
-    .tabs{display:flex;gap:10px;margin:10px 0}
-    .tab{padding:8px 12px;border:1px solid var(--ring);border-radius:10px;background:var(--chip);cursor:pointer}
-    .tab.active{background:#fff;color:#000;border-color:#fff}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-  <img src="assets/brand/blindado-logo.svg" alt="Blindado"/>
-  <div class="brand">Org Admin</div>
-  <a href="index.html" class="link" style="margin-left:auto">← Demos</a>
-    </header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blindado • Org Admin</title>
+    <link rel="stylesheet" href="styles/blindado.css" />
+    <style>
+      .input {
+        background: var(--chip);
+        border: 1px solid var(--ring);
+        border-radius: 12px;
+        color: var(--text);
+        padding: 10px 12px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .btn-sm {
+        background: #fff;
+        color: #000;
+        border-radius: 9999px;
+        padding: 10px 14px;
+        font-weight: 600;
+      }
+      .btn-ol {
+        background: transparent;
+        border: 1px solid #fff;
+        color: #fff;
+        border-radius: 9999px;
+        padding: 8px 12px;
+      }
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin: 10px 0;
+      }
+      .tab {
+        padding: 8px 12px;
+        border: 1px solid var(--ring);
+        border-radius: 10px;
+        background: var(--chip);
+        cursor: pointer;
+      }
+      .tab.active {
+        background: #fff;
+        color: #000;
+        border-color: #fff;
+      }
+      .mono {
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+          monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img src="assets/brand/blindado-logo.svg" alt="Blindado" />
+        <div class="brand">Org Admin</div>
+        <a href="index.html" class="link" style="margin-left: auto">← Demos</a>
+      </header>
 
-    <div class="card">
-      <div class="row" style="flex-wrap:wrap">
-        <label class="control"><span class="small" style="padding-right:6px">Ref</span>
-          <input id="ref" class="input mono" placeholder="project ref"/>
-        </label>
-        <label class="control"><span class="small" style="padding-right:6px">Admin</span>
-          <input id="admin" class="input mono" placeholder="x-admin-secret"/>
-        </label>
-        <button id="copy" class="btn-ol">Copy link</button>
+      <div class="card">
+        <div class="row" style="flex-wrap: wrap">
+          <label class="control"
+            ><span class="small" style="padding-right: 6px">Ref</span>
+            <input id="ref" class="input mono" placeholder="project ref" />
+          </label>
+          <label class="control"
+            ><span class="small" style="padding-right: 6px">Admin</span>
+            <input id="admin" class="input mono" placeholder="x-admin-secret" />
+          </label>
+          <button id="copy" class="btn-ol">Copy link</button>
+        </div>
+        <div class="small" style="margin-top: 6px">Tip: add ?ref=...&admin=... to prefill</div>
       </div>
-      <div class="small" style="margin-top:6px">Tip: add ?ref=...&admin=... to prefill</div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="signed">Signed Upload URL</div>
+        <div class="tab" data-tab="direct">Direct Upload (multipart)</div>
+        <div class="tab" data-tab="license">License Upsert</div>
+      </div>
+
+      <div id="pane-signed" class="card">
+        <div class="grid" style="grid-template-columns: repeat(3, 1fr)">
+          <label class="col"
+            ><span class="small">Bucket</span
+            ><input id="s-bucket" class="input" placeholder="avatars | licenses | ..."
+          /></label>
+          <label class="col"
+            ><span class="small">Path</span
+            ><input id="s-path" class="input" placeholder="folder/name.ext"
+          /></label>
+          <label class="col"
+            ><span class="small">Content-Type</span
+            ><input id="s-ct" class="input" placeholder="image/jpeg"
+          /></label>
+        </div>
+        <div class="row" style="margin-top: 10px; gap: 10px">
+          <button id="s-run" class="btn-sm">Create signed URL</button>
+          <button id="s-put" class="btn-ol">PUT sample text</button>
+        </div>
+        <pre
+          id="s-out"
+          class="mono"
+          style="font-size: 12px; max-height: 260px; overflow: auto; margin-top: 10px"
+        ></pre>
+      </div>
+
+      <div id="pane-direct" class="card" style="display: none">
+        <div class="grid" style="grid-template-columns: repeat(3, 1fr)">
+          <label class="col"
+            ><span class="small">Bucket</span
+            ><input id="d-bucket" class="input" placeholder="avatars (default)"
+          /></label>
+          <label class="col"
+            ><span class="small">profile_id</span
+            ><input id="d-profile" class="input" placeholder="uuid (for avatars)"
+          /></label>
+          <label class="col"
+            ><span class="small">File</span><input id="d-file" type="file" class="input"
+          /></label>
+        </div>
+        <div class="row" style="margin-top: 10px">
+          <button id="d-run" class="btn-sm">Upload</button>
+        </div>
+        <pre
+          id="d-out"
+          class="mono"
+          style="font-size: 12px; max-height: 260px; overflow: auto; margin-top: 10px"
+        ></pre>
+      </div>
+
+      <div id="pane-license" class="card" style="display: none">
+        <div class="grid" style="grid-template-columns: repeat(3, 1fr)">
+          <label class="col"
+            ><span class="small">guard_id</span
+            ><input id="l-guard" class="input mono" placeholder="uuid"
+          /></label>
+          <label class="col"
+            ><span class="small">type</span
+            ><input id="l-type" class="input" placeholder="id_card | license | ..."
+          /></label>
+          <label class="col"
+            ><span class="small">status</span
+            ><input id="l-status" class="input" placeholder="valid (default)"
+          /></label>
+        </div>
+        <label class="col" style="margin-top: 10px"
+          ><span class="small">files (comma-separated storage paths)</span
+          ><input
+            id="l-files"
+            class="input mono"
+            placeholder="avatars/uuid/123.jpg, licenses/uuid/type/456.jpg"
+        /></label>
+        <div class="row" style="margin-top: 10px">
+          <button id="l-run" class="btn-sm">Upsert</button>
+        </div>
+        <pre
+          id="l-out"
+          class="mono"
+          style="font-size: 12px; max-height: 260px; overflow: auto; margin-top: 10px"
+        ></pre>
+      </div>
+
+      <footer class="muted" style="margin-top: 14px; font-size: 12px">
+        Admin calls require x-admin-secret header. Functions used: admin_documents (JSON or
+        multipart) and admin_licenses (JSON).
+      </footer>
     </div>
 
-    <div class="tabs">
-      <div class="tab active" data-tab="signed">Signed Upload URL</div>
-      <div class="tab" data-tab="direct">Direct Upload (multipart)</div>
-      <div class="tab" data-tab="license">License Upsert</div>
-    </div>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const ref = params.get('ref') || 'isnezquuwepqcjkaupjh';
+      const admin = params.get('admin') || '';
+      const FN_BASE = () =>
+        `https://${document.getElementById('ref').value.trim() || ref}.supabase.co/functions/v1`;
+      document.getElementById('ref').value = ref;
+      document.getElementById('admin').value = admin;
+      function copy() {
+        const p = new URLSearchParams(location.search);
+        p.set('ref', document.getElementById('ref').value.trim());
+        if (document.getElementById('admin').value.trim())
+          p.set('admin', document.getElementById('admin').value.trim());
+        navigator.clipboard.writeText(`${location.origin}${location.pathname}?${p.toString()}`);
+      }
+      document.getElementById('copy').onclick = copy;
 
-    <div id="pane-signed" class="card">
-      <div class="grid" style="grid-template-columns:repeat(3,1fr)">
-        <label class="col"><span class="small">Bucket</span><input id="s-bucket" class="input" placeholder="avatars | licenses | ..."/></label>
-        <label class="col"><span class="small">Path</span><input id="s-path" class="input" placeholder="folder/name.ext"/></label>
-        <label class="col"><span class="small">Content-Type</span><input id="s-ct" class="input" placeholder="image/jpeg"/></label>
-      </div>
-      <div class="row" style="margin-top:10px;gap:10px">
-        <button id="s-run" class="btn-sm">Create signed URL</button>
-        <button id="s-put" class="btn-ol">PUT sample text</button>
-      </div>
-      <pre id="s-out" class="mono" style="font-size:12px;max-height:260px;overflow:auto;margin-top:10px"></pre>
-    </div>
+      function hdr() {
+        const h = { 'content-type': 'application/json' };
+        const a = document.getElementById('admin').value.trim();
+        if (a) h['x-admin-secret'] = a;
+        return h;
+      }
+      function out(id, data) {
+        document.getElementById(id).textContent =
+          typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      }
 
-    <div id="pane-direct" class="card" style="display:none">
-      <div class="grid" style="grid-template-columns:repeat(3,1fr)">
-        <label class="col"><span class="small">Bucket</span><input id="d-bucket" class="input" placeholder="avatars (default)"/></label>
-        <label class="col"><span class="small">profile_id</span><input id="d-profile" class="input" placeholder="uuid (for avatars)"/></label>
-        <label class="col"><span class="small">File</span><input id="d-file" type="file" class="input"/></label>
-      </div>
-      <div class="row" style="margin-top:10px"><button id="d-run" class="btn-sm">Upload</button></div>
-      <pre id="d-out" class="mono" style="font-size:12px;max-height:260px;overflow:auto;margin-top:10px"></pre>
-    </div>
+      // Tabs
+      document.querySelectorAll('.tab').forEach(
+        (t) =>
+          (t.onclick = () => {
+            document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
+            t.classList.add('active');
+            const k = t.dataset.tab;
+            ['signed', 'direct', 'license'].forEach(
+              (n) =>
+                (document.getElementById(`pane-${n}`).style.display = n === k ? 'block' : 'none'),
+            );
+          }),
+      );
 
-    <div id="pane-license" class="card" style="display:none">
-      <div class="grid" style="grid-template-columns:repeat(3,1fr)">
-        <label class="col"><span class="small">guard_id</span><input id="l-guard" class="input mono" placeholder="uuid"/></label>
-        <label class="col"><span class="small">type</span><input id="l-type" class="input" placeholder="id_card | license | ..."/></label>
-        <label class="col"><span class="small">status</span><input id="l-status" class="input" placeholder="valid (default)"/></label>
-      </div>
-      <label class="col" style="margin-top:10px"><span class="small">files (comma-separated storage paths)</span><input id="l-files" class="input mono" placeholder="avatars/uuid/123.jpg, licenses/uuid/type/456.jpg"/></label>
-      <div class="row" style="margin-top:10px"><button id="l-run" class="btn-sm">Upsert</button></div>
-      <pre id="l-out" class="mono" style="font-size:12px;max-height:260px;overflow:auto;margin-top:10px"></pre>
-    </div>
+      // Signed URL
+      document.getElementById('s-run').onclick = async () => {
+        const body = {
+          bucket: document.getElementById('s-bucket').value.trim(),
+          path: document.getElementById('s-path').value.trim(),
+          contentType: document.getElementById('s-ct').value.trim(),
+        };
+        const r = await fetch(`${FN_BASE()}/admin_documents`, {
+          method: 'POST',
+          headers: hdr(),
+          body: JSON.stringify(body),
+        });
+        const j = await r.json();
+        out('s-out', j);
+        window.__lastSigned = j;
+      };
+      document.getElementById('s-put').onclick = async () => {
+        const j = window.__lastSigned;
+        if (!j?.signedUrl) {
+          out('s-out', { error: 'create signed url first' });
+          return;
+        }
+        const h = j.headers || { 'x-upsert': 'true', 'content-type': 'text/plain' };
+        const r = await fetch(j.signedUrl, {
+          method: 'PUT',
+          headers: h,
+          body: new Blob([`ok ${new Date().toISOString()}\n`], {
+            type: h['content-type'] || 'text/plain',
+          }),
+        });
+        out('s-out', { put_status: r.status, ok: r.ok });
+      };
 
-    <footer class="muted" style="margin-top:14px;font-size:12px">Admin calls require x-admin-secret header. Functions used: admin_documents (JSON or multipart) and admin_licenses (JSON).</footer>
-  </div>
+      // Direct upload (multipart)
+      document.getElementById('d-run').onclick = async () => {
+        const f = document.getElementById('d-file').files[0];
+        if (!f) {
+          out('d-out', { error: 'select file' });
+          return;
+        }
+        const fd = new FormData();
+        if (document.getElementById('d-bucket').value.trim())
+          fd.append('bucket', document.getElementById('d-bucket').value.trim());
+        if (document.getElementById('d-profile').value.trim())
+          fd.append('profile_id', document.getElementById('d-profile').value.trim());
+        fd.append('file', f);
+        const r = await fetch(`${FN_BASE()}/admin_documents`, {
+          method: 'POST',
+          headers: Object.assign(
+            {},
+            document.getElementById('admin').value.trim()
+              ? { 'x-admin-secret': document.getElementById('admin').value.trim() }
+              : {},
+          ),
+          body: fd,
+        });
+        const j = await r.json();
+        out('d-out', j);
+      };
 
-  <script>
-    const params=new URLSearchParams(location.search);
-    const ref=params.get('ref')||'isnezquuwepqcjkaupjh';
-    const admin=params.get('admin')||'';
-    const FN_BASE=()=>`https://${document.getElementById('ref').value.trim()||ref}.supabase.co/functions/v1`;
-    document.getElementById('ref').value=ref; document.getElementById('admin').value=admin;
-    function copy(){ const p=new URLSearchParams(location.search); p.set('ref',document.getElementById('ref').value.trim()); if(document.getElementById('admin').value.trim()) p.set('admin',document.getElementById('admin').value.trim()); navigator.clipboard.writeText(`${location.origin}${location.pathname}?${p.toString()}`); }
-    document.getElementById('copy').onclick=copy;
-
-    function hdr(){ const h={'content-type':'application/json'}; const a=document.getElementById('admin').value.trim(); if(a) h['x-admin-secret']=a; return h; }
-    function out(id,data){ document.getElementById(id).textContent = typeof data==='string'?data:JSON.stringify(data,null,2); }
-
-    // Tabs
-    document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const k=t.dataset.tab; ['signed','direct','license'].forEach(n=> document.getElementById(`pane-${n}`).style.display = (n===k?'block':'none')); });
-
-    // Signed URL
-    document.getElementById('s-run').onclick = async ()=>{
-      const body={ bucket: document.getElementById('s-bucket').value.trim(), path: document.getElementById('s-path').value.trim(), contentType: document.getElementById('s-ct').value.trim() };
-      const r=await fetch(`${FN_BASE()}/admin_documents`,{method:'POST',headers:hdr(),body:JSON.stringify(body)});
-      const j=await r.json(); out('s-out', j);
-      window.__lastSigned = j;
-    };
-    document.getElementById('s-put').onclick = async ()=>{
-      const j=window.__lastSigned; if(!j?.signedUrl){ out('s-out',{error:'create signed url first'}); return; }
-      const h = j.headers || { 'x-upsert':'true', 'content-type':'text/plain' };
-      const r = await fetch(j.signedUrl,{ method:'PUT', headers:h, body: new Blob([`ok ${new Date().toISOString()}\n`], {type: h['content-type']||'text/plain'}) });
-      out('s-out',{ put_status: r.status, ok: r.ok });
-    };
-
-    // Direct upload (multipart)
-    document.getElementById('d-run').onclick = async ()=>{
-      const f=document.getElementById('d-file').files[0]; if(!f){ out('d-out',{error:'select file'}); return; }
-      const fd=new FormData(); if(document.getElementById('d-bucket').value.trim()) fd.append('bucket', document.getElementById('d-bucket').value.trim()); if(document.getElementById('d-profile').value.trim()) fd.append('profile_id', document.getElementById('d-profile').value.trim()); fd.append('file', f);
-      const r=await fetch(`${FN_BASE()}/admin_documents`,{ method:'POST', headers: Object.assign({}, document.getElementById('admin').value.trim()? {'x-admin-secret': document.getElementById('admin').value.trim()} : {}) , body: fd });
-      const j=await r.json(); out('d-out', j);
-    };
-
-    // License upsert
-    document.getElementById('l-run').onclick = async ()=>{
-      const files=(document.getElementById('l-files').value||'').split(',').map(s=>s.trim()).filter(Boolean).map(path=>({path}));
-      const body={ guard_id: document.getElementById('l-guard').value.trim(), type: document.getElementById('l-type').value.trim(), status: document.getElementById('l-status').value.trim()||'valid', files };
-      const r=await fetch(`${FN_BASE()}/admin_licenses`,{method:'POST',headers:hdr(),body:JSON.stringify(body)});
-      const j=await r.json(); out('l-out', j);
-    };
-  </script>
-</body>
+      // License upsert
+      document.getElementById('l-run').onclick = async () => {
+        const files = (document.getElementById('l-files').value || '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((path) => ({ path }));
+        const body = {
+          guard_id: document.getElementById('l-guard').value.trim(),
+          type: document.getElementById('l-type').value.trim(),
+          status: document.getElementById('l-status').value.trim() || 'valid',
+          files,
+        };
+        const r = await fetch(`${FN_BASE()}/admin_licenses`, {
+          method: 'POST',
+          headers: hdr(),
+          body: JSON.stringify(body),
+        });
+        const j = await r.json();
+        out('l-out', j);
+      };
+    </script>
+  </body>
 </html>

@@ -15,7 +15,11 @@ const auth = { 'content-type': 'application/json', apikey: ANON, Authorization: 
 
 Deno.test('locations heartbeat', async () => {
   const body = { op: 'heartbeat', guard_id: GUARD_ID, lat: 19.44, lng: -99.14 };
-  const r = await fetch(`${BASE_LOC}/locations`, { method: 'POST', headers: auth, body: JSON.stringify(body) });
+  const r = await fetch(`${BASE_LOC}/locations`, {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify(body),
+  });
   if (!r.ok) throw new Error(`heartbeat failed: ${r.status}`);
   const j = await r.json();
   if (!j.ok) throw new Error(`heartbeat not ok: ${JSON.stringify(j)}`);

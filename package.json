@@ -1,0 +1,15 @@
+{
+  "name": "blindado",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint . --ext .js,.ts,.html --fix",
+    "fmt": "prettier -w ."
+  },
+  "devDependencies": {
+    "@html-eslint/eslint-plugin": "^0.24.1",
+    "@html-eslint/parser": "^0.24.1",
+    "eslint": "^9.33.0",
+    "prettier": "^3.6.2"
+  }
+}

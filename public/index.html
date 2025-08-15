@@ -1,42 +1,88 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Blindado • Demos</title>
-  <link rel="stylesheet" href="styles/blindado.css" />
-  <style>
-    .links{display:grid;gap:12px}
-    @media(min-width:820px){.links{grid-template-columns:repeat(2,1fr)}}
-    .a{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--ring);border-radius:16px;padding:14px;text-decoration:none;color:var(--text)}
-    .a:hover{border-color:#fff}
-    .muted{color:var(--muted);font-size:12px}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-  <img src="assets/brand/blindado-logo.svg" alt="Blindado"/>
-      <div class="brand">Demos</div>
-    </header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blindado • Demos</title>
+    <link rel="stylesheet" href="styles/blindado.css" />
+    <style>
+      .links {
+        display: grid;
+        gap: 12px;
+      }
+      @media (min-width: 820px) {
+        .links {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      .a {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--card);
+        border: 1px solid var(--ring);
+        border-radius: 16px;
+        padding: 14px;
+        text-decoration: none;
+        color: var(--text);
+      }
+      .a:hover {
+        border-color: #fff;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img src="assets/brand/blindado-logo.svg" alt="Blindado" />
+        <div class="brand">Demos</div>
+      </header>
 
-    <div class="card" style="margin-bottom:16px">
-      <div class="muted">Append query params as needed: anon=SUPABASE_ANON_KEY, guard=GUARD_ID, gmaps=GOOGLE_MAPS_KEY, ref=PROJECT_REF, admin=ADMIN_API_SECRET, lang=en|es.</div>
+      <div class="card" style="margin-bottom: 16px">
+        <div class="muted">
+          Append query params as needed: anon=SUPABASE_ANON_KEY, guard=GUARD_ID,
+          gmaps=GOOGLE_MAPS_KEY, ref=PROJECT_REF, admin=ADMIN_API_SECRET, lang=en|es.
+        </div>
+      </div>
+
+      <div class="links">
+        <a class="a" href="client.html"
+          ><span>Client demo</span><span class="muted">Single-page booking</span></a
+        >
+        <a class="a" href="dispatcher.html?guard=c38efbac-fd1e-426b-a0ab-be59fd908c8c"
+          ><span>Dispatcher</span><span class="muted">Jobs console</span></a
+        >
+        <a class="a" href="guard.html?guard=c38efbac-fd1e-426b-a0ab-be59fd908c8c"
+          ><span>Guard</span><span class="muted">Compact guard view</span></a
+        >
+        <a class="a" href="org-admin.html?ref=isnezquuwepqcjkaupjh"
+          ><span>Org Admin</span><span class="muted">Uploads & licenses</span></a
+        >
+        <a class="a" href="auth.html"
+          ><span>Auth</span><span class="muted">Magic link sign-in</span></a
+        >
+        <a class="a" href="client_register.html"
+          ><span>Client register</span><span class="muted">Create client profile</span></a
+        >
+        <a class="a" href="company_onboard.html"
+          ><span>Company onboard</span><span class="muted">Create company & link admin</span></a
+        >
+        <a class="a" href="freelancer_apply.html"
+          ><span>Freelancer apply</span><span class="muted">Guard application</span></a
+        >
+        <a class="a" href="admin_guard_form.html"
+          ><span>Admin: Guard form</span><span class="muted">x-admin-secret required</span></a
+        >
+      </div>
+
+      <footer class="muted" style="margin-top: 16px">
+        See README for details: public/README.md
+      </footer>
     </div>
-
-    <div class="links">
-  <a class="a" href="client.html"><span>Client demo</span><span class="muted">Single-page booking</span></a>
-  <a class="a" href="dispatcher.html?guard=c38efbac-fd1e-426b-a0ab-be59fd908c8c"><span>Dispatcher</span><span class="muted">Jobs console</span></a>
-  <a class="a" href="guard.html?guard=c38efbac-fd1e-426b-a0ab-be59fd908c8c"><span>Guard</span><span class="muted">Compact guard view</span></a>
-  <a class="a" href="org-admin.html?ref=isnezquuwepqcjkaupjh"><span>Org Admin</span><span class="muted">Uploads & licenses</span></a>
-  <a class="a" href="auth.html"><span>Auth</span><span class="muted">Magic link sign-in</span></a>
-  <a class="a" href="client_register.html"><span>Client register</span><span class="muted">Create client profile</span></a>
-  <a class="a" href="company_onboard.html"><span>Company onboard</span><span class="muted">Create company & link admin</span></a>
-  <a class="a" href="freelancer_apply.html"><span>Freelancer apply</span><span class="muted">Guard application</span></a>
-  <a class="a" href="admin_guard_form.html"><span>Admin: Guard form</span><span class="muted">x-admin-secret required</span></a>
-    </div>
-
-    <footer class="muted" style="margin-top:16px">See README for details: public/README.md</footer>
-  </div>
-</body>
+  </body>
 </html>

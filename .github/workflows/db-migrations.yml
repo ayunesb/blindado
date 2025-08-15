@@ -2,12 +2,12 @@ name: Supabase DB Migrations
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
     paths:
       - 'supabase/migrations/**'
       - '.github/workflows/db-migrations.yml'
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
     paths:
       - 'supabase/migrations/**'
   workflow_dispatch:

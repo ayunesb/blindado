@@ -1,86 +1,148 @@
 <!doctype html>
 <html lang="es" class="dark">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin • Crear/Editar Guardia</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    function toast(msg, bad=false){
-      const t=document.getElementById('toast'); t.textContent=msg
-      t.className='fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-sm '+(bad?'bg-red-600':'bg-emerald-600')
-      setTimeout(()=>t.className='hidden', 3000)
-    }
-  </script>
-  <script type="module">
-    const FN = 'https://isnezquuwepqcjkaupjh.supabase.co/functions/v1/admin_upsert_guard'
-
-    const qs = (id)=>document.getElementById(id)
-
-    async function save(){
-      const payload = {
-        id: qs('id').value || undefined,
-        user_id: qs('user_id').value || null,
-        company_id: qs('company_id').value || null,
-        first_name: qs('first_name').value.trim() || null,
-        last_name: qs('last_name').value.trim() || null,
-        armed: qs('armed').checked,
-        dress_codes: Array.from(document.querySelectorAll('input[name=dress]:checked')).map(i=>i.value),
-        hourly_rate: Number(qs('hourly_rate').value||0) || null,
-        photo_url: qs('photo_url').value.trim() || null,
-        status: qs('status').value
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Admin • Crear/Editar Guardia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      function toast(msg, bad = false) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className =
+          'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-sm ' +
+          (bad ? 'bg-red-600' : 'bg-emerald-600');
+        setTimeout(() => (t.className = 'hidden'), 3000);
       }
-      const secret = qs('secret').value.trim()
-      if(!secret) return toast('Admin secret requerido', true)
-      const res = await fetch(FN, { method:'POST', headers:{ 'x-admin-secret': secret, 'content-type':'application/json' }, body: JSON.stringify(payload) })
-      const j = await res.json().catch(()=>({}))
-      if(!res.ok) return toast(j.error||'Error', true)
-      toast('Guardia guardado: '+(j.guard_id||''))
-    }
+    </script>
+    <script type="module">
+      const FN = 'https://isnezquuwepqcjkaupjh.supabase.co/functions/v1/admin_upsert_guard';
 
-    document.addEventListener('DOMContentLoaded', ()=>{
-      qs('save').addEventListener('click', save)
-    })
-  </script>
-</head>
-<body class="bg-black text-zinc-200 min-h-screen">
-  <header class="p-4 border-b border-zinc-800">
-    <div class="font-semibold">Admin • Crear/Editar Guardia</div>
-  </header>
+      const qs = (id) => document.getElementById(id);
 
-  <main class="max-w-2xl mx-auto p-6 space-y-6">
-    <div class="border border-zinc-800 rounded-2xl p-5 space-y-3">
-      <div class="grid grid-cols-2 gap-3">
-        <input id="id" placeholder="guard.id (opcional)" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-        <input id="user_id" placeholder="user_id (si existe)" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <input id="first_name" placeholder="Nombre" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-        <input id="last_name" placeholder="Apellido" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <input id="company_id" placeholder="company_id (opcional)" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-        <input id="hourly_rate" type="number" min="0" step="0.01" placeholder="$ / hora" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-      </div>
-      <div class="flex items-center gap-2">
-        <input id="armed" type="checkbox" class="accent-emerald-500">
-        <label for="armed">Armado</label>
-      </div>
-      <div class="space-y-1">
-        <div class="text-sm text-zinc-400">Código de vestimenta</div>
-        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="dress" value="formal" class="accent-emerald-500"> Formal</label>
-        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="dress" value="tactical" class="accent-emerald-500"> Táctico</label>
-        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="dress" value="casual" class="accent-emerald-500"> Casual</label>
-      </div>
-      <input id="photo_url" placeholder="Foto URL" class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-      <div class="grid grid-cols-2 gap-3">
-        <input id="status" placeholder="status (e.g., active, inactive)" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-        <input id="secret" placeholder="x-admin-secret" class="px-3 py-2 rounded-xl bg-black border border-zinc-800" />
-      </div>
-      <button id="save" class="w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-xl py-2 font-medium">Guardar</button>
-    </div>
-  </main>
+      async function save() {
+        const payload = {
+          id: qs('id').value || undefined,
+          user_id: qs('user_id').value || null,
+          company_id: qs('company_id').value || null,
+          first_name: qs('first_name').value.trim() || null,
+          last_name: qs('last_name').value.trim() || null,
+          armed: qs('armed').checked,
+          dress_codes: Array.from(document.querySelectorAll('input[name=dress]:checked')).map(
+            (i) => i.value,
+          ),
+          hourly_rate: Number(qs('hourly_rate').value || 0) || null,
+          photo_url: qs('photo_url').value.trim() || null,
+          status: qs('status').value,
+        };
+        const secret = qs('secret').value.trim();
+        if (!secret) return toast('Admin secret requerido', true);
+        const res = await fetch(FN, {
+          method: 'POST',
+          headers: { 'x-admin-secret': secret, 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) return toast(j.error || 'Error', true);
+        toast('Guardia guardado: ' + (j.guard_id || ''));
+      }
 
-  <div id="toast" class="hidden"></div>
-</body>
+      document.addEventListener('DOMContentLoaded', () => {
+        qs('save').addEventListener('click', save);
+      });
+    </script>
+  </head>
+  <body class="bg-black text-zinc-200 min-h-screen">
+    <header class="p-4 border-b border-zinc-800">
+      <div class="font-semibold">Admin • Crear/Editar Guardia</div>
+    </header>
+
+    <main class="max-w-2xl mx-auto p-6 space-y-6">
+      <div class="border border-zinc-800 rounded-2xl p-5 space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <input
+            id="id"
+            placeholder="guard.id (opcional)"
+            class="px-3 py-2 rounded-xl bg-black border border-zinc-800"
+          />
+          <input
+            id="user_id"
+            placeholder="user_id (si existe)"
+            class="px-3 py-2 rounded-xl bg-black border border-zinc-800"
+          />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <input
+            id="first_name"
+            placeholder="Nombre"
+            class="px-3 py-2 rounded-xl bg-black border border-zinc-800"
+          />
+          <input
+            id="last_name"
+            placeholder="Apellido"
+            class="px-3 py-2 rounded-xl bg-black border border-zinc-800"
+          />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <input
+            id="company_id"
+            placeholder="company_id (opcional)"
+            class="px-3 py-2 rounded-xl bg-black border border-zinc-800"
+          />
+          <input
+            id="hourly_rate"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="$ / hora"
+            class="px-3 py-2 rounded-xl bg-black border border-zinc-800"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="armed" type="checkbox" class="accent-emerald-500" />
+          <label for="armed">Armado</label>
+        </div>
+        <div class="space-y-1">
+          <div class="text-sm text-zinc-400">Código de vestimenta</div>
+          <label class="flex items-center gap-2 text-sm"
+            ><input type="checkbox" name="dress" value="formal" class="accent-emerald-500" />
+            Formal</label
+          >
+          <label class="flex items-center gap-2 text-sm"
+            ><input type="checkbox" name="dress" value="tactical" class="accent-emerald-500" />
+            Táctico</label
+          >
+          <label class="flex items-center gap-2 text-sm"
+            ><input type="checkbox" name="dress" value="casual" class="accent-emerald-500" />
+            Casual</label
+          >
+        </div>
+        <input
+          id="photo_url"
+          placeholder="Foto URL"
+          class="w-full px-3 py-2 rounded-xl bg-black border border-zinc-800"
+        />
+        <div class="grid grid-cols-2 gap-3">
+          <input
+            id="status"
+            placeholder="status (e.g., active, inactive)"
+            class="px-3 py-2 rounded-xl bg-black border border-zinc-800"
+          />
+          <input
+            id="secret"
+            placeholder="x-admin-secret"
+            class="px-3 py-2 rounded-xl bg-black border border-zinc-800"
+          />
+        </div>
+        <button
+          id="save"
+          class="w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-xl py-2 font-medium"
+        >
+          Guardar
+        </button>
+      </div>
+    </main>
+
+    <div id="toast" class="hidden"></div>
+  </body>
 </html>

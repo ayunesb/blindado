@@ -2,16 +2,16 @@ name: Acceptance Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
     inputs:
       project_ref:
-        description: "Supabase project ref (overrides FN)"
+        description: 'Supabase project ref (overrides FN)'
         required: false
       functions_url:
-        description: "Full functions base URL (if not standard)"
+        description: 'Full functions base URL (if not standard)'
         required: false
 
 jobs:
