@@ -19,6 +19,8 @@ DUR_HOURS="${DUR_HOURS:-4}"
 # Prefer SUPABASE_ANON_KEY when present (CI)
 ANON="${ANON:-${SUPABASE_ANON_KEY:-}}"
 ADMIN="${ADMIN:-${ADMIN_API_SECRET:-}}"
+STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-}"
+STRIPE_PUBLISHABLE_KEY="${STRIPE_PUBLISHABLE_KEY:-}"
 
 # In CI, require ANON to be set for Functions gateway
 if [[ "${GITHUB_ACTIONS:-}" == "true" && -z "${ANON}" ]]; then
@@ -132,6 +134,25 @@ done
 
 echo
 echo "✅ Smoke OK — booking_id=$BOOKING_ID assignment_id=$ASSIGN_ID"
+
+# Optional Stripe create-intent check if Stripe keys are present
+if [[ -n "$STRIPE_SECRET_KEY" && -n "$STRIPE_PUBLISHABLE_KEY" ]]; then
+  echo
+  echo "→ payments_create_intent (Stripe)"
+  CI_REQ=$(cat <<JSON
+{"amount": ${AMOUNT:-1000}, "currency": "mxn", "booking_id": "$BOOKING_ID"}
+JSON
+)
+  # Pass publishable key if function echoes it; function uses secret from env
+  STRIPE_RES=$(curl -fsS "${AUTH_ARGS[@]}" -X POST "$FN/payments_create_intent" -H 'content-type: application/json' -d "$CI_REQ")
+  echo "$STRIPE_RES" | jq .
+  CLIENT_SECRET=$(echo "$STRIPE_RES" | jq -r '.client_secret // empty')
+  if [[ -z "$CLIENT_SECRET" ]]; then
+    echo "[WARN] Stripe client_secret missing; check function/env"
+  else
+    echo "[ok] Stripe PaymentIntent client_secret received"
+  fi
+fi
 
 # Locations (optional simple check)
 echo
