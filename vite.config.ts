@@ -8,8 +8,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        client: resolve(__dirname, 'public/client.html'),
-        guard: resolve(__dirname, 'public/guard.html'),
+        client: resolve(__dirname, 'client.html'),
+        guard: resolve(__dirname, 'guard.html'),
       },
     },
     outDir: 'dist',
