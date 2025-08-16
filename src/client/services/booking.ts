@@ -6,6 +6,12 @@ export async function submitBookingLead(
   supabase: SupabaseClient,
   payload: { pickupLocation: string; pickupIso: string; durationHours: number }
 ) {
+  const params = new URLSearchParams(window.location.search);
+  const stub = params.has('stub') || (import.meta as any).env?.VITE_STUB_API === 'true';
+  if (stub) {
+    await new Promise((r) => setTimeout(r, 150));
+    return { ok: true, data: { booking_id: 'stub-id' } } as const;
+  }
   const start = new Date(payload.pickupIso);
   const end = new Date(start.getTime() + payload.durationHours * 60 * 60 * 1000);
 

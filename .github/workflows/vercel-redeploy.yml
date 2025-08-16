@@ -1,8 +1,7 @@
-name: Deprecated Vercel Redeploy (disabled)
-on:
-  workflow_dispatch: {}
+name: (removed)
+on: { workflow_dispatch: {} }
 jobs:
   noop:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Use vercel-deploy.yml via deploy hook."
+      - run: echo "This workflow has been removed."

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { serve } from 'std/http/server.ts';
-import { preflight } from '../_shared/http.ts';
+import { preflight, withCors } from '../_shared/http.ts';
 import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
@@ -13,7 +13,7 @@ const corsHeaders = {
 const j = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   const pf = preflight(req);
   if (pf) return pf;
 
@@ -88,7 +88,7 @@ serve(async (req) => {
   } catch (e) {
     return j({ error: String(e?.message || e) }, 500);
   }
-});
+}));
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const toRad = (x: number) => (x * Math.PI) / 180;

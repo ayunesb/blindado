@@ -2,8 +2,8 @@
   "importMap": "./import_map.json",
   "compilerOptions": {
     "lib": ["deno.ns", "dom"],
-    "strict": true,
-    "allowImportingTsExtensions": true
+  "strict": true,
+  "allowImportingTsExtensions": true
   },
   "lint": {
     "rules": { "tags": ["recommended"] }

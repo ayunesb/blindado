@@ -1,6 +1,6 @@
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
-import { preflight, ok, badRequest, serverError } from '../_shared/http.ts';
+import { preflight, ok, badRequest, serverError, withCors } from '../_shared/http.ts';
 
 function cityFromLatLng(lat?: number | null, lng?: number | null): string | null {
   if (typeof lat !== 'number' || typeof lng !== 'number') return null;
@@ -10,7 +10,7 @@ function cityFromLatLng(lat?: number | null, lng?: number | null): string | null
   return null;
 }
 
-serve(async (req: Request) => {
+serve(withCors(async (req: Request) => {
   const pf = preflight(req);
   if (pf) return pf;
   const origin = req.headers.get('origin') ?? '*';
@@ -95,4 +95,4 @@ serve(async (req: Request) => {
 
   if (error) return serverError(error.message, origin);
   return ok({ ok: true, booking_id: data.id }, origin);
-});
+}));

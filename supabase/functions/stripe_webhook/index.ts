@@ -1,5 +1,5 @@
 import { serve } from 'std/http/server.ts';
-import { preflight, badRequest, ok } from '../_shared/http.ts';
+import { preflight, badRequest, ok, withCors } from '../_shared/http.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -105,7 +105,7 @@ function formEncode(obj: Record<string, string | number | boolean | undefined>) 
   return sp;
 }
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   const pf = preflight(req);
   if (pf) return pf;
   if (req.method !== 'POST') return badRequest('Method not allowed');
@@ -233,4 +233,4 @@ serve(async (req) => {
   }
 
   return ok({ ok: true, booking_id, transfers });
-});
+}));

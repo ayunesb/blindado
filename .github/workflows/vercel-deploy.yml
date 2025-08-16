@@ -1,18 +1,67 @@
 name: Vercel Deploy
+
 on:
-  workflow_dispatch:
   workflow_run:
     workflows: ["Supabase CI"]
     types: [completed]
-    branches: [main]
+  workflow_dispatch:
+
 jobs:
   deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # Run on manual dispatch OR when Supabase CI succeeded
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Vercel Deploy Hook
+      - name: Trigger Vercel deploy via hook
         env:
           HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
         run: |
-          [ -z "$HOOK" ] && echo "Missing VERCEL_DEPLOY_HOOK_URL" && exit 1
-          curl -fsS -X POST "$HOOK" -H 'content-type: application/json' -d '{"source":"github-actions"}'
+          if [ -z "$HOOK" ]; then
+            echo "VERCEL_DEPLOY_HOOK_URL not set"
+            exit 1
+          fi
+          echo "Triggering Vercel…"
+          curl -fsSL -X POST "$HOOK" -H "Content-Type: application/json" || exit 1
+
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    env:
+      HEALTH_URL: ${{ vars.HEALTH_URL }}
+      HEALTH_ORIGIN: ${{ vars.HEALTH_ORIGIN }}
+      SPA_URL: ${{ vars.SPA_URL }}
+    steps:
+      - name: Check HEALTH_URL is configured
+        run: |
+          if [ -z "$HEALTH_URL" ]; then
+            echo "Set repo variable HEALTH_URL to your /health function URL"
+            exit 1
+          fi
+          echo "Using $HEALTH_URL"
+
+      - name: Sanity check SPA is reachable (optional)
+        if: ${{ env.SPA_URL != '' }}
+        run: |
+          code=$(curl -s -o /tmp/spa.html -w "%{http_code}" "$SPA_URL" || true)
+          echo "SPA GET -> $code"
+          if [ "$code" != "200" ]; then echo "SPA not reachable" && exit 1; fi
+          grep -qi "Book a Protector" /tmp/spa.html || (echo "Hero copy not found" && exit 1)
+
+      - name: Wait for deployment to go healthy
+        run: |
+          # 5-minute wait loop (30 * 10s)
+          for i in {1..30}; do
+            if [ -n "$HEALTH_ORIGIN" ]; then
+              code=$(curl -s -o /dev/null -w "%{http_code}" -H "Origin: $HEALTH_ORIGIN" "$HEALTH_URL" || true)
+            else
+              code=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+            fi
+            echo "Attempt $i -> $code"
+            if [ "$code" = "200" ]; then
+              echo "Health OK"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Health check failed: $HEALTH_URL"
+          exit 1

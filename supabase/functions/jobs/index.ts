@@ -1,7 +1,7 @@
 // supabase/functions/jobs/index.ts
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
-import { preflight } from '../_shared/http.ts';
+import { preflight, withCors } from '../_shared/http.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -10,7 +10,7 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   const pf = preflight(req);
   if (pf) return pf;
 
@@ -226,4 +226,4 @@ serve(async (req) => {
       headers: cors,
     });
   }
-});
+}));

@@ -1,17 +1,12 @@
+// @ts-nocheck
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
+import { withCors } from "../_shared/http.ts";
 
-function cors() {
-  return {
-    'access-control-allow-origin': '*',
-    'access-control-allow-headers': 'authorization,apikey,content-type',
-    'access-control-allow-methods': 'POST,OPTIONS',
-  } as Record<string, string>;
-}
 function j(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json', ...cors() },
+    headers: { 'content-type': 'application/json' },
   });
 }
 
@@ -27,8 +22,8 @@ function cityFromLatLng(lat?: number | null, lng?: number | null): string | null
   return null;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
+serve(withCors(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   if (req.method !== 'POST') return j({ error: 'POST only' }, 405);
 
   // Prefer standard env names, fallback to BLINDADO_* if present
@@ -111,7 +106,7 @@ serve(async (req) => {
       .ilike('tier', tier)
       .limit(1);
     rule = rules?.[0] as any;
-    if (ruleErr || !rule) return j({ error: 'pricing rule not found for city/tier' }, 400);
+  if (ruleErr || !rule) return j({ error: 'pricing rule not found for city/tier' }, 400);
   }
 
   const min_hours = rule.min_hours ?? 1;
@@ -136,4 +131,4 @@ serve(async (req) => {
     surge_mult,
     preauth_amount,
   });
-});
+}));

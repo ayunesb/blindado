@@ -1,19 +1,14 @@
+// @ts-nocheck
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'content-type, authorization, apikey',
-  'Content-Type': 'application/json',
-};
+import { withCors } from "../_shared/http.ts";
 
 function j(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders });
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
+serve(withCors(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   if (req.method !== 'POST') return j({ error: 'POST only' }, 405);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || Deno.env.get('BLINDADO_SUPABASE_URL');
@@ -42,4 +37,4 @@ serve(async (req) => {
     );
   if (error) return j({ error: error.message }, 500);
   return j({ ok: true, booking_id });
-});
+}));

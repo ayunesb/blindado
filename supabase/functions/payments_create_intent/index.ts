@@ -1,5 +1,5 @@
 import { serve } from 'std/http/server.ts';
-import { preflight, badRequest, ok } from '../_shared/http.ts';
+import { preflight, badRequest, ok, withCors } from '../_shared/http.ts';
 
 type CreateReq = {
   booking_id?: string;
@@ -81,7 +81,7 @@ function ensureBookingId(id?: string) {
   return `bk_${hex}`;
 }
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   const pf = preflight(req);
   if (pf) return pf;
 
@@ -147,4 +147,4 @@ serve(async (req) => {
     transfer_group: booking_id,
     splits_bps: splits,
   });
-});
+}));

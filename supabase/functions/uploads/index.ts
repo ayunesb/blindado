@@ -2,7 +2,7 @@
 // Secure base64 upload (avatars, licenses, vehicles). Returns public/signed URL.
 // Uses same import aliases (serve, supabase) as other functions for consistency.
 import { serve } from 'std/http/server.ts';
-import { preflight } from '../_shared/http.ts';
+import { preflight, withCors } from '../_shared/http.ts';
 import { createClient } from '@supabase/supabase-js';
 
 const cors = {
@@ -12,7 +12,7 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-serve(async (req) => {
+serve(withCors(async (req) => {
   const pf = preflight(req);
   if (pf) return pf;
   if (req.method === 'OPTIONS') {
@@ -64,4 +64,4 @@ serve(async (req) => {
       headers: cors,
     });
   }
-});
+}));
