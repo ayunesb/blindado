@@ -17,7 +17,7 @@ export default function CompanyStaffListScreen() {
 		<section className="app-wrap pt-6 space-y-4">
 			<h2 className="text-[24px] font-semibold">Company Staff</h2>
 			<p className="text-white/70">Manage staff documents and onboarding.</p>
-			<Button onClick={() => navigate('company-staff-new')}>Add Staff</Button>
+			<Button onClick={() => navigate('company-staff-new')} data-testid="cs-add">Add Staff</Button>
 			{loading ? (
 				<div className="rounded-2xl bg-white/6 border border-white/10 p-4 text-white/70">Loading…</div>
 			) : rows.length === 0 ? (

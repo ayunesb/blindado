@@ -30,13 +30,13 @@ export default function CompanyStaffNewScreen({ onToast }: { onToast: (m: string
 	return (
 		<section className="app-wrap pt-6 space-y-4">
 			<h2 className="text-[24px] font-semibold">New Staff</h2>
-			<TextField label="Full Name" placeholder="Jane Bodyguard" value={name} onChange={setName} />
-			<TextField label="Email" placeholder="jane@company.com" value={email} onChange={setEmail} />
-			<TextField label="Role" placeholder="guard" value={role} onChange={setRole} />
-			<FileCard title="ID Document" url={idDocUrl} onPick={() => pick('id')} busy={progress>0 && progress<100} />
-			<FileCard title="License" url={licenseUrl} onPick={() => pick('license')} busy={progress>0 && progress<100} />
-			<FileCard title="Photo" url={photoUrl} onPick={() => pick('photo')} busy={progress>0 && progress<100} />
-			<Button onClick={onSave}>Save Staff</Button>
+			<TextField label="Full Name" placeholder="Jane Bodyguard" value={name} onChange={setName} testId="csn-name" />
+			<TextField label="Email" placeholder="jane@company.com" value={email} onChange={setEmail} testId="csn-email" />
+			<TextField label="Role" placeholder="guard" value={role} onChange={setRole} testId="csn-role" />
+			<FileCard title="ID Document" url={idDocUrl} onPick={() => pick('id')} busy={progress>0 && progress<100} testId="csn-id" />
+			<FileCard title="License" url={licenseUrl} onPick={() => pick('license')} busy={progress>0 && progress<100} testId="csn-license" />
+			<FileCard title="Photo" url={photoUrl} onPick={() => pick('photo')} busy={progress>0 && progress<100} testId="csn-photo" />
+			<Button onClick={onSave} data-testid="csn-save">Save Staff</Button>
 		</section>
 	);
 }

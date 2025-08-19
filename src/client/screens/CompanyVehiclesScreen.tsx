@@ -35,12 +35,12 @@ export default function CompanyVehiclesScreen({ onDone, onToast }: { onDone: () 
 	return (
 		<section className="app-wrap pt-6 space-y-4">
 			<h2 className="text-[24px] font-semibold">Company Vehicles</h2>
-			<TextField label="Make" placeholder="Cadillac" value={make} onChange={setMake} />
-			<TextField label="Model" placeholder="Escalade" value={model} onChange={setModel} />
-			<TextField label="Plate" placeholder="NY ABC-1234" value={plate} onChange={setPlate} />
+			<TextField label="Make" placeholder="Cadillac" value={make} onChange={setMake} testId="cv-make" />
+			<TextField label="Model" placeholder="Escalade" value={model} onChange={setModel} testId="cv-model" />
+			<TextField label="Plate" placeholder="NY ABC-1234" value={plate} onChange={setPlate} testId="cv-plate" />
 			<FileCard title="Registration" url={registrationUrl} onPick={() => pick('registration')} busy={progress>0 && progress<100} />
 			<FileCard title="Insurance" url={insuranceUrl} onPick={() => pick('insurance')} busy={progress>0 && progress<100} />
-			<Button onClick={onSave}>Save Vehicle</Button>
+			<Button onClick={onSave} data-testid="cv-save">Save Vehicle</Button>
 
 			<div className="pt-6">
 				<h3 className="text-lg font-semibold mb-2">Your Vehicles</h3>

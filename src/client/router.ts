@@ -16,7 +16,8 @@ export type Route =
   | 'company-staff'
   | 'company-staff-new'
   | 'company-staff/:id'
-  | 'apply';
+  | 'apply'
+  | 'assignments';
 export type Params = Record<string, string>;
 const VALID: Route[] = [
   'home',
@@ -34,6 +35,7 @@ const VALID: Route[] = [
   'company-staff-new',
   'company-staff/:id',
   'apply',
+  'assignments',
 ];
 const DEFAULT: Route = 'home';
 

@@ -1,0 +1,25 @@
+name: SPA Smoke (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  spa_smoke:
+    runs-on: ubuntu-latest
+    env:
+      SPA_URL: ${{ vars.SPA_URL }}
+    steps:
+      - name: Check SPA_URL is configured
+        run: |
+          if [ -z "$SPA_URL" ]; then
+            echo "Set repo variable SPA_URL to your deployed client.html URL"
+            exit 1
+          fi
+          echo "Using $SPA_URL"
+
+      - name: Assert hero copy exists
+        run: |
+          code=$(curl -s -o /tmp/spa.html -w "%{http_code}" "$SPA_URL" || true)
+          echo "SPA GET -> $code"
+          if [ "$code" != "200" ]; then echo "SPA not reachable" && exit 1; fi
+          grep -qi "Book a Protector" /tmp/spa.html || (echo "Hero copy not found" && exit 1)

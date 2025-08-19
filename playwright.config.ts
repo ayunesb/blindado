@@ -12,7 +12,7 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
   },
   webServer: {
-  command: 'vite build && vite preview --port 4173 --strictPort',
+  command: 'VITE_SUPABASE_URL=http://localhost VITE_SUPABASE_ANON_KEY=dummy VITE_STUB_API=1 vite build && vite preview --port 4173 --strictPort',
     url: 'http://localhost:4173',
     reuseExistingServer: true,
   },

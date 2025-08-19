@@ -30,9 +30,9 @@ export default function ProfileEditScreen({ onDone, onToast }: { onDone: () => v
 	return (
 		<section className="app-wrap pt-6 space-y-4">
 			<h2 className="text-[24px] font-semibold">Edit Profile</h2>
-			<FileCard title="ID / Passport" url={idUrl} onPick={() => pickAndUpload('users/self/id_doc', setIdUrl)} busy={progress>0 && progress<100} />
-			<FileCard title="Proof of Residence" url={porUrl} onPick={() => pickAndUpload('users/self/proof_of_residence', setPorUrl)} busy={progress>0 && progress<100} />
-			<Button onClick={onSave}>Save</Button>
+			<FileCard title="ID / Passport" url={idUrl} onPick={() => pickAndUpload('users/self/id_doc', setIdUrl)} busy={progress>0 && progress<100} testId="pe-id" />
+			<FileCard title="Proof of Residence" url={porUrl} onPick={() => pickAndUpload('users/self/proof_of_residence', setPorUrl)} busy={progress>0 && progress<100} testId="pe-por" />
+			<Button onClick={onSave} data-testid="pe-save">Save</Button>
 		</section>
 	);
 }

@@ -46,6 +46,19 @@ export default [
     },
   },
 
+  // Node scripts
+  {
+    files: ['scripts/**/*.cjs', 'scripts/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'script',
+      globals: { ...globals.node },
+    },
+    rules: {
+      'no-undef': 'off',
+    },
+  },
+
   // Tests (Playwright): allow globals
   {
     files: ['tests/**/*.{ts,tsx}', 'e2e/**/*.{ts,tsx}'],

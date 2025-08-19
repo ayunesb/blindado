@@ -26,6 +26,8 @@ import CompanyStaffListScreen from './screens/CompanyStaffListScreen';
 import CompanyStaffNewScreen from './screens/CompanyStaffNewScreen';
 import CompanyStaffDetailScreen from './screens/CompanyStaffDetailScreen';
 import ApplyScreen from './screens/ApplyScreen';
+import { getSessionRole } from './lib/auth';
+import { routesFor, type Role as UiRole } from './lib/roles';
 
 type Props = { sb: string };
 
@@ -90,6 +92,7 @@ function validateDraft(d: BookingDraft) {
 
 export default function App({ sb }: Props) {
   const { route, params, navigate } = useHashRoute();
+  const [uiRole, setUiRole] = useState<UiRole | undefined>(undefined);
   const [toast, setToast] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -118,6 +121,18 @@ export default function App({ sb }: Props) {
     if (!window.location.hash) navigate('home');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch session role once on load
+  useEffect(() => {
+    getSessionRole().then((r) => setUiRole(r.role as UiRole | undefined)).catch(() => setUiRole(undefined));
+  }, []);
+
+  // Route guard: if current route not in allowed set, send to home
+  useEffect(() => {
+    if (!uiRole) return;
+    const allowed = routesFor[uiRole];
+    if (!allowed.includes(route)) navigate('home');
+  }, [route, uiRole, navigate]);
 
   // Keep the bottom-sheet open state in sync with the hash route
   useEffect(() => {
@@ -199,6 +214,16 @@ export default function App({ sb }: Props) {
           active={'home'}
           onChange={(r) => navigate(r)}
         />
+      </div>
+    );
+  }
+
+  // Assignments placeholder (company & freelancer)
+  if (route === 'assignments') {
+    return (
+      <div className="mx-auto max-w-[420px] min-h-screen bg-black text-white p-6">
+        <h2 className="text-xl font-semibold mb-4">Assignments</h2>
+        <p className="text-white/70">Coming soon: list of assignments for your role.</p>
       </div>
     );
   }
@@ -396,16 +421,30 @@ export default function App({ sb }: Props) {
               <Divider />
               <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('profile-edit')}>Profile & Documents</button>
               <Divider />
-              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company')}>Company</button>
-              <Divider />
-              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company-permits')}>Company Permits</button>
-              <Divider />
-              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company-vehicles')}>Company Vehicles</button>
-              <Divider />
-              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company-staff')}>Company Staff</button>
-              <Divider />
-              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('apply')}>Apply as Freelancer</button>
-              <Divider />
+              {(uiRole === 'company') && (
+                <>
+                  <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company')}>Company</button>
+                  <Divider />
+                  <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company-permits')}>Company Permits</button>
+                  <Divider />
+                  <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company-vehicles')}>Company Vehicles</button>
+                  <Divider />
+                  <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company-staff')}>Company Staff</button>
+                  <Divider />
+                </>
+              )}
+              {(uiRole === 'company' || uiRole === 'freelancer') && (
+                <>
+                  <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('assignments')}>Assignments</button>
+                  <Divider />
+                </>
+              )}
+              {(uiRole !== 'freelancer') && (
+                <>
+                  <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('apply')}>Apply as Freelancer</button>
+                  <Divider />
+                </>
+              )}
               <Row label="Sign out" destructive />
             </div>
 
@@ -430,7 +469,7 @@ export default function App({ sb }: Props) {
           <button
             onClick={() => navigate('home')}
             aria-label="Close"
-            className="absolute left-6 top-5 text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30 rounded-full p-2"
+            className="absolute left-4 top-3 text-white/90 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30 rounded-full w-10 h-10 flex items-center justify-center bg-white/10"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
               <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -454,6 +493,7 @@ export default function App({ sb }: Props) {
               onChange={(v) => setDraft((d) => ({ ...d, pickupLocation: v }))}
               error={errors.pickupLocation}
               icon={<span className="text-xl">📍</span>}
+              testId="pickup-location"
             />
             <DateField
               label="Pickup Date"
@@ -462,6 +502,7 @@ export default function App({ sb }: Props) {
               min={nowLocalISODate()}
               error={errors.pickupDate}
               icon={<span className="text-xl">📅</span>}
+              testId="pickup-date"
             />
             <TimeField
               label="Pickup Time"
@@ -469,17 +510,19 @@ export default function App({ sb }: Props) {
               onChange={(v) => setDraft((d) => ({ ...d, pickupTime: v }))}
               error={errors.pickupTime}
               icon={<span className="text-xl">⏰</span>}
+              testId="pickup-time"
             />
             <DurationField
               valueHours={draft.durationHours}
               onChange={(n) => setDraft((d) => ({ ...d, durationHours: n }))}
               error={errors.durationHours}
+              testId="duration"
             />
           </div>
 
           {/* Sticky Next */}
       <div className="sticky bottom-0 bg-gradient-to-t from-black/30 to-transparent pt-3 safe-bottom px-6 mt-4">
-            <Button onClick={onNext} disabled={!canNext} className={!canNext ? 'opacity-50 cursor-not-allowed' : ''}>
+            <Button onClick={onNext} disabled={!canNext} className={!canNext ? 'opacity-50 cursor-not-allowed' : ''} data-testid="next">
               Next
             </Button>
           </div>
@@ -517,7 +560,7 @@ export default function App({ sb }: Props) {
           <Button variant="secondary" height="md" rounded="md" onClick={() => navigate('book')}>
             Back
           </Button>
-          <Button height="md" rounded="md" onClick={onConfirm} disabled={submitting} className={submitting ? 'opacity-60' : ''}>
+          <Button height="md" rounded="md" onClick={onConfirm} disabled={submitting} className={submitting ? 'opacity-60' : ''} data-testid="confirm">
             Confirm
           </Button>
         </div>

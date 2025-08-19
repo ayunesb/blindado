@@ -19,5 +19,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test
-      - run: npm run build
-      - run: npm run e2e
+      - name: Build (with public env)
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: http://localhost
+          VITE_SUPABASE_ANON_KEY: dummy
+      - name: E2E tests
+        run: npm run e2e

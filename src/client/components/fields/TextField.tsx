@@ -9,6 +9,7 @@ export default function TextField({
   error,
   icon,
   id,
+  testId,
 }: {
   label: string;
   placeholder?: string;
@@ -17,6 +18,7 @@ export default function TextField({
   error?: string;
   icon?: React.ReactNode;
   id?: string;
+  testId?: string;
 }) {
   const autoId = React.useId();
   const inputId = id || `text-${autoId}`;
@@ -33,6 +35,7 @@ export default function TextField({
           value={value}
           id={inputId}
           onChange={(e) => onChange(e.target.value)}
+          data-testid={testId}
         />
       </div>
       {error && <p className="text-red-400 text-sm mt-2">{error}</p>}

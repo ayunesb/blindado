@@ -9,6 +9,7 @@ export default function TimeField({
   error,
   icon,
   id,
+  testId,
 }: {
   label: string;
   value: string;
@@ -17,6 +18,7 @@ export default function TimeField({
   error?: string;
   icon?: React.ReactNode;
   id?: string;
+  testId?: string;
 }) {
   const autoId = React.useId();
   const inputId = id || `time-${autoId}`;
@@ -32,6 +34,7 @@ export default function TimeField({
           onChange={(e) => onChange(e.target.value)}
           id={inputId}
           step={step}
+          data-testid={testId}
         />
       </div>
       {error && <p className="text-red-400 text-sm mt-2">{error}</p>}

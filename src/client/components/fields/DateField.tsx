@@ -9,6 +9,7 @@ export default function DateField({
   error,
   icon,
   id,
+  testId,
 }: {
   label: string;
   value: string;
@@ -17,6 +18,7 @@ export default function DateField({
   error?: string;
   icon?: React.ReactNode;
   id?: string;
+  testId?: string;
 }) {
   const autoId = React.useId();
   const inputId = id || `date-${autoId}`;
@@ -32,6 +34,7 @@ export default function DateField({
           onChange={(e) => onChange(e.target.value)}
           id={inputId}
           min={min}
+          data-testid={testId}
         />
       </div>
       {error && <p className="text-red-400 text-sm mt-2">{error}</p>}

@@ -25,10 +25,10 @@ export default function CompanyStaffDetailScreen({ id, onDone, onToast }: { id: 
 		<section className="app-wrap pt-6 space-y-4">
 			<h2 className="text-[24px] font-semibold">Edit Staff</h2>
 			<div className="text-white/70 text-sm">ID: {id}</div>
-			<FileCard title="ID Document" url={idDocUrl} onPick={() => pick('id')} busy={progress>0 && progress<100} />
-			<FileCard title="License" url={licenseUrl} onPick={() => pick('license')} busy={progress>0 && progress<100} />
-			<FileCard title="Photo" url={photoUrl} onPick={() => pick('photo')} busy={progress>0 && progress<100} />
-			<Button onClick={onSave}>Save</Button>
+			<FileCard title="ID Document" url={idDocUrl} onPick={() => pick('id')} busy={progress>0 && progress<100} testId="csd-id" />
+			<FileCard title="License" url={licenseUrl} onPick={() => pick('license')} busy={progress>0 && progress<100} testId="csd-license" />
+			<FileCard title="Photo" url={photoUrl} onPick={() => pick('photo')} busy={progress>0 && progress<100} testId="csd-photo" />
+			<Button onClick={onSave} data-testid="csd-save">Save</Button>
 		</section>
 	);
 }

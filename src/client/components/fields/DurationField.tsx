@@ -10,6 +10,7 @@ export default function DurationField({
   presets = [2, 4, 8, 'Custom'],
   label = 'Duration of Protection',
   error,
+  testId,
 }: {
   valueHours: number;
   onChange: (n: number) => void;
@@ -18,6 +19,7 @@ export default function DurationField({
   presets?: (number | 'Custom')[];
   label?: string;
   error?: string;
+  testId?: string;
 }) {
   const [custom, setCustom] = useState(false);
 
@@ -44,6 +46,7 @@ export default function DurationField({
                     onChange(p as number);
                   }
                 }}
+                data-testid={typeof p === 'number' ? `duration-${p}` : 'duration-custom'}
               >
                 {isCustom ? 'Custom' : `${p}h`}
               </button>
@@ -59,6 +62,7 @@ export default function DurationField({
               value={valueHours}
               onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value || min))))}
               className="w-24 h-12 rounded-xl bg-white/10 border border-white/15 text-white text-[16px] px-3 outline-none input-dark appearance-none"
+                data-testid={testId ? `${testId}-custom-input` : undefined}
             />
             <span className="text-white/70">hours</span>
           </div>

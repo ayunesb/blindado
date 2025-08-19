@@ -27,12 +27,12 @@ export default function ApplyScreen({ onDone, onToast }: { onDone: () => void; o
 	return (
 		<section className="app-wrap pt-6 space-y-4">
 			<h2 className="text-[24px] font-semibold">Apply to Join</h2>
-			<TextField label="Full Name" placeholder="Alex Protector" value={name} onChange={setName} />
-			<TextField label="Email" placeholder="alex@example.com" value={email} onChange={setEmail} />
-			<TextField label="License Number" placeholder="NY-123456" value={license} onChange={setLicense} />
-			<FileCard title="Resume / CV" url={resumeUrl} onPick={() => pick('resume')} busy={progress>0 && progress<100} />
-			<FileCard title="Vehicle (optional)" url={vehicleDocUrl} onPick={() => pick('vehicle')} busy={progress>0 && progress<100} />
-			<Button onClick={onSubmit}>Submit Application</Button>
+			<TextField label="Full Name" placeholder="Alex Protector" value={name} onChange={setName} testId="apply-name" />
+			<TextField label="Email" placeholder="alex@example.com" value={email} onChange={setEmail} testId="apply-email" />
+			<TextField label="License Number" placeholder="NY-123456" value={license} onChange={setLicense} testId="apply-license" />
+			<FileCard title="Resume / CV" url={resumeUrl} onPick={() => pick('resume')} busy={progress>0 && progress<100} testId="apply-resume" />
+			<FileCard title="Vehicle (optional)" url={vehicleDocUrl} onPick={() => pick('vehicle')} busy={progress>0 && progress<100} testId="apply-vehicle" />
+			<Button onClick={onSubmit} data-testid="apply-submit">Submit Application</Button>
 		</section>
 	);
 }

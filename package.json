@@ -7,16 +7,20 @@
     "lint": "eslint . --ext .ts,.tsx --max-warnings=0",
     "fmt": "prettier -w .",
     "dev": "vite",
+    "prebuild": "node scripts/prebuild.cjs",
     "build": "vite build",
+    "postbuild": "node scripts/check-dist.mjs",
     "preview": "vite preview --port 4173 --strictPort",
-  "e2e": "playwright test",
-  "test": "vitest run tests/unit --reporter=basic",
-  "test:unit": "vitest run tests/unit --reporter=basic",
-  "pw:install": "playwright install --with-deps",
-  "preflight": "npm ci && npm run typecheck && npm run lint && npm run test && npm run e2e",
-  "accept": "npm run build && npm run e2e"
+    "e2e": "playwright test",
+    "test": "vitest run tests/unit --reporter=basic",
+    "test:unit": "vitest run tests/unit --reporter=basic",
+    "pw:install": "playwright install --with-deps",
+    "preflight": "npm ci && npm run typecheck && npm run lint && npm run test && npm run e2e",
+    "accept": "npm run build && npm run e2e",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.9.1",
     "@eslint/js": "^9.33.0",
     "@html-eslint/eslint-plugin": "^0.24.1",
     "@html-eslint/parser": "^0.24.1",
@@ -31,20 +35,21 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.3.0",
+    "png-to-ico": "^2.1.8",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "sharp": "^0.33.5",
     "start-server-and-test": "^2.0.0",
     "tailwindcss": "^4.1.12",
-  "typescript-eslint": "^8.39.1",
-  "typescript": "^5.6.3",
-  "vite": "^7.1.2",
-  "vitest": "^2.1.3",
-  "@axe-core/playwright": "^4.9.1"
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.39.1",
+    "vite": "^7.1.2",
+    "vitest": "^2.1.3"
   },
   "dependencies": {
-  "@supabase/supabase-js": "^2.55.0",
-  "@sentry/browser": "^8.38.0"
+    "@sentry/browser": "^8.38.0",
+    "@supabase/supabase-js": "^2.55.0"
   }
 }
