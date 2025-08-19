@@ -36,11 +36,11 @@ export default function BottomNav({
 
   return (
     <nav
-      className="fixed left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] h-16 px-3 rounded-[28px] bg-white/6 backdrop-blur-md border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,.5)] z-40"
+      className="fixed z-40 left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] w-[92%] max-w-[420px] h-16 px-2 rounded-[28px] bg-white/10 backdrop-blur-md border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,.5)]"
       role="navigation"
       aria-label="Primary"
     >
-      <ul className="flex items-center gap-2 h-full">
+      <ul className="flex items-center justify-between gap-2 h-full">
         {tabs.map((t) => {
           const isActive = (t.key === 'protector' && active === 'home') || t.key === active;
           return (

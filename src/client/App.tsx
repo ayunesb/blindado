@@ -1,6 +1,6 @@
 // src/client/App.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { useHashRoute, Route } from './router';
+import { useHashRoute, navigate as nav } from './router';
 import Button from './components/Button';
 import ValuePropCard from './components/ValuePropCard';
 import ProfileCard from './components/ProfileCard';
@@ -16,8 +16,18 @@ import { PROTECTORS } from './data/profiles';
 import { computeQuote } from '../shared/quote';
 import { getSupabaseClient } from './lib/supabase';
 import { submitBookingLead } from './services/booking';
+import ProfileScreen from './screens/ProfileScreen';
+import OnboardScreen from './screens/OnboardScreen';
+import ProfileEditScreen from './screens/ProfileEditScreen';
+import CompanyScreen from './screens/CompanyScreen';
+import CompanyPermitsScreen from './screens/CompanyPermitsScreen';
+import CompanyVehiclesScreen from './screens/CompanyVehiclesScreen';
+import CompanyStaffListScreen from './screens/CompanyStaffListScreen';
+import CompanyStaffNewScreen from './screens/CompanyStaffNewScreen';
+import CompanyStaffDetailScreen from './screens/CompanyStaffDetailScreen';
+import ApplyScreen from './screens/ApplyScreen';
 
-type Props = { anon: string; sb: string };
+type Props = { sb: string };
 
 // localStorage key
 const LS_KEY = 'blindado.bookings';
@@ -78,10 +88,11 @@ function validateDraft(d: BookingDraft) {
   return errors;
 }
 
-export default function App({ anon, sb }: Props) {
-  const { route, navigate } = useHashRoute();
+export default function App({ sb }: Props) {
+  const { route, params, navigate } = useHashRoute();
   const [toast, setToast] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const supabase = useMemo(() => {
     try { return getSupabaseClient(); } catch { return null; }
   }, []);
@@ -108,6 +119,11 @@ export default function App({ anon, sb }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Keep the bottom-sheet open state in sync with the hash route
+  useEffect(() => {
+    setSheetOpen(route === 'book' || route === 'quote');
+  }, [route]);
+
   // Persist bookings
   const [bookings, setBookings] = useState<Booking[]>(() => {
     try {
@@ -120,7 +136,9 @@ export default function App({ anon, sb }: Props) {
   useEffect(() => {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify(bookings));
-    } catch {}
+    } catch {
+      // ignore persist errors (private mode / quota exceeded)
+    }
   }, [bookings]);
 
   function onNext() {
@@ -165,72 +183,160 @@ export default function App({ anon, sb }: Props) {
       setBookings((prev) => [booking, ...prev]);
       setToast('Request submitted. We\u2019ll contact you shortly.');
       navigate('bookings');
-    } catch (err) {
-      console.error(err);
+  } catch {
       setToast('Something went wrong. Try again.');
     } finally {
       setSubmitting(false);
     }
   }
 
+  // Full-page profile view
+  if (route === 'profile' && params.id) {
+    return (
+      <div className="mx-auto max-w-[420px] min-h-screen bg-black text-white">
+        <ProfileScreen id={params.id} onBack={() => navigate('home')} />
+        <BottomNav
+          active={'home'}
+          onChange={(r) => navigate(r)}
+        />
+      </div>
+    );
+  }
+
+  // Onboarding view
+  if (route === 'onboard') {
+    return (
+      <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white">
+        <OnboardScreen onDone={() => navigate('account')} />
+        <BottomNav active={'account'} onChange={(r) => navigate(r)} />
+      </div>
+    );
+  }
+  if (route === 'profile-edit') {
+    return (
+      <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white">
+        <ProfileEditScreen onDone={() => navigate('account')} onToast={setToast} />
+        <BottomNav active={'account'} onChange={(r) => navigate(r)} />
+      </div>
+    );
+  }
+  if (route === 'company') {
+    return (
+      <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white">
+        <CompanyScreen onDone={() => navigate('account')} onToast={setToast} />
+        <BottomNav active={'account'} onChange={(r) => navigate(r)} />
+      </div>
+    );
+  }
+  if (route === 'company-permits') {
+    return (
+      <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white">
+        <CompanyPermitsScreen onDone={() => navigate('account')} onToast={setToast} />
+        <BottomNav active={'account'} onChange={(r) => navigate(r)} />
+      </div>
+    );
+  }
+  if (route === 'company-vehicles') {
+    return (
+      <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white">
+        <CompanyVehiclesScreen onDone={() => navigate('account')} onToast={setToast} />
+        <BottomNav active={'account'} onChange={(r) => navigate(r)} />
+      </div>
+    );
+  }
+  if (route === 'company-staff') {
+    return (
+      <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white">
+        <CompanyStaffListScreen />
+        <BottomNav active={'account'} onChange={(r) => navigate(r)} />
+      </div>
+    );
+  }
+  if (route === 'company-staff-new') {
+    return (
+      <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white">
+        <CompanyStaffNewScreen onToast={setToast} />
+        <BottomNav active={'account'} onChange={(r) => navigate(r)} />
+      </div>
+    );
+  }
+  if (route === 'company-staff/:id' && params.id) {
+    return (
+      <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white">
+        <CompanyStaffDetailScreen id={params.id} onDone={() => navigate('company-staff')} onToast={setToast} />
+        <BottomNav active={'account'} onChange={(r) => navigate(r)} />
+      </div>
+    );
+  }
+  if (route === 'apply') {
+    return (
+      <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white">
+        <ApplyScreen onDone={() => navigate('account')} onToast={setToast} />
+        <BottomNav active={'account'} onChange={(r) => navigate(r)} />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen pb-28">
-      {/* HERO */}
-      <header className="relative h-[280px] overflow-hidden">
-        <img src="/assets/brand/ic-car-suv.svg" alt="Hero" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/70" />
-        <div className="absolute inset-x-0 bottom-0 px-6 pb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <img src="/brand/icons/shield.svg" alt="Blindado" className="w-8 h-8" />
-            <span className="text-white/80 text-sm">Premium Protection</span>
-          </div>
-          <h1 className="px-0 -mt-1 text-white text-[40px] leading-[44px] font-semibold tracking-[-0.02em]">
-            Book Armed Protectors in New York City
-          </h1>
-        </div>
-      </header>
+  <div className="mx-auto max-w-[480px] min-h-screen bg-black text-white pb-28">
+      {/* HOME */}
+      {route === 'home' && (
+        <>
+          <header className="relative h-[280px] overflow-hidden">
+            <img src="/assets/brand/ic-car-suv.svg" alt="Hero" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/70" />
+            <div className="absolute inset-x-0 bottom-0 px-6 pb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <img src="/brand/icons/shield.svg" alt="Blindado" className="w-8 h-8" />
+                <span className="text-white/80 text-sm">Premium Protection</span>
+              </div>
+              <h1 className="px-0 -mt-1 text-white text-[40px] leading-[44px] font-semibold tracking-[-0.02em]">
+                Book Armed Protectors in New York City
+              </h1>
+            </div>
+          </header>
 
-      <main>
-        {/* Primary CTA */}
-        <div className="px-6 mt-6">
-          <Button onClick={() => navigate('book')}>Book a Protector</Button>
-        </div>
+          <main className="app-wrap">
+            {/* Primary CTA */}
+            <div className="px-6 mt-6">
+              <Button onClick={() => navigate('book')}>Book a Protector</Button>
+            </div>
 
-        {/* Value Props */}
-        <section className="mt-6 space-y-4 px-6" aria-label="Why Blindado">
-          <ValuePropCard
-            title="Vetted Professionals"
-            subtitle="Former law enforcement & military with executive protection training."
-            icon={<span className="text-2xl">🛡️</span>}
-          />
-          <ValuePropCard
-            title="On-Demand Coverage"
-            subtitle="Book for 2–24 hours with instant quote and transparent pricing."
-            icon={<span className="text-2xl">⚡</span>}
-          />
-          <ValuePropCard
-            title="Black Car Option"
-            subtitle="Professional drivers & secure transport available as an add-on."
-            icon={<span className="text-2xl">🚘</span>}
-          />
-        </section>
+            {/* Value Props */}
+            <section className="mt-6 space-y-4" aria-label="Why Blindado">
+              <ValuePropCard
+                title="Vetted Professionals"
+                subtitle="Former law enforcement & military with executive protection training."
+                icon={<span className="text-2xl">🛡️</span>}
+              />
+              <ValuePropCard
+                title="On-Demand Coverage"
+                subtitle="Book for 2–24 hours with instant quote and transparent pricing."
+                icon={<span className="text-2xl">⚡</span>}
+              />
+              <ValuePropCard
+                title="Black Car Option"
+                subtitle="Professional drivers & secure transport available as an add-on."
+                icon={<span className="text-2xl">🚘</span>}
+              />
+            </section>
 
-        {/* Profiles Carousel */}
-        <section className="mt-6" aria-label="Meet the Protectors">
-          <h2 className="px-6 text-white text-[28px] font-semibold">Meet the Protectors</h2>
-          <div
-            className="mt-4 pl-6 pr-4 flex gap-4 overflow-x-auto snap-x snap-mandatory"
-            aria-roledescription="carousel"
-          >
-            {PROTECTORS.map((p) => (
-              <ProfileCard key={p.id} p={p} />
-            ))}
-          </div>
-        </section>
+            {/* Profiles Carousel */}
+            <section className="mt-6" aria-label="Meet the Protectors">
+              <h2 className="text-white text-[28px] font-semibold">Meet the Protectors</h2>
+              <div className="mt-4 -ml-6 -mr-4 pl-6 pr-4 flex gap-4 overflow-x-auto snap-x snap-mandatory momentum" aria-roledescription="carousel">
+                {PROTECTORS.map((p) => (
+                  <ProfileCard key={p.id} p={p} />
+                ))}
+              </div>
+            </section>
+          </main>
+        </>
+      )}
 
         {/* Bookings screen */}
         {route === 'bookings' && (
-          <section className="px-6 pt-6">
+          <section className="app-wrap pt-6">
             {bookings.length === 0 ? (
               <div className="h-[40vh] flex flex-col items-center justify-center text-center">
                 <p className="text-white/70 text-[16px]">No bookings yet.</p>
@@ -269,7 +375,7 @@ export default function App({ anon, sb }: Props) {
 
         {/* Account screen */}
         {route === 'account' && (
-          <section className="px-6 pt-6 space-y-4">
+          <section className="app-wrap pt-6 space-y-4">
             <div className="rounded-2xl bg-white/6 border border-white/8 p-4 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white/80 text-lg">
                 {/* initials placeholder */}
@@ -288,11 +394,26 @@ export default function App({ anon, sb }: Props) {
               <Divider />
               <Row label="Terms & Privacy" />
               <Divider />
+              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('profile-edit')}>Profile & Documents</button>
+              <Divider />
+              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company')}>Company</button>
+              <Divider />
+              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company-permits')}>Company Permits</button>
+              <Divider />
+              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company-vehicles')}>Company Vehicles</button>
+              <Divider />
+              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('company-staff')}>Company Staff</button>
+              <Divider />
+              <button className="w-full text-left h-14 px-4 text-white" onClick={() => navigate('apply')}>Apply as Freelancer</button>
+              <Divider />
               <Row label="Sign out" destructive />
             </div>
+
+            <div className="pt-2">
+              <Button onClick={() => navigate('onboard')}>Start Onboarding</Button>
+            </div>
           </section>
-        )}
-      </main>
+  )}
 
       {/* Bottom Nav */}
       <BottomNav
@@ -304,22 +425,28 @@ export default function App({ anon, sb }: Props) {
       />
 
       {/* Booking Bottom Sheet (over Home) */}
-      <BottomSheet isOpen={route === 'book' || route === 'quote'} onClose={() => navigate('home')}>
-        <div className="px-5 pt-2 pb-4">
+      <BottomSheet ariaLabel="Booking Details" isOpen={sheetOpen} onClose={() => { setSheetOpen(false); navigate('home'); }}>
           {/* Back chevron */}
           <button
             onClick={() => navigate('home')}
             aria-label="Close"
-            className="absolute left-4 top-4 text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30 rounded-full p-2"
+            className="absolute left-6 top-5 text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30 rounded-full p-2"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
               <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
 
-          <h3 className="text-white text-[20px] font-semibold px-1 mt-2 mb-4">Booking Details</h3>
+          <h3 className="text-white text-[20px] font-semibold px-6 mt-2 mb-2">Booking Details</h3>
+          {params.pid && (
+            <div className="mb-3 px-2 py-1 inline-flex items-center gap-2 rounded-full bg-white/10 text-white/80 text-sm">
+              <span className="w-4 h-4">🛡️</span>
+              <span>Protector: {params.pid}</span>
+              <button className="ml-2 text-white/60 hover:text-white" onClick={() => nav('book')}>×</button>
+            </div>
+          )}
 
-          <div className="space-y-5">
+          <div className="px-6 space-y-5">
             <TextField
               label="Pickup Location"
               placeholder="e.g., The Mark Hotel, 25 E 77th St"
@@ -351,13 +478,12 @@ export default function App({ anon, sb }: Props) {
           </div>
 
           {/* Sticky Next */}
-          <div className="sticky bottom-0 bg-gradient-to-t from-black/30 to-transparent pt-3 safe-bottom px-0 mt-4">
+      <div className="sticky bottom-0 bg-gradient-to-t from-black/30 to-transparent pt-3 safe-bottom px-6 mt-4">
             <Button onClick={onNext} disabled={!canNext} className={!canNext ? 'opacity-50 cursor-not-allowed' : ''}>
               Next
             </Button>
           </div>
-        </div>
-      </BottomSheet>
+    </BottomSheet>
 
       {/* Quote Modal */}
       <Modal open={route === 'quote'} onClose={() => navigate('book')} ariaLabel="Instant Quote">

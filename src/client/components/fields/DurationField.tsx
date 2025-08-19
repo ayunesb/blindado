@@ -34,7 +34,7 @@ export default function DurationField({
                 key={String(p)}
                 type="button"
                 className={clsx(
-                  'h-10 px-4 rounded-2xl border text-[14px]',
+                  'h-10 px-4 rounded-2xl border text-[14px] appearance-none focus:outline-none',
                   selected ? 'bg-white text-black border-transparent' : 'text-white/80 border-white/15'
                 )}
                 onClick={() => {
@@ -58,7 +58,7 @@ export default function DurationField({
               max={max}
               value={valueHours}
               onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value || min))))}
-              className="w-24 h-12 rounded-xl bg-white/10 border border-white/15 text-white text-[16px] px-3 outline-none"
+              className="w-24 h-12 rounded-xl bg-white/10 border border-white/15 text-white text-[16px] px-3 outline-none input-dark appearance-none"
             />
             <span className="text-white/70">hours</span>
           </div>

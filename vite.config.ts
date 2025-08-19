@@ -8,20 +8,20 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
+  index: resolve(__dirname, 'index.html'),
         client: resolve(__dirname, 'client.html'),
         guard: resolve(__dirname, 'guard.html'),
       },
     },
     outDir: 'dist',
     emptyOutDir: true,
-    copyPublicDir: false,
   },
   server: {
-    port: 5173,
+  port: 5173,
     host: true,
   },
   preview: {
-    port: 5174,
+  port: 4173,
     host: true,
   },
 })

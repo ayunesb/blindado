@@ -1,27 +1,73 @@
-// ESLint v9 flat config
+// ESLint v9 flat config for the web app only
+import js from '@eslint/js';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+
 /** @type {import('eslint').Linter.FlatConfig[]} */
 export default [
+  // Ignore built artifacts and non-web folders
   {
     ignores: [
+      'dist/**',
+      'node_modules/**',
       'public/**',
-      'supabase/functions/**',
+      'supabase/**',
+      'web/**',
+  '.eslintrc.json',
+  '.eslintignore',
+  'client.html',
+  'guard.html',
+      '**/*.html',
       '**/*.svg',
       '**/*.png',
       '**/*.jpg',
-      'supabase/.temp/**',
     ],
   },
+
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+
+  // App + components (TypeScript/React)
   {
-    files: ['**/*.js', '**/*.ts'],
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      globals: { window: 'readonly', document: 'readonly', console: 'readonly' },
+      globals: { ...globals.browser, ...globals.node },
     },
+    plugins: { react, 'react-hooks': reactHooks },
     rules: {
-      'no-unused-vars': 'off',
-      'no-undef': 'off',
-      'no-console': 'off',
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+
+  // Tests (Playwright): allow globals
+  {
+    files: ['tests/**/*.{ts,tsx}', 'e2e/**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        test: true,
+        expect: true,
+        page: true,
+        browser: true,
+        context: true,
+      },
+    },
+  },
+  // Deno smoke tests live under tests but are not linted by TS-ESLint
+  {
+    files: ['tests/*_test.ts'],
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
 ];

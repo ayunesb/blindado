@@ -1,5 +1,5 @@
 // src/client/components/Modal.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import clsx from 'clsx';
 
 export default function Modal({
@@ -13,6 +13,7 @@ export default function Modal({
   children: React.ReactNode;
   ariaLabel?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && open) onClose();
@@ -20,6 +21,10 @@ export default function Modal({
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (open) ref.current?.focus();
+  }, [open]);
 
   return (
     <>
@@ -41,6 +46,8 @@ export default function Modal({
         )}
       >
         <div
+          ref={ref}
+          tabIndex={-1}
           className={clsx(
             'w-[92%] max-w-[360px] rounded-3xl bg-[#0E0E0E] border border-white/10 p-6 shadow-2xl transform transition duration-200',
             open ? 'opacity-100 scale-100' : 'opacity-0 scale-95'

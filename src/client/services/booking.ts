@@ -7,7 +7,8 @@ export async function submitBookingLead(
   payload: { pickupLocation: string; pickupIso: string; durationHours: number }
 ) {
   const params = new URLSearchParams(window.location.search);
-  const stub = params.has('stub') || (import.meta as any).env?.VITE_STUB_API === 'true';
+  const viteEnv = (import.meta as unknown as { env?: Record<string, string | undefined> }).env || {};
+  const stub = params.has('stub') || viteEnv.VITE_STUB_API === 'true';
   if (stub) {
     await new Promise((r) => setTimeout(r, 150));
     return { ok: true, data: { booking_id: 'stub-id' } } as const;

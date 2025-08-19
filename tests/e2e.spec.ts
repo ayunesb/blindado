@@ -3,14 +3,15 @@ import { test, expect } from '@playwright/test';
 // Use a taller mobile-like viewport so sticky bottom buttons are visible
 test.use({ viewport: { width: 390, height: 900 } });
 
-const base = 'http://127.0.0.1:4173/client.html?stub=1';
+const preview = process.env.PREVIEW_URL || 'http://localhost:4173';
+const base = `${preview.replace(/\/$/, '')}/client.html?stub=1`;
 
 test('book flow to quote + confirm toast', async ({ page }) => {
   await page.goto(base);
   await expect(page.getByText('Book Armed Protectors in New York City')).toBeVisible();
 
   await page.getByRole('button', { name: 'Book a Protector' }).click();
-  await expect(page.getByText('Pickup Location')).toBeVisible();
+  await page.getByPlaceholder('e.g., The Mark Hotel, 25 E 77th St').waitFor();
 
   await page.getByPlaceholder('e.g., The Mark Hotel, 25 E 77th St').fill('10 Hudson Yards, NYC');
   // Fill date/time via input; pick a far-future date to avoid validation

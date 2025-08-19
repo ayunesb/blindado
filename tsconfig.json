@@ -13,5 +13,7 @@
     "esModuleInterop": true,
     "types": ["vite/client", "@types/react", "@types/react-dom"]
   },
-  "include": ["supabase", "scripts", "public", "src"]
+  // Only typecheck the web app source and Vite config; Deno Edge Functions and tests are excluded.
+  "include": ["src", "vite.config.ts"],
+  "exclude": ["dist", "node_modules", "supabase", "public", "tests", "web"]
 }

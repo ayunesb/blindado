@@ -1,10 +1,11 @@
 -- 05_storage_policies.sql
--- Creates buckets & policies for profile photos, licenses, incidents media
+-- Creates buckets & policies for profile photos, company docs, vehicles docs, incidents
 
 -- Buckets
 insert into storage.buckets (id, name, public) values
-  ('profiles','profiles', true),
-  ('licenses','licenses', false),
+  ('profiles','profiles', false),
+  ('company_docs','company_docs', false),
+  ('vehicles','vehicles', false),
   ('incidents','incidents', false)
   on conflict (id) do nothing;
 
@@ -16,26 +17,41 @@ returns boolean language sql stable as $$
   );
 $$;
 
--- Profiles (public read, owner or admin write)
-create policy "profiles_public_read" on storage.objects
-  for select using (bucket_id = 'profiles');
-create policy "profiles_owner_upsert" on storage.objects
+-- Profiles: private; owner or admin can read/write (signed URLs recommended)
+do $$ begin
+  if exists (select 1 from pg_policies where polname='profiles_public_read') then
+    drop policy "profiles_public_read" on storage.objects;
+  end if;
+end $$;
+
+create policy if not exists "profiles owner read" on storage.objects
+  for select using (
+    bucket_id = 'profiles' and (auth.uid() = owner or public.is_admin(auth.uid()))
+  );
+create policy if not exists "profiles owner write" on storage.objects
   for all using (
     bucket_id = 'profiles' and (auth.uid() = owner or public.is_admin(auth.uid()))
   ) with check (
     bucket_id = 'profiles' and (auth.uid() = owner or public.is_admin(auth.uid()))
   );
 
--- Licenses (owner or admin full access)
-create policy "licenses_owner_all" on storage.objects
+-- Company docs and vehicles (private)
+create policy if not exists "company docs owner all" on storage.objects
   for all using (
-    bucket_id = 'licenses' and (auth.uid() = owner or public.is_admin(auth.uid()))
+    bucket_id = 'company_docs' and (auth.uid() = owner or public.is_admin(auth.uid()))
   ) with check (
-    bucket_id = 'licenses' and (auth.uid() = owner or public.is_admin(auth.uid()))
+    bucket_id = 'company_docs' and (auth.uid() = owner or public.is_admin(auth.uid()))
+  );
+
+create policy if not exists "vehicles owner all" on storage.objects
+  for all using (
+    bucket_id = 'vehicles' and (auth.uid() = owner or public.is_admin(auth.uid()))
+  ) with check (
+    bucket_id = 'vehicles' and (auth.uid() = owner or public.is_admin(auth.uid()))
   );
 
 -- Incidents (owner or admin full access)
-create policy "incidents_owner_all" on storage.objects
+create policy if not exists "incidents_owner_all" on storage.objects
   for all using (
     bucket_id = 'incidents' and (auth.uid() = owner or public.is_admin(auth.uid()))
   ) with check (

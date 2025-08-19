@@ -1,3 +1,22 @@
+## Edge Functions – Env and Endpoints
+
+Environment variables:
+- SUPABASE_URL: Project URL
+- SUPABASE_SERVICE_ROLE_KEY: Service Role key (server-side only)
+- ALLOWED_ORIGINS: Comma-separated allowed origins for CORS (e.g., https://app.example.com,https://staging.example.com)
+
+Endpoints (invoke by name via Supabase client):
+- client_profile_upsert — POST; upserts profile docs; zod-validated; rate-limited
+- company_upsert — POST; upserts company and links caller
+- company_staff_upsert — POST; upserts staff for caller’s company
+- vehicle_upsert — POST; upserts company vehicle docs (company owner only)
+- company_permits_upsert — POST; upserts company permits
+- bookings — POST; creates booking; zod-validated; rate-limited
+- quotes — POST; upserts quote for booking; zod-validated; rate-limited
+
+Notes:
+- All functions share strict CORS with an allow-list and return 204 for OPTIONS.
+- Rate limits persist to public.edge_rate_limits; audit logs write to public.logs_edge.
 ## Flip-the-switch runbook
 
 This runbook sets the minimum env to get CI → Vercel deploy → post-deploy smoke running green.

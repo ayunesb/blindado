@@ -2,6 +2,8 @@
 import { serve } from 'std/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
 import { withCors } from "../_shared/http.ts";
+import { rateLimit, tooMany, auditLog } from "../_shared/http.ts";
+import { z } from 'zod';
 
 function j(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -25,9 +27,21 @@ serve(withCors(async (req: Request) => {
     return j({ error: 'invalid JSON' }, 400);
   }
 
-  const { booking_id, quote } = body || {};
-  if (!booking_id || typeof booking_id !== 'string')
-    return j({ error: 'booking_id required' }, 400);
+  const Payload = z.object({
+    booking_id: z.string().uuid(),
+    quote: z.any(),
+  });
+  const parsed = Payload.safeParse(body || {});
+  if (!parsed.success) return j({ error: 'invalid payload' }, 400);
+  const { booking_id, quote } = parsed.data;
+
+  // rate limit based on actor or IP
+  const auth = (req.headers.get('authorization') || '').replace('Bearer ', '');
+  const { data: authData } = await admin.auth.getUser(auth);
+  const actor = authData?.user?.id ?? null;
+  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+  const rl = await rateLimit(admin, `quotes:${actor ?? 'ip:' + ip}`, 120, 60);
+  if (!rl.allowed) return tooMany();
 
   const { error } = await admin
     .from('quotes')
@@ -36,5 +50,6 @@ serve(withCors(async (req: Request) => {
       { onConflict: 'booking_id' },
     );
   if (error) return j({ error: error.message }, 500);
+  await auditLog(admin, 'quotes', actor, 'upsert', { booking_id });
   return j({ ok: true, booking_id });
 }));

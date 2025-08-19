@@ -15,3 +15,10 @@ Tailwind
 
 URLs
 - Keep using client.html?anon=&sb= and guard.html
+
+Environment
+- SUPABASE_URL and SUPABASE_ANON_KEY are required for live API; otherwise the app falls back to stub mode when you append `?stub=1` to URLs or set `VITE_STUB_API=true`.
+- Edge Functions rely on SUPABASE_SERVICE_ROLE_KEY and a strict ALLOWED_ORIGINS allow-list (comma-separated). Preflight OPTIONS return 204 via a shared helper.
+
+Typechecking
+- The web app TypeScript config excludes `supabase/` so `npm run typecheck` stays focused on Vite code. Deno Edge Functions are checked by Deno in their own env; files include `// @ts-nocheck` to suppress VS Code mixed-env diagnostics.

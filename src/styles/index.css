@@ -8,3 +8,77 @@
   --color-border: rgba(255,255,255,.10);
 }
 html,body { background: var(--color-bg); color: #fff; }
+
+/* --- Dark inputs everywhere --- */
+:root { color-scheme: dark; }
+
+/* Base text color on dark backgrounds */
+body { color: rgba(255,255,255,0.92); }
+
+/* App content width: phone edge-to-edge with 24px padding, cap at 480px */
+.app-wrap { max-width: 480px; margin-inline: auto; padding-inline: 24px; }
+
+/* Reusable input style for the app */
+.input-dark {
+  width: 100%;
+  height: 4rem; /* h-16 */
+  border-radius: 1rem; /* rounded-2xl */
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.15);
+  padding-left: 1rem; /* px-4 */
+  padding-right: 1rem;
+  color: #fff;
+  outline: none;
+}
+.input-dark::placeholder { color: rgba(255,255,255,0.6); }
+.input-dark:focus {
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.3);
+}
+
+/* WebKit datetime sub-fields ensure white text */
+.input-dark::-webkit-datetime-edit-ampm-field,
+.input-dark::-webkit-datetime-edit-hour-field,
+.input-dark::-webkit-datetime-edit-minute-field,
+.input-dark::-webkit-datetime-edit-text,
+.input-dark::-webkit-datetime-edit-fields-wrapper { color: #fff; }
+
+/* Icons next to inputs */
+.icon-dark { color: rgba(255,255,255,0.8); }
+
+/* Tell native controls to render in dark mode */
+input[type="date"],
+input[type="time"],
+select {
+  color-scheme: dark;
+}
+
+/* WebKit bits so the text is actually white */
+input,
+textarea { color: #fff; caret-color: #fff; }
+input::placeholder { color: rgba(255,255,255,0.6); }
+
+/* Remove default light outlines on focus */
+input:focus, textarea:focus, select:focus, button:focus { outline: none; }
+
+/* iOS/Safari date/time internals */
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit { color: #fff; }
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(.85);
+}
+
+/* Autofill (Safari/Chrome) */
+input:-webkit-autofill,
+textarea:-webkit-autofill {
+  -webkit-text-fill-color: #fff !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* Safe-area padding helper for sticky footers/buttons */
+.safe-bottom { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+
+/* iOS momentum scrolling for horizontal carousels */
+.momentum { -webkit-overflow-scrolling: touch; }
