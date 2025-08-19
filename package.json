@@ -11,7 +11,10 @@
     "preview": "vite preview --port 4173 --strictPort",
   "e2e": "playwright test",
   "test": "vitest run tests/unit --reporter=basic",
-  "test:unit": "vitest run tests/unit --reporter=basic"
+  "test:unit": "vitest run tests/unit --reporter=basic",
+  "pw:install": "playwright install --with-deps",
+  "preflight": "npm ci && npm run typecheck && npm run lint && npm run test && npm run e2e",
+  "accept": "npm run build && npm run e2e"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
@@ -34,12 +37,14 @@
     "react-dom": "^19.1.1",
     "start-server-and-test": "^2.0.0",
     "tailwindcss": "^4.1.12",
-    "typescript-eslint": "^8.39.1",
+  "typescript-eslint": "^8.39.1",
+  "typescript": "^5.6.3",
   "vite": "^7.1.2",
   "vitest": "^2.1.3",
   "@axe-core/playwright": "^4.9.1"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.55.0"
+  "@supabase/supabase-js": "^2.55.0",
+  "@sentry/browser": "^8.38.0"
   }
 }

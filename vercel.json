@@ -1,5 +1,6 @@
 {
   "rewrites": [
+  { "source": "/", "destination": "/client.html" },
     { "source": "/client", "destination": "/client.html" },
     { "source": "/guard", "destination": "/guard.html" },
     { "source": "/company", "destination": "/company_onboard.html" },
@@ -17,7 +18,7 @@
         { "key": "Permissions-Policy", "value": "geolocation=()" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval' https://js.stripe.com; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com https://*.sentry.io; frame-src https://js.stripe.com; worker-src 'self'; form-action 'self'; upgrade-insecure-requests"
+      "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval' https://js.stripe.com; connect-src 'self' https://*.supabase.co https://*.supabase.in https://api.stripe.com https://*.stripe.com https://*.sentry.io; frame-src https://js.stripe.com; worker-src 'self'; form-action 'self'; upgrade-insecure-requests"
         }
       ]
     }

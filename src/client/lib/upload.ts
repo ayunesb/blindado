@@ -9,7 +9,7 @@ export function useUpload() {
 	const [progress, setProgress] = useState(0);
 
 	const MAX_SIZE = 15 * 1024 * 1024; // 15MB
-	const ALLOWED = new Set(['image/jpeg','image/png','image/svg+xml','image/webp','application/pdf']);
+	const ALLOWED = new Set(['image/jpeg','image/png','application/pdf']);
 
 	function attach(el: HTMLInputElement) {
 		inputRef.current = el;

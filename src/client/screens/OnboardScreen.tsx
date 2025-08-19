@@ -57,7 +57,6 @@ export default function OnboardScreen({ role: initialRole = 'client', onDone }: 
       }
       onDone();
     } catch (e) {
-      console.error(e);
       alert((e as Error).message || 'Failed. Try again.');
     } finally {
       setSubmitting(false);
