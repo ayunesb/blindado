@@ -65,6 +65,7 @@ In Vercel Project → Settings → Environment Variables (Production and Preview
 - VITE_SUPABASE_URL: https://<ref>.supabase.co
 - VITE_SUPABASE_ANON_KEY: <anon key>
 - VITE_STUB_API: false (optional; omit in prod)
+- VITE_SENTRY_DSN: optional; if set, client initializes Sentry for error tracking
 
 ### 5) Kick the pipeline
 
@@ -80,6 +81,12 @@ Artifacts attached: smoke logs and deploy plan.
 - Post-deploy smoke stuck at 403: Set HEALTH_ORIGIN to your site origin, or leave ALLOWED_ORIGINS empty temporarily.
 - SPA hero check fails: Confirm SPA_URL points to the deployed client.html and the page contains “Book a Protector”.
 - Stripe webhooks: ensure STRIPE_WEBHOOK_SECRET is set and the endpoint is configured in Stripe dashboard to your deployed stripe_webhook function URL.
+- CSP: Update vercel.json Content-Security-Policy if you add new third-party origins (analytics, maps). Current policy allows Supabase, Stripe, and Sentry connects.
+
+### Security headers snapshot
+
+- Strict-Transport-Security, Referrer-Policy, Permissions-Policy set in vercel.json.
+- Content-Security-Policy tightened: default-src self; connect to Supabase/Stripe/Sentry only; frame-src js.stripe.com; object-src none; frame-ancestors none; etc.
 
 ### Helper: setup via GitHub CLI
 
