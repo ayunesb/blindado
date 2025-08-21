@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">blindado</string>
+    <string name="title_activity_main">blindado</string>
+    <string name="package_name">escolta.services</string>
+    <string name="custom_url_scheme">escolta.services</string>
+</resources>
