@@ -17,7 +17,9 @@
     "pw:install": "playwright install --with-deps",
     "preflight": "npm ci && npm run typecheck && npm run lint && npm run test && npm run e2e",
     "accept": "npm run build && npm run e2e",
-    "icons": "node scripts/generate-icons.mjs"
+  "icons": "node scripts/generate-icons.mjs",
+  "contracts": "node -e \"if(!process.env.CI_LIVE){console.log('skip contracts (set CI_LIVE=1)');process.exit(0)}\" && node scripts/contracts/health.mjs && node scripts/contracts/bookings.mjs && node scripts/contracts/client_profile_upsert.mjs && node scripts/contracts/company_upsert.mjs && node scripts/contracts/company_permits_upsert.mjs && node scripts/contracts/vehicle_upsert.mjs && node scripts/contracts/company_staff_upsert.mjs && node scripts/contracts/freelancer_apply.mjs && node scripts/contracts/storage_ttl.mjs",
+  "e2e:visual": "VISUAL=1 playwright test tests/visual.spec.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.9.1",
@@ -49,10 +51,6 @@
     "vitest": "^2.1.3"
   },
   "dependencies": {
-    "@capacitor/android": "^7.4.3",
-    "@capacitor/cli": "^7.4.3",
-    "@capacitor/core": "^7.4.3",
-    "@capacitor/ios": "^7.4.3",
     "@sentry/browser": "^8.38.0",
     "@supabase/supabase-js": "^2.55.0"
   }
